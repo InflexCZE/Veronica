@@ -10,6 +10,12 @@ The Editor (D3D12) and `WebQwen.exe` (Dawn on D3D12) run on one GPU. On the 8 GB
 - Dawn's residency management does not prevent it, enabled or disabled. Its external memory reservation is capped at half the budget and evicts nothing by itself.
 - `IDXGIAdapter3::QueryVideoMemoryInfo` does not show demotion (`CurrentUsage` counts demoted allocations as local). The `GPU Process Memory` performance counters (`Dedicated Usage`, `Shared Usage`) do.
 - `Evict` is lazy: nothing moves until another allocation needs the room. When everything fits, `Evict` followed by `MakeResident` costs about 0.2 ms.
+- Budgets are not a 50:50 split. The foreground process keeps a budget of about 81% of the available VRAM, whatever the others use. A windowless background process gets roughly the rest. The budgets add up to more than physical VRAM.
+- No hint makes Windows prefer one process over another:
+  - `IDXGIAdapter3::SetVideoMemoryReservation` is accepted but capped at about half the budget, and demotion is unchanged.
+  - `D3DKMTSetProcessSchedulingPriorityClass` (WebQwen HIGH, Editor IDLE) changes nothing.
+  - D3D12 residency priorities act only within one process. With both devices in one process (model MAXIMUM, Editor MINIMUM during a turn), the running model slowly pushes the idle Editor out, over about 17 s of inference. Swapping the priorities back never returns the Editor's memory while the model sits idle: Editor frames stayed about 25x slower for 20 s and more.
+- Explicit `Evict` / `MakeResident` is the only mechanism found that moves memory between the two sides on demand.
 
 ## Strategy: ping-pong residency
 
