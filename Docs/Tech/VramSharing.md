@@ -29,6 +29,15 @@ Exactly one side keeps its working set resident at a time. The same path runs on
 - WebQwen evicts and restores its own allocations explicitly, covering every storage buffer of 1 MB and more (6166 of about 6200 MB for Bonsai).
 - The evicted side lives in system memory: up to about 6.2 GB for the model plus 1-3 GB for the Editor.
 
+## WebQwen residency
+
+- `wq.dll` releases on its own: every engine operation (chat, score, and each model-load phase) ends by waiting for the GPU queue to go idle and evicting its buffers, before the operation's done callback. A done callback therefore means WebQwen's VRAM is released, and Veronica needs no extra message for it.
+- Every engine operation starts with a synchronous `MakeResident` of its buffers.
+- Between the steps of one agent turn (tool calls), WebQwen evicts and makes resident again while the Editor stays frozen. This costs nothing because `Evict` is lazy.
+- A submit while the buffers are released is a bug. `wq.dll` asserts in debug builds and logs an error in every build, then makes the buffers resident so the submit cannot fault the GPU.
+- Dawn's own residency management is disabled (`use_d3d12_residency_management` off).
+- Lazy `Evict` is measured behaviour, not documented. The documentation says only that `Evict` "enables page-out", that `MakeResident` and `Evict` are reference-counted, and that `Evict` must follow the GPU's last use of the object.
+
 ## Model load
 
 The load is split:
