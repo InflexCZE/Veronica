@@ -26,25 +26,23 @@ Exactly one side keeps its working set resident at a time. The same path runs on
 - **Turn end:** WebQwen evicts its buffers. The Editor makes all its engine resources resident and resumes rendering.
 - Nothing is destroyed or re-created; every handle stays valid on both sides.
 - While evicted, the Editor must not submit any engine-device work: GPU access to an evicted resource faults.
-- WebQwen evicts and restores its own allocations explicitly, covering every storage buffer of 1 MB and more (6166 of about 6200 MB for Bonsai).
+- WebQwen evicts and restores its own large buffers explicitly: every storage buffer of 1 MB and more that is not mappable (6166 of about 6200 MB for Bonsai).
 - The evicted side lives in system memory: up to about 6.2 GB for the model plus 1-3 GB for the Editor.
 
 ## WebQwen residency
 
-- `wq.dll` releases on its own: every engine operation (chat, score, and each model-load phase) ends by waiting for the GPU queue to go idle and evicting its buffers, before the operation's done callback. A done callback therefore means WebQwen's VRAM is released, and Veronica needs no extra message for it.
+- `webgpu_dawn.dll` owns the large buffers: it creates them as its own D3D12 committed resources imported into Dawn, and evicts or restores a device's set on request. It is the only binary that sees D3D12. Dawn keeps imported memory until the device is released, even after the buffer is released, so a device's set only grows.
+- `wq.dll` decides when: every engine operation (load, chat, reset, score) ends by waiting for the GPU queue to go idle and evicting its buffers, before the operation's done callback. A done callback therefore means WebQwen's VRAM is released, and Veronica needs no extra message for it.
 - Every engine operation starts with a synchronous `MakeResident` of its buffers.
 - Between the steps of one agent turn (tool calls), WebQwen evicts and makes resident again while the Editor stays frozen. This costs nothing because `Evict` is lazy.
-- A submit while the buffers are released is a bug. `wq.dll` asserts in debug builds and logs an error in every build, then makes the buffers resident so the submit cannot fault the GPU.
+- GPU work queued while the buffers are released (a submit or a buffer write) is a bug. `wq.dll` asserts in debug builds and logs an error in every build, then makes the buffers resident so the work cannot fault the GPU.
+- The eviction runs in the queue-idle callback itself, and waits again if work was queued since the release started. Destroying a device evicts its buffers at once, since Dawn keeps their memory until the device is released.
 - Dawn's own residency management is disabled (`use_d3d12_residency_management` off).
 - Lazy `Evict` is measured behaviour, not documented. The documentation says only that `Evict` "enables page-out", that `MakeResident` and `Evict` are reference-counted, and that `Evict` must follow the GPU's last use of the object.
 
 ## Model load
 
-The load is split:
-
-1. **Weight upload** (about 10 s for 5.2 GB from the local cache): the Editor is frozen and evicted, as in a turn.
-2. **When the weights are done** (the engine starts compiling shader modules and the GPU is idle): WebQwen evicts its buffers and the Editor resumes.
-3. **Shader compile** (about 27 s) runs with the Editor live. Allocations made from here on (about 0.85 GB) do not demote while the weights are evicted; WebQwen evicts again when the load ends. The rest of the KV cache and scratch (about 0.15 GB) is allocated in the first turn.
+The load is split: the Editor is frozen and evicted for the weight upload (about 10 s for 5.2 GB from the local cache) and live for the shader compile that follows (about 27 s). How WebQwen and the Editor coordinate the split is not designed yet. Until it is, a load is one engine operation: the Editor stays frozen for all of it, and WebQwen releases its VRAM when the load completes.
 
 ## Cost
 
@@ -57,4 +55,4 @@ RTX 3070 8 GB, about 1 GB held by the desktop, Bonsai:
 
 - Decode and prefill match WebQwen running alone. Editor frame times after resume match those before the turn.
 - Each direction costs about 0.25 s per GB of overlap (Editor + model + others - VRAM). It is close to zero when everything fits.
-- Split load: the Editor is frozen for the weight upload only (10 s); it is back about 0.9 s after that.
+- Measured with the release at the end of every engine operation, as implemented, and with the spike's split load. In the split load the Editor was back about 0.9 s after the weight upload.

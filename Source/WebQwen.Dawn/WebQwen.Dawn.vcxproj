@@ -38,9 +38,11 @@
 
   <ItemGroup>
     <ClCompile Include="MsvcStlCompat.cpp" />
+    <ClCompile Include="Residency.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="webgpu_dawn.def" />
+    <ClInclude Include="wq_dawn.h" />
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

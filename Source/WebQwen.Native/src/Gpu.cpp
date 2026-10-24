@@ -3,6 +3,9 @@
 // integer handles.
 #include "Engine.h"
 
+#include "wq_dawn.h"
+
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -60,7 +63,7 @@ void Gpu::ReleaseAll() {
     if (queue) wgpuQueueRelease(queue);
     queue = nullptr;
     for (uint32_t id = 1; id < handles.size(); id++) Release(id);
-    if (device) wgpuDeviceRelease(device);
+    if (device) wqDawnReleaseDevice(device), wgpuDeviceRelease(device);
     device = nullptr;
     if (adapter) wgpuAdapterRelease(adapter);
     adapter = nullptr;
@@ -195,6 +198,10 @@ Pending* NewPending(const Info& info) {
     return new Pending{engine, v8::Global<v8::Promise::Resolver>(info.GetIsolate(), resolver)};
 }
 
+void LogError(Engine* engine, const std::string& text) {
+    if (engine->host.log) engine->host.log(engine->host.ctx, WQ_LOG_ERROR, text.data(), text.size());
+}
+
 // make runs on the engine thread with V8 entered; an empty result rejects
 // with error.
 void Settle(Pending* pending, std::string error, std::function<v8::Local<v8::Value>(v8::Isolate*)> make) {
@@ -314,7 +321,16 @@ void RequestDevice(const Info& info) {
             else *(uint32_t*)((char*)&limits + field->offset) = (uint32_t)v;
         }
     }
+    // Large buffers are imported D3D12 memory so they can be evicted between
+    // operations; that replaces Dawn's own residency management.
+    if (wgpuAdapterHasFeature(adapter, WGPUFeatureName_SharedBufferMemoryD3D12Resource))
+        features.push_back(WGPUFeatureName_SharedBufferMemoryD3D12Resource);
+    const char* disabledToggles[] = {"use_d3d12_residency_management"};
+    WGPUDawnTogglesDescriptor toggles = WGPU_DAWN_TOGGLES_DESCRIPTOR_INIT;
+    toggles.disabledToggleCount = 1;
+    toggles.disabledToggles = disabledToggles;
     WGPUDeviceDescriptor d = WGPU_DEVICE_DESCRIPTOR_INIT;
+    d.nextInChain = &toggles.chain;
     d.requiredFeatureCount = features.size();
     d.requiredFeatures = features.data();
     d.requiredLimits = &limits;
@@ -356,8 +372,9 @@ void RequestDevice(const Info& info) {
             Gpu& gpu = pending->engine->gpu;
             auto ctx = isolate->GetCurrentContext();
             if (gpu.queue) wgpuQueueRelease(gpu.queue);
-            if (gpu.device) wgpuDeviceRelease(gpu.device);
+            if (gpu.device) wqDawnReleaseDevice(gpu.device), wgpuDeviceRelease(gpu.device);
             gpu.device = device;
+            gpu.released = false;
             gpu.queue = wgpuDeviceGetQueue(device);
             wgpuDeviceAddRef(device);
             WGPUSupportedFeatures features = WGPU_SUPPORTED_FEATURES_INIT;
@@ -383,7 +400,14 @@ WGPUDevice Device(const Info& info) {
 }
 
 void DestroyDevice(const Info& info) {
-    if (auto device = Obj<WGPUDevice>(info, 0, GpuKind::Device, "device")) wgpuDeviceDestroy(device);
+    auto device = Obj<WGPUDevice>(info, 0, GpuKind::Device, "device");
+    if (!device) return;
+    wgpuDeviceDestroy(device);
+    // Dawn keeps the imported memory until the device is released; evicted,
+    // it no longer takes VRAM from the next model or the Editor.
+    wqDawnReleaseDevice(device);
+    Gpu& gpu = FromInfo(info)->gpu;
+    if (gpu.device == device) gpu.released = false;
 }
 
 void Release(const Info& info) { FromInfo(info)->gpu.Release(U32(info, 0)); }
@@ -440,7 +464,7 @@ void CreateBuffer(const Info& info) {
     d.usage = (WGPUBufferUsage)(uint64_t)Num(info, 1);
     d.mappedAtCreation = info[2]->BooleanValue(info.GetIsolate());
     d.label = View(label);
-    info.GetReturnValue().Set(FromInfo(info)->gpu.Add(wgpuDeviceCreateBuffer(device, &d), GpuKind::Buffer));
+    info.GetReturnValue().Set(FromInfo(info)->gpu.Add(wqDawnCreateBuffer(device, &d), GpuKind::Buffer));
 }
 
 void DestroyBuffer(const Info& info) {
@@ -780,6 +804,23 @@ void Finish(const Info& info) {
     info.GetReturnValue().Set(gpu.Add(cb, GpuKind::CommandBuffer));
 }
 
+// Every call that queues GPU work comes here first. Work outside an operation
+// finds the buffers evicted, and the GPU would fault on them.
+bool EnsureResident(const Info& info, const char* call) {
+    Engine* engine = FromInfo(info);
+    Gpu& gpu = engine->gpu;
+    gpu.queued++;
+    if (!gpu.released) return true;
+    assert(!"GPU work while GPU memory is released");
+    LogError(engine, std::string(call) + " while GPU memory is released; making it resident");
+    if (wqDawnMakeResident(gpu.device) < 0) {
+        Throw(info, std::string(call) + ": making GPU memory resident failed");
+        return false;
+    }
+    gpu.released = false;
+    return true;
+}
+
 // (array of command buffer handles); submitted buffers are released.
 void Submit(const Info& info) {
     Gpu& gpu = FromInfo(info)->gpu;
@@ -793,6 +834,7 @@ void Submit(const Info& info) {
         cbs[i] = (WGPUCommandBuffer)gpu.Get(ids[i], GpuKind::CommandBuffer);
         if (!cbs[i]) return Throw(info, "submit: invalid command buffer");
     }
+    if (!EnsureResident(info, "submit")) return;
     wgpuQueueSubmit(gpu.queue, cbs.size(), cbs.data());
     for (uint32_t id : ids) gpu.Release(id);
 }
@@ -808,6 +850,7 @@ void WriteBuffer(const Info& info) {
     if (!Bytes(info[2], &data, &length)) return Throw(info, "writeBuffer: data is not a buffer");
     size_t offset = (size_t)Num(info, 3), size = (size_t)Num(info, 4);
     if (offset > length || size > length - offset) return Throw(info, "writeBuffer: range outside the data");
+    if (!EnsureResident(info, "writeBuffer")) return;
     wgpuQueueWriteBuffer(gpu.queue, buffer, (uint64_t)Num(info, 1), data + offset, size);
 }
 
@@ -822,6 +865,58 @@ void OnSubmittedWorkDone(const Info& info) {
     };
     cb.userdata1 = pending;
     wgpuQueueOnSubmittedWorkDone(gpu.queue, cb);
+}
+
+// Every engine operation starts here.
+void ResidencyAcquire(const Info& info) {
+    Gpu& gpu = FromInfo(info)->gpu;
+    if (!gpu.device || !gpu.released) return;
+    if (wqDawnMakeResident(gpu.device) < 0) return Throw(info, "making GPU memory resident failed");
+    gpu.released = false;
+}
+
+struct PendingRelease {
+    Pending* pending;
+    WGPUDevice device;
+    uint64_t queued;
+};
+
+// Evicts from the Dawn callback itself, so no script runs between the queue
+// going idle and the eviction. Work queued meanwhile means waiting again.
+void EvictWhenIdle(PendingRelease* r) {
+    WGPUQueueWorkDoneCallbackInfo cb = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
+    cb.mode = WGPUCallbackMode_AllowProcessEvents;
+    cb.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* u1, void*) {
+        auto* r = (PendingRelease*)u1;
+        Engine* engine = r->pending->engine;
+        Gpu& gpu = engine->gpu;
+        if (gpu.device == r->device) {
+            if (status == WGPUQueueWorkDoneStatus_Success && gpu.queued != r->queued) {
+                r->queued = gpu.queued;
+                return EvictWhenIdle(r);
+            }
+            if (status != WGPUQueueWorkDoneStatus_Success)
+                LogError(engine, "GPU memory stays resident: the queue failed (" + Text(message) + ")");
+            else if (wqDawnEvict(r->device) < 0)
+                LogError(engine, "GPU memory stays resident: evicting it failed");
+            else
+                gpu.released = true;
+        }
+        Settle(r->pending, "", nullptr);
+        delete r;
+    };
+    cb.userdata1 = r;
+    wgpuQueueOnSubmittedWorkDone(r->pending->engine->gpu.queue, cb);
+}
+
+// Every engine operation ends here: once the GPU is idle the large buffers
+// are evicted, so the host may give the VRAM away when the operation
+// completes. Never rejects; a failure is logged and leaves the memory resident.
+void ResidencyRelease(const Info& info) {
+    Engine* engine = FromInfo(info);
+    auto* pending = NewPending(info);
+    if (!engine->gpu.queue) return Settle(pending, "", nullptr);
+    EvictWhenIdle(new PendingRelease{pending, engine->gpu.device, engine->gpu.queued});
 }
 
 struct Method {
@@ -865,6 +960,8 @@ const Method kGpu[] = {
     {"submit", Submit},
     {"writeBuffer", WriteBuffer},
     {"onSubmittedWorkDone", OnSubmittedWorkDone},
+    {"residencyAcquire", ResidencyAcquire},
+    {"residencyRelease", ResidencyRelease},
 };
 
 }  // namespace

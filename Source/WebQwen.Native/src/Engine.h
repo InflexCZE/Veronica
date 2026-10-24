@@ -65,6 +65,10 @@ struct Gpu {
     // Callbacks Dawn has yet to deliver; while any are outstanding the loop
     // polls Dawn instead of sleeping.
     int pending = 0;
+    // The device's large buffers are evicted: set between engine operations.
+    bool released = false;
+    // Calls that queued GPU work; a release waits again if any came meanwhile.
+    uint64_t queued = 0;
 
     uint32_t Add(void* object, GpuKind kind);
     void* Get(uint32_t id, GpuKind kind) const;

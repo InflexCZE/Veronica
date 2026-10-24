@@ -3,14 +3,24 @@
 ;(function (g) {
   'use strict'
   const host = g.__host
+  const gpu = g.__gpu
   let engine = null
   let slot = null
 
   // Operations run one after another: web-llm does not guard a reload
-  // against a concurrent request, or a request against a reload.
+  // against a concurrent request, or a request against a reload. Each holds
+  // the model's GPU memory resident only while it runs; when its promise
+  // settles the memory is released.
   let tail = Promise.resolve()
   const serial = (run) => {
-    const result = tail.then(run)
+    const result = tail.then(async () => {
+      gpu.residencyAcquire()
+      try {
+        return await run()
+      } finally {
+        await gpu.residencyRelease()
+      }
+    })
     tail = result.then(
       () => undefined,
       () => undefined,

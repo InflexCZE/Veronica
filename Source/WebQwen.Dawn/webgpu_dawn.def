@@ -276,3 +276,8 @@ wgpuTextureSetOwnershipForMemoryDump
 wgpuTextureViewAddRef
 wgpuTextureViewRelease
 wgpuTextureViewSetLabel
+; Residency of large buffers (Residency.cpp, wq_dawn.h).
+wqDawnCreateBuffer
+wqDawnEvict
+wqDawnMakeResident
+wqDawnReleaseDevice

@@ -34,7 +34,7 @@
 
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>include;$(V8Dir)include;$(DawnDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;..\WebQwen.Dawn;$(V8Dir)include;$(DawnDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <!-- V8 is built against Chromium's libc++ without exceptions; code that includes v8.h must match. libc++
            must precede clang's builtin headers, which only GNU-style -isystem achieves. -->
       <AdditionalOptions>/clang:-nostdinc++ "/clang:-isystem$(V8Dir)cxx\buildtools\third_party\libc++" "/clang:-isystem$(V8Dir)cxx\third_party\libc++\src\include" %(AdditionalOptions)</AdditionalOptions>

@@ -44,7 +44,7 @@ One folder, side by side:
 |---|---|
 | `WebQwen.exe` | C#, .NET 9, framework-dependent (the Editor requires .NET 9 already). All I/O; loads `wq.dll` in-process. |
 | `wq.dll` | V8, the script host and the WebGPU functions; the C API `WebQwen.exe` calls. |
-| `webgpu_dawn.dll` | Dawn's `webgpu.h` C API. |
+| `webgpu_dawn.dll` | Dawn's `webgpu.h` C API, plus the residency of large buffers (`wq_dawn.h`, see `VramSharing.md`). |
 | `dxcompiler.dll`, `dxil.dll` | DirectX Shader Compiler, required by Dawn's D3D12 backend. Not part of the WebQwen release: Veronica copies them from the Editor's binaries folder when it installs or updates WebQwen. |
 
 ## Build
