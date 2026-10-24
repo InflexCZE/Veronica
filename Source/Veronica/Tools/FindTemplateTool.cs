@@ -1,0 +1,32 @@
+using System.Text.Json;
+using Veronica.Agent;
+using Veronica.Agent.Tools;
+using Veronica.Editing;
+
+namespace Veronica.Tools;
+
+public sealed class FindTemplateTool : ITool
+{
+    public string Name => "find_template";
+
+    public string Description => "Lists the prefab templates create_prefab can build from, as the Editor's Create Prefab menu shows them.";
+
+    public string Parameters => """
+        {"type":"object","properties":{"filter":{"type":"string","description":"Words that must all appear in the template path, e.g. ion thrusters; empty lists all"}}}
+        """;
+
+    public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
+    {
+        string? filter = Args.OptionalText(arguments, "filter");
+        return new ToolResult(await EditorProject.RunAsync(project =>
+        {
+            var found = Templates.Filter(PrefabTemplates.List(project).Keys, filter);
+            if (found.Count == 0)
+                return $"No template matches '{filter}'.";
+            var lines = found.Take(Templates.MaxListed).ToList();
+            if (found.Count > Templates.MaxListed)
+                lines.Add($"... {found.Count - Templates.MaxListed} more; add words to the filter.");
+            return string.Join("\n", lines);
+        }, cancellationToken));
+    }
+}

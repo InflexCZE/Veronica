@@ -21,10 +21,11 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - **Content items** are named by project-relative path, or by bare file name with the extension optional. A name resolves over the loaded mod and its dependencies. An ambiguous name is an error that lists the candidate paths. The model never sees GUIDs.
 - **Edits** go through the Editor's own definition data layer (`ObjectManipulator` / `MemberReference`), the same layer the Property Inspector uses. No UI is automated. For a `.partialdef`, reads see the merged definition and writes are recorded as overrides automatically.
-- **Saving:** every successful change saves the way an inspector edit does, and an open Property Inspector shows the new value. There is no save tool.
+- **Saving:** every successful change saves the way an inspector edit does, and an open Property Inspector shows the new value. There is no save tool. As with inspector edits, a failed disk write only reaches the Editor log.
 - **No undo:** edits are not Ctrl-Z steps. The user reverts with version control.
 - **Read-only:** the tools use the Editor's own flag, `ExplorerItem.CurrentReadOnly`. Edits check it on the target file and creation checks it on the target folder. When it is set, the error quotes its `Reason` (for example "Project read-only", "File in use").
-- **Project:** every call uses the currently loaded project. With none loaded, the tool says so.
+- **Project:** every call uses the currently loaded project, reached through `VRageCore.Instance.Engine`. With none loaded, the tool says so.
+- **Stop:** a call the user stopped before it reached the UI thread changes nothing.
 - **Errors** are short, name the bad part, and list the valid alternatives where there are any: sibling field names, candidate paths, enum names, templates, concrete types.
 - **Threading:** tools run on a worker thread and do their project work on the UI thread.
 
@@ -87,11 +88,11 @@ The first set of agent tools that act on the loaded project. The target is build
 
 ## create_folder
 
-Creates every missing level of `folder_path`. An existing folder is a success ("already exists").
+Creates every missing level of `folder_path` inside the mod. An existing folder is a success ("already exists"). The project root itself is read-only in the Editor, so new folders go under its top folders, such as `Assets`.
 
 ## Templates
 
-- A template is a prefab template the Editor offers under Create Prefab, named by its browser path, for example `Blocks/Breakable/Ion Thrusters`.
+- A template is an entry of the Editor's Create Prefab menu, named by its menu path below the menu's own top group, for example `Blocks/Breakable/Ion Thrusters`. The list is read from the generator that builds the menu, so it is exactly what the menu offers, empty prefabs included.
 - Matching is case-insensitive, and `/`, `\` and runs of spaces separate words.
 - `find_template(filter?)` lists the templates whose path contains every word of `filter`. Without a filter it lists all of them. Capped at about 50.
 - `create_prefab` resolves `template` in tiers and stops at the first tier with any match:
@@ -100,8 +101,11 @@ Creates every missing level of `folder_path`. An existing folder is a success ("
   3. every word of `template` appears in the path.
 
   One match generates the prefab. Several matches are an error that lists them.
-- `name` names the generated files.
-- The reply is one line per generated file, with its project-relative path and definition type: `Mods/MyThruster/MyThruster_IonThrusterDefinition.partialdef (ThrusterDefinition)`. Each path is a valid target.
+- `name` names the generated files: it answers the name the template asks for, and the template's own name check applies. A template that never asks (empty prefabs, single-file templates) has its files' shared name prefix replaced by `name`.
+- `folder` is created like `create_folder` when missing; created folders stay even when generation then fails. Folders under `AssetSources` are refused, as in the Editor.
+- Generation stops before writing any file when one of the generated file names already exists in the folder. (Generators dodge an existing name with ` (2)`; the tool refuses that instead.)
+- After writing, generated assets whose processing failed are reprocessed, as the Editor's own create does: some need the files written after them.
+- The reply is one line per generated file, with its project-relative path and definition type: `Assets/MyThruster/MyThruster_IonThrusterDefinition.partialdef (ThrusterDefinition)`. Each path is a valid target.
 
 ## Assemblies
 

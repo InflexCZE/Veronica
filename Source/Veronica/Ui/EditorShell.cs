@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.UI.UniDock.Docking;
 using Veronica.Agent.Tools;
+using Veronica.Tools;
 
 namespace Veronica.Ui;
 
@@ -88,10 +89,22 @@ public sealed class EditorShell
         _panel.Select();
     }
 
+    private static readonly ITool[] Tools =
+    [
+        new FindContentTool(),
+        new ListFolderTool(),
+        new ReadTool(),
+        new WriteTool(),
+        new ListElementAddTool(),
+        new CreateFolderTool(),
+        new FindTemplateTool(),
+        new CreatePrefabTool(),
+    ];
+
     private static ChatPanelViewModel CreatePanel()
     {
         var provider = LocalModel.CreateProvider();
-        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet([new AddTool()]));
+        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools));
         provider.StatusChanged += panel.ShowStatus;
         return panel;
     }

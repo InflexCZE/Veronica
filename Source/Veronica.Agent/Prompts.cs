@@ -10,6 +10,8 @@ public static class Prompts
 
     public static TurnLimits ChatLimits { get; } = new()
     {
+        // Until tool rewards exist (Docs/TODOs/ToolRewards.md), a whole block build has to fit in one turn.
+        MaxRounds = 50,
         MaxTokens = 4000,
         Thinking = true,
         LengthNudge = new LengthNudge(() => LengthNudge, MaxNudges: 2),

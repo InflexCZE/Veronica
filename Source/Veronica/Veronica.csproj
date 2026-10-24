@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Veronica.Agent\Veronica.Agent.csproj" />
+    <ProjectReference Include="..\Veronica.Editing\Veronica.Editing.csproj" />
   </ItemGroup>
 
   <!-- Development wiring until WebQwen is installed: the exe from this repo's build output. -->
@@ -37,6 +38,7 @@
     <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.Xaml.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.ContentPipeline.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.ContentPipeline.Game.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Core.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Core.Game.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.DCS.dll" Private="false" />

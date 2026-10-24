@@ -35,7 +35,7 @@
   - arguments that are not a JSON object;
   - an exception thrown by the tool.
 - Tools run on a worker thread.
-- The only tool is `add(a, b)`, which proves the path end to end.
+- The tools are the Editor tools in `EditorTools.md`. Their descriptions say only what the model would not guess; the system prompt carries no tool guidance.
 
 ## Conversation
 
@@ -50,9 +50,10 @@
 |---|---|
 | system prompt | "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely." |
 | thinking | on |
+| rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 |
 | length nudge | up to 2 per turn |
-| tools | `add` |
+| tools | the Editor tools (`EditorTools.md`) |
 
 ## WebQwen provider
 
