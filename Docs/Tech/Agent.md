@@ -63,6 +63,6 @@
 
 ## Testing
 
-- `Veronica.Tests` covers `ClientToolLoop` with scripted rounds.
+- `Veronica.Tests` covers `ClientToolLoop` with scripted rounds, and the editing layer behind the Editor tools (see `EditorTools.md`).
 - It also runs WebQwen.exe's `Server` and the plugin's `WebQwenConnection` against each other over in-memory pipes, with a scripted engine in place of the model.
 - Process lifetime and the live model are tested by hand in the Editor.

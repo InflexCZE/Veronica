@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.UI.Shared.dll" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CheckEditorDir" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(EditorDir)VRage.Library.dll')">
+    <Error Text="VRage.Library.dll not found in '$(EditorDir)'. Set SE2Root (or EditorDir) in Directory.Build.local.props, see Directory.Build.local.props.template." />
+  </Target>
+
+</Project>

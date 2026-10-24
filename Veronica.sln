@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica", "Source\Veronica
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Agent", "Source\Veronica.Agent\Veronica.Agent.csproj", "{22E77F97-C97B-4913-A0A5-52C11BABA9DD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Editing", "Source\Veronica.Editing\Veronica.Editing.csproj", "{5E8A2C41-7B3D-4F6A-9C12-D84B0E6F3A57}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Tests", "Source\Veronica.Tests\Veronica.Tests.csproj", "{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}"
 EndProject
 Global
@@ -47,6 +49,10 @@ Global
 		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Debug|x64.Build.0 = Debug|Any CPU
 		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Release|x64.ActiveCfg = Release|Any CPU
 		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Release|x64.Build.0 = Release|Any CPU
+		{5E8A2C41-7B3D-4F6A-9C12-D84B0E6F3A57}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5E8A2C41-7B3D-4F6A-9C12-D84B0E6F3A57}.Debug|x64.Build.0 = Debug|Any CPU
+		{5E8A2C41-7B3D-4F6A-9C12-D84B0E6F3A57}.Release|x64.ActiveCfg = Release|Any CPU
+		{5E8A2C41-7B3D-4F6A-9C12-D84B0E6F3A57}.Release|x64.Build.0 = Release|Any CPU
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Debug|x64.ActiveCfg = Debug|x64
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Debug|x64.Build.0 = Debug|x64
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Release|x64.ActiveCfg = Release|x64

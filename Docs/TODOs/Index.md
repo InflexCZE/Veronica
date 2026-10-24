@@ -23,3 +23,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorVersionFloor.md](EditorVersionFloor.md) | Editor: oldest Editor build a release supports (owner decision) |
 | [EditorTextOutside.md](EditorTextOutside.md) | Editor: font-fallback crash for text written outside our views |
 | [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |
+| [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps (owner decision) |
+| [ValidationTool.md](ValidationTool.md) | Editor tools: agent cannot see validation issues |
+| [EditorSkills.md](EditorSkills.md) | Editor tools: no skill checklists for the model (owner decision) |
+| [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
+| [ConditionalWritability.md](ConditionalWritability.md) | Editor tools: conditional read-only rules of the inspector are ignored |

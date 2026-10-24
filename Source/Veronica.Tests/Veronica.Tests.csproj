@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Keen's serialization generator, for [Serialize] test types. -->
+    <VRageBundleName>Veronica.Tests</VRageBundleName>
+    <VRageBundleVersion>1.0.0</VRageBundleVersion>
+    <!-- Raised inside the generator's own output. -->
+    <NoWarn>$(NoWarn);CS8509</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +22,25 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Veronica.Agent\Veronica.Agent.csproj" />
+    <ProjectReference Include="..\Veronica.Editing\Veronica.Editing.csproj" />
     <ProjectReference Include="..\WebQwen\WebQwen.csproj" />
+  </ItemGroup>
+
+  <!-- Copied, with what they depend on: xunit skips a test assembly whose references it cannot find. -->
+  <ItemGroup>
+    <Reference Include="$(EditorDir)VRage.Library.dll" />
+    <Reference Include="$(EditorDir)VRage.Core.dll" />
+    <Reference Include="$(EditorDir)VRage.ContentPipeline.dll" />
+    <Reference Include="$(EditorDir)VRage.UI.Shared.dll" />
+    <Reference Include="$(EditorDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+    <Analyzer Include="$(EditorDir)VRage.Library.Generator.dll" />
+    <Analyzer Include="$(EditorDir)VRage.CodeAnalysis.dll" />
+    <CompilerVisibleProperty Include="VRageBundleName" />
+    <CompilerVisibleProperty Include="VRageBundleVersion" />
+    <!-- The engine indexes types from the entry assembly, which here is the test host. -->
+    <RuntimeHostConfigurationOption Include="Keen.VRage.Library.DefaultMetadataContextAssemblies" Value="$(AssemblyName)" />
+    <!-- Native profiler the engine's type indexers start. -->
+    <None Include="$(EditorDir)Optick.dll" Link="Optick.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
 </Project>
