@@ -1,0 +1,106 @@
+{
+  "repo": {
+    "sha": "99008d0107358391e878a8bb8798edf2486cded7",
+    "short_sha": "99008d0",
+    "dirty": false
+  },
+  "generated_at": "2026-10-24T11:04:55.700Z",
+  "web_llm": {
+    "base_version": "0.2.85",
+    "version": "0.2.85-webqwen.99008d0",
+    "tarball": "mlc-ai-web-llm-0.2.85-webqwen.99008d0.tgz",
+    "tarball_sha256": "4d4681148a6bb6b34c990f4ff6451ffbf3cb79f119f3e84a9e831f880c095179"
+  },
+  "models": [
+    {
+      "model_id": "Qwen3.5-9B-UD-Q3_K_XL-MLC",
+      "quantization": "ggufmix",
+      "status": "production",
+      "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/e84331c36957dfb0e81c25f9046e9414e9935a51/UD-Q3_K_XL/",
+      "weights_bytes": 5712892241,
+      "context_window_size": 20480,
+      "required_features": [
+        "shader-f16",
+        "subgroups"
+      ],
+      "vram_required_MB": 6000,
+      "subgroup_min_size": 32,
+      "subgroup_max_size": 64,
+      "required_limits": {
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 1073741824
+      },
+      "max_record_bytes": 508559360,
+      "host_embedding": true,
+      "mtp_head": true,
+      "mtp_draft_length": 3,
+      "mtp_min_draft_prob": 0.5,
+      "lib": {
+        "original_name": "Qwen3.5-9B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s32-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/36b3d8091a95c28f30f6e2f1566aa326208b11b9/UD-Q3_K_XL/webgpu.wasm",
+        "sha256": "a92dde27bb9d3e13cf44f6a0ab9637134052b0f9b066401dad77701e32dd63a1",
+        "bytes": 24712484
+      }
+    },
+    {
+      "model_id": "Qwen3.8-27B-UD-Q3_K_XL-MLC",
+      "quantization": "ggufmix",
+      "status": "production",
+      "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/752bd11970be36080b806eb145b0b0f6fde58fb8/UD-Q3_K_XL/",
+      "weights_bytes": 13620643806,
+      "context_window_size": 20480,
+      "required_features": [
+        "shader-f16",
+        "subgroups"
+      ],
+      "vram_required_MB": 15000,
+      "subgroup_min_size": 32,
+      "subgroup_max_size": 64,
+      "required_limits": {
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 1073741824
+      },
+      "max_record_bytes": 635699200,
+      "host_embedding": true,
+      "mtp_head": true,
+      "mtp_draft_length": 3,
+      "mtp_min_draft_prob": 0.5,
+      "lib": {
+        "original_name": "Qwen3.8-27B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s32-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/7ebbcebde617afc932ec43eae4e46f300093c69f/UD-Q3_K_XL/webgpu.wasm",
+        "sha256": "49854fbdd5717ac14c23e4cce2b8468642023ea8070f354fe2ff29e9dcb99ac0",
+        "bytes": 57878368
+      }
+    },
+    {
+      "model_id": "Ternary-Bonsai-2-27B-MLC",
+      "quantization": "ggufmix",
+      "status": "production",
+      "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/bf4c77f054f290b3901fc3e2d06dc0e40d2095fa/T3/",
+      "weights_bytes": 5710355361,
+      "context_window_size": 20480,
+      "required_features": [
+        "shader-f16",
+        "subgroups"
+      ],
+      "vram_required_MB": 6900,
+      "subgroup_min_size": 32,
+      "subgroup_max_size": 64,
+      "required_limits": {
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 268435456
+      },
+      "max_record_bytes": 266199040,
+      "host_embedding": true,
+      "mtp_head": false,
+      "mtp_draft_length": null,
+      "mtp_min_draft_prob": null,
+      "lib": {
+        "original_name": "Ternary-Bonsai-2-27B-MLC_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_odm_dqmall_pf_k64_kvq8_ra_ab_sb_t3_s30s5-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/7e1ed3c1825b61c42fbb672f91b336a3984009c5/T3/webgpu.wasm",
+        "sha256": "72f807aadc2e685f44357a2bca9164eb5fe4bea4cecdc9e68271e663b512e9b8",
+        "bytes": 20602590
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+#include "Resources.h"
+
+WQ_RES_RUNTIME_JS RCDATA "runtime.js"
+WQ_RES_WEBGPU_JS RCDATA "webgpu.js"
+WQ_RES_API_JS RCDATA "api.js"
+WQ_RES_ENGINE_JS RCDATA "index.js"

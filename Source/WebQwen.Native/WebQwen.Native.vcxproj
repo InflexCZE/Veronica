@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{06F67EAC-854C-4E52-9EE2-FDCF475E065A}</ProjectGuid>
+    <RootNamespace>WebQwenNative</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <TargetName>wq</TargetName>
+  </PropertyGroup>
+  <Import Project="..\Native.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <EngineDir>$(MSBuildThisFileDirectory)Engine\</EngineDir>
+    <EngineOutDir>$(IntDir)engine\</EngineOutDir>
+    <EngineJs>$(EngineOutDir)package\lib\index.js</EngineJs>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>include;$(V8Dir)include;$(DawnDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <!-- V8 is built against Chromium's libc++ without exceptions; code that includes v8.h must match. libc++
+           must precede clang's builtin headers, which only GNU-style -isystem achieves. -->
+      <AdditionalOptions>/clang:-nostdinc++ "/clang:-isystem$(V8Dir)cxx\buildtools\third_party\libc++" "/clang:-isystem$(V8Dir)cxx\third_party\libc++\src\include" %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE;_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS;V8_COMPRESS_POINTERS;V8_31BIT_SMIS_ON_64BIT_ARCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>false</ExceptionHandling>
+    </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>js;$(EngineOutDir)package\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>$(V8Dir)lib\v8_monolith.lib;msvcprt.lib;winmm.lib;dbghelp.lib;ws2_32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- With unreferenced-section removal V8 crashes on its first script. -->
+      <OptimizeReferences>false</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClInclude Include="include\wq.h" />
+    <ClInclude Include="src\Engine.h" />
+    <ClInclude Include="src\Resources.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Engine.cpp" />
+    <ClCompile Include="src\Gpu.cpp" />
+    <ClCompile Include="src\Host.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src\Resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="js\api.js" />
+    <None Include="js\runtime.js" />
+    <None Include="js\webgpu.js" />
+    <None Include="Engine\manifest.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EngineTarball Include="$(EngineDir)*.tgz" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WebQwen.Dawn\WebQwen.Dawn.vcxproj">
+      <Project>{82A29AB0-E4D7-4662-866B-8C450D946A52}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- The engine ships as the vendored web-llm tarball; its sha256 must match the vendored manifest. -->
+  <Target Name="UnpackEngine" BeforeTargets="ResourceCompile" Inputs="@(EngineTarball);$(EngineDir)manifest.json" Outputs="$(EngineJs)">
+    <Error Condition="'@(EngineTarball->Count())' != '1'" Text="Expected exactly one web-llm tarball in $(EngineDir)." />
+    <PropertyGroup>
+      <ManifestText>$([System.IO.File]::ReadAllText('$(EngineDir)manifest.json'))</ManifestText>
+      <ExpectedSha>$([System.Text.RegularExpressions.Regex]::Match($(ManifestText), '"tarball_sha256"\s*:\s*"([0-9a-fA-F]{64})"').Groups[1].Value.ToLowerInvariant())</ExpectedSha>
+    </PropertyGroup>
+    <GetFileHash Files="@(EngineTarball)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="ActualSha" />
+    </GetFileHash>
+    <Error Condition="'$(ActualSha.ToLowerInvariant())' != '$(ExpectedSha)'" Text="@(EngineTarball) has sha256 $(ActualSha.ToLowerInvariant()), the manifest expects '$(ExpectedSha)'." />
+    <RemoveDir Directories="$(EngineOutDir)" />
+    <MakeDir Directories="$(EngineOutDir)" />
+    <Exec Command="&quot;$(SystemRoot)\System32\tar.exe&quot; -xzf &quot;@(EngineTarball->'%(FullPath)')&quot; -C &quot;$(EngineOutDir.TrimEnd('\'))&quot; package/lib/index.js" />
+  </Target>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
