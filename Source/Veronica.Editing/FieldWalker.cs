@@ -46,7 +46,7 @@ public static class FieldWalker
         Type type = Fields.ValueType(member);
         if (type.IsAbstract || type.IsInterface)
         {
-            var choices = ListAppender.ConcreteTypes(type);
+            var choices = Elements.ConcreteTypes(type);
             throw new EditError($"'{path}' is null and holds a {Fields.TypeLabel(type)}, which cannot be created here"
                 + (choices.Count == 0 ? "." : $" (types: {string.Join(", ", choices.Select(c => c.Name))})."));
         }

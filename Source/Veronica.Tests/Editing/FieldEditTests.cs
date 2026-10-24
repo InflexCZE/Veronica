@@ -197,7 +197,7 @@ public sealed class FieldEditTests
     public void Composite_write_names_its_fields() => Assert.Contains("Child.Depth", Fails(() => Write("Child", "1")));
 
     [Fact]
-    public void Collection_write_points_at_elements() => Assert.Contains("list_element_add", Fails(() => Write("Dummies", "1")));
+    public void Collection_write_points_at_elements() => Assert.Contains("element_add", Fails(() => Write("Dummies", "1")));
 
     [Fact]
     public void References_resolve_by_name()

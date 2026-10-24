@@ -10,7 +10,8 @@ The first set of agent tools that act on the loaded project. The target is build
 | `list_folder(folder_path)` | lists a folder's direct children |
 | `read(target, path?)` | shows a definition, or one field or subtree of it |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
-| `list_element_add(target, list_path, type?)` | appends a default element to a list |
+| `element_add(target, path, key?, type?)` | adds a default element to a list or dictionary |
+| `element_remove(target, path)` | removes one list element or dictionary entry |
 | `create_folder(folder_path)` | creates a folder and any missing parents |
 | `find_template(filter?)` | lists prefab templates |
 | `create_prefab(template, name, folder)` | generates a prefab's definition set from a template |
@@ -67,14 +68,16 @@ The first set of agent tools that act on the loaded project. The target is build
 - The reply is the path and the change: `UIData.Name: "ThrusterPlaceholder" -> "Modded Thruster"`, plus `(created Missing)` when parents were created.
 - A field is writable the way the inspector allows: it has a setter, is not `[ReadOnlyInInspector]`, and no read-only struct contains it. Read-only fields are rejected. Read marks them `read-only`. A read-only object stays in dumps, because its fields can still be written.
 
-## list_element_add
+## element_add and element_remove
 
-- Appends a default element and returns its path, for example `Dummies[2]`, followed by the element's fields. The model fills it with `write`.
-- A null list, and null objects on its path, are created first.
-- An element of a definition-reference list starts empty (`none`); `write` points it at an item.
-- Keyed lists cannot be appended to, since every element needs a key.
-- `type` matters only for a list whose element type is abstract. Without `type`, the error lists the types the inspector's add button offers for that list (at most 50). `type` matches by short name, or by full name when short names collide.
-- Elements cannot be removed.
+- `element_add(target, path, key?, type?)` adds a default element and returns its path, for example `Dummies[2]` or `ThrustClasses[Water]`, followed by the element's fields. The model fills it with `write`.
+  - A list gets the element at its end. A dictionary, or a keyed list, needs `key`; an existing key is an error that points at the entry to write instead.
+  - A null collection, and null objects on its path, are created first.
+  - An element of a definition-reference collection starts empty (`none`); `write` points it at an item.
+  - `type` matters only for a collection whose element type is abstract. Without `type`, the error lists the types the inspector's add button offers for it (at most 50). `type` matches by short name, or by full name when short names collide.
+- `element_remove(target, path)` removes the element at a path as read prints it: `Dummies[1]`, `ThrustClasses[Ion]` or `ThrustClasses.Ion`. The reply says that list elements after it moved up one index.
+- Both go through the engine's own collection operations, so on a `.partialdef` they are recorded as overrides like any write.
+- A collection without a setter is still edited in place; one marked `[ReadOnlyInInspector]` is not.
 
 ## find_content and list_folder
 

@@ -46,7 +46,7 @@ public static class FieldWriter
         else if (Fields.GetReference(member) is { } reference)
             SetReference(member, canonical, reference, value, links);
         else if (member.MemberKind != MemberValueKind.Value)
-            throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; write its elements like '{canonical}[0]', or add one with list_element_add.");
+            throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; write its elements like '{canonical}[0]', or add one with element_add.");
         else if (Fields.IsScalar(Fields.ValueType(member)))
             member.SetValue<object?>(Values.FromJson(value, Fields.ValueType(member)));
         else if (Fields.TryGetInlineFields(member, out var fields))
