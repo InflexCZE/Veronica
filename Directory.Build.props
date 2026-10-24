@@ -5,4 +5,20 @@
   </PropertyGroup>
 
   <Import Project="$(RepoRoot)Directory.Build.local.props" Condition="Exists('$(RepoRoot)Directory.Build.local.props')" />
+
+  <PropertyGroup Condition="'$(SE2Root)' != ''">
+    <SE2Root>$([MSBuild]::EnsureTrailingSlash('$(SE2Root)'))</SE2Root>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SE2Config Condition="'$(SE2Config)' == ''">Debug</SE2Config>
+    <EditorDir Condition="'$(EditorDir)' == ''">$(SE2Root)VRage\Sources\Editor\VRage.Editor\bin\x64\$(SE2Config)\</EditorDir>
+    <GameDir Condition="'$(GameDir)' == ''">$(SE2Root)Game2\Sources\Game2\bin\x64\$(SE2Config)\</GameDir>
+    <GameDataDir Condition="'$(GameDataDir)' == ''">$(SE2Root)Game2\GameData\</GameDataDir>
+    <EngineDataDir Condition="'$(EngineDataDir)' == ''">$(SE2Root)VRage\GameData\</EngineDataDir>
+    <EditorDir>$([MSBuild]::EnsureTrailingSlash('$(EditorDir)'))</EditorDir>
+    <GameDir>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</GameDir>
+    <GameDataDir>$([MSBuild]::EnsureTrailingSlash('$(GameDataDir)'))</GameDataDir>
+    <EngineDataDir>$([MSBuild]::EnsureTrailingSlash('$(EngineDataDir)'))</EngineDataDir>
+  </PropertyGroup>
 </Project>

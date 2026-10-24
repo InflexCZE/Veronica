@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Veronica.Ui"
+             x:Class="Veronica.Ui.ChatView"
+             x:DataType="ui:ChatPanelViewModel">
+
+  <UserControl.Resources>
+    <FontFamily x:Key="VeronicaUiFont">avares://VRage.UI.Shared/Resources/Fonts/Roboto/Roboto-*.ttf#Roboto</FontFamily>
+    <FontFamily x:Key="VeronicaTextFont">Segoe UI, Segoe UI Emoji, Segoe UI Symbol</FontFamily>
+  </UserControl.Resources>
+
+  <!-- The Editor's global TextBlock style uses Roboto by relative URI, and Avalonia's glyph fallback
+       throws on relative URIs: any glyph Roboto lacks would crash the Editor. Every text control in
+       this view therefore gets an absolute or system font. -->
+  <UserControl.Styles>
+    <Style Selector=":is(TextBlock)">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaUiFont}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.message">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+    </Style>
+    <Style Selector="Border.message">
+      <Setter Property="Background" Value="{DynamicResource SemiDarkGrayColor}" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Margin" Value="0,0,24,6" />
+    </Style>
+    <Style Selector="Border.message.user">
+      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="Margin" Value="24,0,0,6" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto" Margin="6">
+    <ScrollViewer x:Name="MessagesScroll" Grid.Row="0">
+      <ItemsControl ItemsSource="{Binding Messages}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="ui:ChatMessage">
+            <Border Classes="message" Classes.user="{Binding FromUser}">
+              <StackPanel>
+                <TextBlock Text="{Binding Author}"
+                           FontWeight="Bold"
+                           FontSize="{DynamicResource SmallFontSize}"
+                           Foreground="{DynamicResource HighlightedTextColor}" />
+                <SelectableTextBlock Classes="message"
+                                     Text="{Binding Text}"
+                                     TextWrapping="Wrap"
+                                     FontSize="{DynamicResource MediumFontSize}"
+                                     Foreground="{DynamicResource PrimaryTextColor}" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+      <TextBox Grid.Column="0"
+               Text="{Binding Draft}"
+               Watermark="Ask Veronica..."
+               TextWrapping="Wrap"
+               MaxHeight="120">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding SendCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Grid.Column="1"
+              Content="Send"
+              Margin="6,0,0,0"
+              VerticalAlignment="Bottom"
+              Command="{Binding SendCommand}" />
+    </Grid>
+  </Grid>
+</UserControl>

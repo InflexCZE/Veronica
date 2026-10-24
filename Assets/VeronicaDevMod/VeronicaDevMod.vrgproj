@@ -1,0 +1,42 @@
+{
+  "$Bundles": {
+    "System.Runtime": "1.0.0.0",
+    "VRage": "0.12.9.606"
+  },
+  "$Type": "VRage:Keen.VRage.Core.Project.VRageProjectData",
+  "$Value": {
+    "Name": "VeronicaDevMod",
+    "Version": null,
+    "Type": "Mod",
+    "ProjectID": {
+      "Guid": "bf6d813c-dcab-4e89-b433-59c668d3d45f",
+      "ModId": null,
+      "ServiceId": ""
+    },
+    "ModSetup": null,
+    "ProjectDependencies": [
+      {
+        "Guid": "56dacb76-e25e-468a-9432-21964a9a0569",
+        "ModId": null,
+        "ServiceId": ""
+      }
+    ],
+    "ProjectDirectories": [],
+    "UsedBuildStream": "",
+    "DefinitionSetNames": [
+      "World"
+    ],
+    "GameExecutable": "SpaceEngineers2.exe",
+    "GameExecutableSearchPaths": [],
+    "ReferencedAssemblies": [],
+    "ReferencedAssembliesSearchPaths": [],
+    "EditorExtensionAssemblies": [
+      "Veronica.dll"
+    ],
+    "EditorExtensionAssembliesSearchPaths": [
+      "..\\..\\Source\\Veronica\\bin\\Debug"
+    ],
+    "SkipContentMounting": false,
+    "EnableIgnoreProcessingErrorFlags": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$Bundles": {
+    "System.Runtime": "1.0.0.0",
+    "VRage": "0.12.9.606"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "94e1a51f-dbe2-45e9-83a2-171d812b7afb",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.DefinitionSetItem",
+        "DefinitionSetName": "World"
+      }
+    ]
+  }
+}

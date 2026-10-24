@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <!-- The Editor arguments the mod HUB passes, shared by Launch-Editor.ps1 and launchSettings.json. -->
+  <PropertyGroup>
+    <EditorExe>$(EditorDir)VRage.Editor.exe</EditorExe>
+    <DevModProject>$(RepoRoot)Assets\VeronicaDevMod\VeronicaDevMod.vrgproj</DevModProject>
+    <EditorLaunchArgs>--project "$(DevModProject)" --globalProjectDirs "$(GameDataDir.TrimEnd('\'))" "$(EngineDataDir.TrimEnd('\'))" --globalAssemblyDirs "$(EditorDir.TrimEnd('\'))" --projectExecutableSearchPaths "$(GameDir.TrimEnd('\'))"</EditorLaunchArgs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- XAML compiler only: the Editor ships its own Avalonia build (10.1.11), compiled against below. -->
+    <PackageReference Include="Avalonia" Version="11.0.10" ExcludeAssets="compile;runtime;native" PrivateAssets="all" />
+    <!-- Avalonia's build telemetry. -->
+    <PackageReference Include="Avalonia.BuildServices" Version="0.0.29" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(EditorDir)Avalonia.Base.dll" Private="false" />
+    <Reference Include="$(EditorDir)Avalonia.Controls.dll" Private="false" />
+    <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />
+    <Reference Include="$(EditorDir)Avalonia.Markup.Xaml.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.ContentPipeline.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Core.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Core.Game.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.DCS.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Editor.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Plugin.Editor.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.UI.UniDock.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- Git does not keep the dev mod's empty content folders. -->
+  <Target Name="EnsureDevModFolders" AfterTargets="Build">
+    <MakeDir Directories="$(RepoRoot)Assets\VeronicaDevMod\Content;$(RepoRoot)Assets\VeronicaDevMod\Assets" />
+  </Target>
+
+  <Target Name="CheckEditorDir" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(EditorDir)VRage.Editor.dll')">
+    <Error Text="VRage.Editor.dll not found in '$(EditorDir)'. Set SE2Root (or EditorDir) in Directory.Build.local.props, see Directory.Build.local.props.template." />
+  </Target>
+
+</Project>

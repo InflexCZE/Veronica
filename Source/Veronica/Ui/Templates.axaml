@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:Veronica.Ui">
+  <!-- No x:DataType: the dock item's Content is null and a typed template does not match null,
+       so nothing would render. ChatView takes its view model from ChatPanelViewModel.Current. -->
+  <DataTemplate x:Key="VeronicaChatPanel">
+    <ui:ChatView />
+  </DataTemplate>
+</ResourceDictionary>

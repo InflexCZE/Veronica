@@ -6,3 +6,6 @@ obj/
 x64/
 *.user
 Directory.Build.local.props
+
+# Editor-written caches of the dev mod
+Assets/VeronicaDevMod/.*cache*

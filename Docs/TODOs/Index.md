@@ -16,3 +16,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict the engine device around a turn |
 | [VramSharingHardware.md](VramSharingHardware.md) | VRAM sharing measured on one NVIDIA card only |
 | [VramSharingBigCards.md](VramSharingBigCards.md) | VRAM sharing: keep the Editor live when everything fits (owner decision) |
+| [EditorVersionFloor.md](EditorVersionFloor.md) | Editor: oldest Editor build a release supports (owner decision) |
+| [EditorTextOutside.md](EditorTextOutside.md) | Editor: font-fallback crash for text written outside our views |
+| [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |

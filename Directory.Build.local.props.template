@@ -3,5 +3,16 @@
   <PropertyGroup>
     <LLVMInstallDir>C:\Program Files\LLVM</LLVMInstallDir>
     <LLVMToolsVersion>22</LLVMToolsVersion>
+
+    <!-- SE2 source checkout. Everything below is derived from it in Directory.Build.props. -->
+    <SE2Root>R:\Checkouts\MartinDev2Runner\</SE2Root>
+
+    <!-- Optional overrides:
+    <SE2Config>Debug</SE2Config>
+    <EditorDir>...\VRage.Editor\bin\x64\Debug\</EditorDir>
+    <GameDir>...\Game2\bin\x64\Debug\</GameDir>
+    <GameDataDir>...\Game2\GameData\</GameDataDir>
+    <EngineDataDir>...\VRage\GameData\</EngineDataDir>
+    -->
   </PropertyGroup>
 </Project>

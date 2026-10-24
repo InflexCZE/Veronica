@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Editor (VeronicaDevMod)": {
+      "commandName": "Executable",
+      "executablePath": "$(EditorExe)",
+      "commandLineArgs": "$(EditorLaunchArgs)",
+      "workingDirectory": "$(GameDir)"
+    }
+  }
+}
