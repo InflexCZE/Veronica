@@ -26,13 +26,11 @@ public sealed class WebQwenProvider(WebQwenLaunch launch, Action<string> log) : 
 
     private async Task StreamRoundAsync(RoundRequest request, Action<StreamDelta> onDelta, CancellationToken cancellationToken)
     {
-        if (request.Tools.Count > 0)
-            throw new NotSupportedException("WebQwen does not carry tools yet.");
         // Off the caller's thread: starting a process can stall, and the caller may be the UI.
         var process = await Task.Run(EnsureStarted, CancellationToken.None).ConfigureAwait(false);
         try
         {
-            await process.Connection.ChatAsync(request.Messages, request.MaxTokens ?? 0, request.Thinking ?? true, onDelta, cancellationToken)
+            await process.Connection.ChatAsync(request.Messages, request.Tools, request.MaxTokens ?? 0, request.Thinking ?? true, onDelta, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (WebQwenClosedException)

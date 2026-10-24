@@ -9,7 +9,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ModelDownloads.md](ModelDownloads.md) | WebQwen: C# downloads of manifest, library and weights |
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run the model, including free VRAM |
 | [InstallStrategy.md](InstallStrategy.md) | Where Veronica finds WebQwen.exe and the model (owner decision) |
-| [ToolWire.md](ToolWire.md) | Tools over the WebQwen protocol and C API |
+| [AddTool.md](AddTool.md) | Remove the `add` test tool when the first Editor tool lands |
 | [ContextFull.md](ContextFull.md) | Chat: full context window (owner decision) |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |

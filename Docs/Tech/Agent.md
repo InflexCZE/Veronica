@@ -25,6 +25,18 @@
 - **Stop:** a stopped round keeps what it generated. Its tool calls are not run: each gets a "stopped by the user" result, so the transcript never carries dangling calls. A tool that returns null (stopped while it ran) also ends the turn this way, for every call left in the round.
 - A failed round appends nothing and fails the turn. There are no retries.
 
+## Tools
+
+- A tool is an `ITool`: name, description, JSON Schema parameters, and `ExecuteAsync` over the parsed arguments.
+- `ToolSet` holds a conversation's tools. It supplies their definitions to every turn and runs each call by name.
+- Every failure becomes a tool result the model can act on, never an exception:
+  - a call the engine could not parse (empty name, raw text as arguments) asks the model to write the call again;
+  - an unknown tool lists the tools there are;
+  - arguments that are not a JSON object;
+  - an exception thrown by the tool.
+- Tools run on a worker thread.
+- The only tool is `add(a, b)`, which proves the path end to end.
+
 ## Conversation
 
 - `Conversation` holds the transcript and the session. It sends one turn at a time: the user message is appended, then the turn's messages as the loop reports them.
@@ -36,11 +48,11 @@
 
 | setting | value |
 |---|---|
-| system prompt | "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely. You have no tools yet." |
+| system prompt | "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely." |
 | thinking | on |
 | max tokens per round | 4000 |
 | length nudge | up to 2 per turn |
-| tools | none |
+| tools | `add` |
 
 ## WebQwen provider
 

@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.UI.UniDock.Docking;
+using Veronica.Agent.Tools;
 
 namespace Veronica.Ui;
 
@@ -90,7 +91,7 @@ public sealed class EditorShell
     private static ChatPanelViewModel CreatePanel()
     {
         var provider = LocalModel.CreateProvider();
-        var panel = new ChatPanelViewModel(provider.OpenSession());
+        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet([new AddTool()]));
         provider.StatusChanged += panel.ShowStatus;
         return panel;
     }

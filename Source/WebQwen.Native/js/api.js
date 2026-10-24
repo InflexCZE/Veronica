@@ -68,24 +68,18 @@
     slot = await engine.allocateSlot()
   }
 
-  const chat = async (op, r) => {
+  // json is the OpenAI-shaped request wq.h describes; it goes to web-llm as is,
+  // plus the streaming members and the slot.
+  const chat = async (op, json) => {
     const e = loaded()
-    // An assistant reply goes back with its think block: without it the
-    // template renders an empty one and the cached prefix no longer matches.
-    const messages = r.messages.map((m) =>
-      m.reasoning !== undefined ? { role: m.role, content: m.content, reasoning_content: m.reasoning } : m,
-    )
-    const request = {
-      messages,
-      stream: true,
-      stream_options: { include_usage: true },
-      extra_body: { enable_thinking: r.enableThinking },
-      slot,
-    }
-    if (r.maxTokens > 0) request.max_tokens = r.maxTokens
-    if (!Number.isNaN(r.temperature)) request.temperature = r.temperature
-    if (!Number.isNaN(r.topP)) request.top_p = r.topP
-    if (r.seed >= 0) request.seed = r.seed
+    const r = JSON.parse(json)
+    const request = { messages: r.messages, stream: true, stream_options: { include_usage: true }, slot }
+    if (r.tools && r.tools.length > 0) request.tools = r.tools
+    if (r.max_tokens > 0) request.max_tokens = r.max_tokens
+    if (typeof r.temperature === 'number') request.temperature = r.temperature
+    if (typeof r.top_p === 'number') request.top_p = r.top_p
+    if (typeof r.seed === 'number' && r.seed >= 0) request.seed = r.seed
+    if (typeof r.enable_thinking === 'boolean') request.extra_body = { enable_thinking: r.enable_thinking }
     chatRunning = true
     try {
       const stream = await e.chat.completions.create(request)
@@ -98,6 +92,12 @@
           const delta = choice.delta || {}
           if (delta.reasoning_content) host.delta(op, 1, delta.reasoning_content)
           if (delta.content) host.delta(op, 0, delta.content)
+          if (delta.tool_calls) {
+            for (const c of delta.tool_calls) {
+              const call = { index: c.index, id: c.id, name: c.function.name, arguments: c.function.arguments }
+              host.delta(op, 2, JSON.stringify(call))
+            }
+          }
           if (choice.finish_reason) finishReason = choice.finish_reason
         }
         if (chunk.usage) usage = chunk.usage

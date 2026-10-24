@@ -25,6 +25,10 @@
     <Style Selector="SelectableTextBlock.reasoning">
       <Setter Property="Opacity" Value="0.6" />
     </Style>
+    <Style Selector="SelectableTextBlock.tool">
+      <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+      <Setter Property="Margin" Value="0,2,0,0" />
+    </Style>
     <Style Selector="TextBox">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
     </Style>
@@ -76,6 +80,13 @@
                   <SelectableTextBlock Classes="message reasoning" Text="{Binding Reasoning}" />
                 </Expander>
                 <SelectableTextBlock Classes="message" Text="{Binding Text}" IsVisible="{Binding HasText}" />
+                <ItemsControl ItemsSource="{Binding Tools}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="ui:ToolActivity">
+                      <SelectableTextBlock Classes="message reasoning tool" Text="{Binding Text}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </Border>
           </DataTemplate>

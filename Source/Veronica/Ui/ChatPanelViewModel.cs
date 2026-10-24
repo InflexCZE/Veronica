@@ -3,6 +3,7 @@ using System.Globalization;
 using Avalonia.Threading;
 using Keen.VRage.Editor.Services.Docking;
 using Veronica.Agent;
+using Veronica.Agent.Tools;
 
 namespace Veronica.Ui;
 
@@ -11,20 +12,22 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private const string ClearCommand = "/clear";
 
     private readonly Conversation _conversation;
+    private readonly ToolSet _tools;
     private string _draft = "";
     private string _status = "";
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
     private bool _clearing;
 
-    public ChatPanelViewModel(IProviderSession session)
+    public ChatPanelViewModel(IProviderSession session, ToolSet tools)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
         CanClose = true;
         CanFloat = true;
 
-        _conversation = new Conversation(session, Prompts.System, Prompts.ChatLimits);
+        _tools = tools;
+        _conversation = new Conversation(session, Prompts.System, Prompts.ChatLimits, tools.Definitions);
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
     }
@@ -164,8 +167,22 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         {
         }
 
-        public Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken) =>
-            Task.FromResult<ToolResult?>(new ToolResult($"Unknown tool {call.Name}: Veronica has no tools yet."));
+        public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
+        {
+            var activity = new ToolActivity(call.Name.Length > 0 ? $"{call.Name} {call.Arguments}" : "unreadable tool call");
+            Post(() => Reply().Tools.Add(activity));
+            try
+            {
+                var result = await panel._tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+                Post(() => activity.Complete(result.Output));
+                return result;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Post(() => activity.Complete("stopped"));
+                return null;
+            }
+        }
 
         private AssistantItem Reply()
         {

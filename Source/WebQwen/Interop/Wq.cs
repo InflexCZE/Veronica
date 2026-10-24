@@ -25,26 +25,6 @@ internal unsafe struct wq_model
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct wq_message
-{
-    public byte* role;
-    public byte* content;
-    public byte* reasoning;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal unsafe struct wq_chat_request
-{
-    public wq_message* messages;
-    public nuint message_count;
-    public int max_tokens;
-    public double temperature;
-    public double top_p;
-    public long seed;
-    public int enable_thinking;
-}
-
-[StructLayout(LayoutKind.Sequential)]
 internal struct wq_usage
 {
     public int prompt_tokens;
@@ -72,6 +52,7 @@ internal static unsafe partial class Wq
 
     public const int WQ_CHANNEL_CONTENT = 0;
     public const int WQ_CHANNEL_REASONING = 1;
+    public const int WQ_CHANNEL_TOOL_CALL = 2;
 
     private const string Lib = "wq";
 
@@ -90,7 +71,7 @@ internal static unsafe partial class Wq
         delegate* unmanaged<void*, int, byte*, void> done, void* user);
 
     [LibraryImport(Lib)]
-    public static partial void wq_chat(nint engine, wq_chat_request* request,
+    public static partial void wq_chat(nint engine, byte* request_json,
         delegate* unmanaged<void*, int, byte*, nuint, void> delta,
         delegate* unmanaged<void*, int, byte*, wq_usage*, byte*, void> done, void* user);
 

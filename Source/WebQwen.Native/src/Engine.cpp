@@ -456,44 +456,15 @@ WQ_API void wq_load_model(wq_engine* engine, const wq_model* model, wq_progress_
     });
 }
 
-WQ_API void wq_chat(wq_engine* engine, const wq_chat_request* request, wq_delta_fn delta, wq_chat_done_fn done, void* user) {
-    struct Message {
-        std::string role, content, reasoning;
-        bool hasReasoning;
-    };
-    std::vector<Message> messages;
-    for (size_t i = 0; i < request->message_count; i++) {
-        const wq_message& m = request->messages[i];
-        messages.push_back({m.role ? m.role : "", m.content ? m.content : "", m.reasoning ? m.reasoning : "",
-                            m.reasoning != nullptr});
-    }
-    int32_t maxTokens = request->max_tokens;
-    double temperature = request->temperature, topP = request->top_p;
-    int64_t seed = request->seed;
-    bool enableThinking = request->enable_thinking != 0;
+WQ_API void wq_chat(wq_engine* engine, const char* request_json, wq_delta_fn delta, wq_chat_done_fn done, void* user) {
+    std::string json = request_json ? request_json : "";
     auto* op = new Op();
     op->user = user;
     op->delta = delta;
     op->chatDone = done;
     engine->Post(op, [=] {
         auto* isolate = engine->isolate;
-        auto ctx = isolate->GetCurrentContext();
-        auto list = v8::Array::New(isolate, (int)messages.size());
-        for (size_t i = 0; i < messages.size(); i++) {
-            auto m = v8::Object::New(isolate);
-            (void)m->Set(ctx, Str(isolate, "role"), JsString(isolate, messages[i].role));
-            (void)m->Set(ctx, Str(isolate, "content"), JsString(isolate, messages[i].content));
-            if (messages[i].hasReasoning)
-                (void)m->Set(ctx, Str(isolate, "reasoning"), JsString(isolate, messages[i].reasoning));
-            (void)list->Set(ctx, (uint32_t)i, m);
-        }
-        auto o = v8::Object::New(isolate);
-        (void)o->Set(ctx, Str(isolate, "messages"), list);
-        (void)o->Set(ctx, Str(isolate, "maxTokens"), v8::Integer::New(isolate, maxTokens));
-        (void)o->Set(ctx, Str(isolate, "temperature"), v8::Number::New(isolate, temperature));
-        (void)o->Set(ctx, Str(isolate, "topP"), v8::Number::New(isolate, topP));
-        (void)o->Set(ctx, Str(isolate, "seed"), v8::Number::New(isolate, (double)seed));
-        (void)o->Set(ctx, Str(isolate, "enableThinking"), v8::Boolean::New(isolate, enableThinking));
+        auto o = JsString(isolate, json);
         engine->Invoke(op, "chat", {o}, [](Op* op, v8::Local<v8::Value> result) {
             auto* isolate = v8::Isolate::GetCurrent();
             auto ctx = isolate->GetCurrentContext();

@@ -139,10 +139,22 @@ public sealed class Server(TextReader input, TextWriter output, Action<string>? 
         // be dropped there (it only interrupts a running generation).
         if (cancellationToken.IsCancellationRequested)
             return new DoneEvent(chat.Id, "abort", 0, 0, 0, 0);
-        var messages = chat.Messages.Select(m => new ChatMessage(m.Role, m.Content, m.Reasoning)).ToList();
-        var stream = engine.Chat(new ChatRequest(messages, chat.MaxTokens, EnableThinking: chat.Thinking), cancellationToken);
+        var messages = chat.Messages.Select(m => new ChatMessage(
+            m.Role,
+            m.Content,
+            m.Reasoning,
+            m.ToolCalls?.Select(c => new EngineToolCall(c.Id, c.Name, c.Arguments)).ToList(),
+            m.ToolCallId)).ToList();
+        var tools = chat.Tools?.Select(t => new ToolSpec(t.Name, t.Description, t.Parameters.GetRawText())).ToList();
+        var request = new ChatRequest(messages, chat.MaxTokens, EnableThinking: chat.Thinking, Tools: tools);
+        var stream = engine.Chat(request, cancellationToken);
         await foreach (var delta in stream.WithCancellation(CancellationToken.None))
         {
+            if (delta.ToolCall is { } call)
+            {
+                Send(new ToolCallEvent(chat.Id, new WireToolCall(call.Id, call.Name, call.Arguments)));
+                continue;
+            }
             string channel = delta.Channel == ChatChannel.Reasoning ? Channels.Reasoning : Channels.Content;
             Send(new DeltaEvent(chat.Id, channel, delta.Text));
         }

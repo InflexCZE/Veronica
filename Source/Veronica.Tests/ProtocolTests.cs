@@ -70,7 +70,7 @@ public sealed class ProtocolTests : IDisposable
             new(ChatRole.Assistant, "a1") { Reasoning = "r1" },
             new(ChatRole.User, "q2"),
         };
-        await _connection.ChatAsync(history, 4000, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
+        await _connection.ChatAsync(history, [], 4000, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
 
         Assert.Equal(
             [new ReasoningDelta("think"), new TextDelta("Hel"), new TextDelta("lo"), new StatsDelta(new RoundStats(12, 3, 100.5, 40.25)), new DoneDelta("stop")],
@@ -84,12 +84,58 @@ public sealed class ProtocolTests : IDisposable
     }
 
     [Fact]
+    public async Task Tools_and_tool_messages_reach_the_engine_and_calls_come_back_in_order()
+    {
+        var engine = new FakeEngine(async (request, writer, ct) =>
+        {
+            await writer.WriteAsync(new ChatDelta(ChatChannel.ToolCall, "", new EngineToolCall("t0", "add", "{\"a\":1,\"b\":2}")));
+            await writer.WriteAsync(new ChatDelta(ChatChannel.ToolCall, "", new EngineToolCall("t1", "", "<tool_call>broken")));
+            return new ChatResult(10, 5, 1, 1, "stop");
+        });
+        _engine.SetResult(engine);
+        var deltas = Deltas(out var onDelta);
+        var tools = new[] { new ToolDefinition("add", "Adds.", "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"number\"}}}") };
+        var history = new AgentMessage[]
+        {
+            new(ChatRole.User, "q"),
+            new(ChatRole.Assistant, "") { Reasoning = "r", ToolCalls = [new ToolCall("p0", "add", "{\"a\":5}")] },
+            new(ChatRole.Tool, "5") { ToolCallId = "p0", Name = "add" },
+        };
+
+        await _connection.ChatAsync(history, tools, 0, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
+
+        Assert.Equal(
+            [new ToolCallDelta(0, "t0", "add", "{\"a\":1,\"b\":2}"), new ToolCallDelta(1, "t1", "", "<tool_call>broken")],
+            deltas.OfType<ToolCallDelta>());
+        var request = Assert.Single(engine.Requests);
+        var tool = Assert.Single(request.Tools!);
+        Assert.Equal(("add", "Adds."), (tool.Name, tool.Description));
+        using (var schema = System.Text.Json.JsonDocument.Parse(tool.ParametersJson))
+            Assert.Equal("number", schema.RootElement.GetProperty("properties").GetProperty("a").GetProperty("type").GetString());
+        var assistant = request.Messages[1];
+        Assert.Equal("r", assistant.Reasoning);
+        Assert.Equal([new EngineToolCall("p0", "add", "{\"a\":5}")], assistant.ToolCalls!);
+        Assert.Equal(("tool", "5", "p0"), (request.Messages[2].Role, request.Messages[2].Content, request.Messages[2].ToolCallId));
+    }
+
+    [Fact]
+    public async Task No_tools_means_none_on_the_request()
+    {
+        var engine = new FakeEngine((_, _, _) => Task.FromResult(new ChatResult(1, 1, 1, 1, "stop")));
+        _engine.SetResult(engine);
+
+        await _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout);
+
+        Assert.True(Assert.Single(engine.Requests).Tools is null or { Count: 0 });
+    }
+
+    [Fact]
     public async Task Thinking_off_reaches_the_engine()
     {
         var engine = new FakeEngine((_, _, _) => Task.FromResult(new ChatResult(1, 1, 1, 1, "stop")));
         _engine.SetResult(engine);
 
-        await _connection.ChatAsync(Hello, 0, false, _ => { }, CancellationToken.None).WaitAsync(Timeout);
+        await _connection.ChatAsync(Hello, [], 0, false, _ => { }, CancellationToken.None).WaitAsync(Timeout);
 
         Assert.False(Assert.Single(engine.Requests).EnableThinking);
     }
@@ -123,7 +169,7 @@ public sealed class ProtocolTests : IDisposable
         var deltas = Deltas(out var onDelta);
         using var cancel = new CancellationTokenSource();
 
-        var chat = _connection.ChatAsync(Hello, 0, true, onDelta, cancel.Token);
+        var chat = _connection.ChatAsync(Hello, [], 0, true, onDelta, cancel.Token);
         await started.Task.WaitAsync(Timeout);
         cancel.Cancel();
         await chat.WaitAsync(Timeout);
@@ -136,13 +182,13 @@ public sealed class ProtocolTests : IDisposable
     public async Task Cancelling_before_ready_leaves_the_load_running()
     {
         using var cancel = new CancellationTokenSource();
-        var chat = _connection.ChatAsync(Hello, 0, true, _ => { }, cancel.Token);
+        var chat = _connection.ChatAsync(Hello, [], 0, true, _ => { }, cancel.Token);
         cancel.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => chat.WaitAsync(Timeout));
 
         _engine.SetResult(new FakeEngine((_, _, _) => Task.FromResult(new ChatResult(1, 1, 1, 1, "stop"))));
         var deltas = Deltas(out var onDelta);
-        await _connection.ChatAsync(Hello, 0, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
+        await _connection.ChatAsync(Hello, [], 0, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
 
         Assert.Equal(new DoneDelta("stop"), deltas[^1]);
     }
@@ -156,11 +202,11 @@ public sealed class ProtocolTests : IDisposable
                 ? throw new EngineException("context full")
                 : Task.FromResult(new ChatResult(1, 1, 1, 1, "stop"))));
 
-        var error = await Assert.ThrowsAsync<WebQwenException>(() => _connection.ChatAsync(Hello, 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout));
+        var error = await Assert.ThrowsAsync<WebQwenException>(() => _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout));
         Assert.Contains("context full", error.Message);
 
         var deltas = Deltas(out var onDelta);
-        await _connection.ChatAsync(Hello, 0, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
+        await _connection.ChatAsync(Hello, [], 0, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
         Assert.Equal(new DoneDelta("stop"), deltas[^1]);
     }
 
@@ -170,7 +216,7 @@ public sealed class ProtocolTests : IDisposable
         _engine.SetException(new EngineException("no adapter"));
 
         Assert.Equal(1, await _server.WaitAsync(Timeout));
-        var error = await Assert.ThrowsAsync<WebQwenClosedException>(() => _connection.ChatAsync(Hello, 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout));
+        var error = await Assert.ThrowsAsync<WebQwenClosedException>(() => _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout));
         Assert.Contains("no adapter", error.Message);
         Assert.Contains("no adapter", await _connection.Closed.WaitAsync(Timeout));
     }
@@ -187,7 +233,7 @@ public sealed class ProtocolTests : IDisposable
             interrupted.SetResult();
             return new ChatResult(1, 1, 1, 1, "abort");
         }));
-        _ = _connection.ChatAsync(Hello, 0, true, _ => { }, CancellationToken.None);
+        _ = _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None);
         await started.Task.WaitAsync(Timeout);
 
         _commands.Writer.Close();
@@ -206,7 +252,7 @@ public sealed class ProtocolTests : IDisposable
             await Task.Delay(System.Threading.Timeout.Infinite, ct).ContinueWith(_ => { });
             return new ChatResult(1, 1, 1, 1, "abort");
         }));
-        var chat = _connection.ChatAsync(Hello, 0, true, _ => { }, CancellationToken.None);
+        var chat = _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None);
         await started.Task.WaitAsync(Timeout);
 
         _events.Writer.Close();

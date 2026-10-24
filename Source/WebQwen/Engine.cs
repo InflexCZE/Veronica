@@ -18,6 +18,7 @@ public enum ChatChannel
 {
     Content = Wq.WQ_CHANNEL_CONTENT,
     Reasoning = Wq.WQ_CHANNEL_REASONING,
+    ToolCall = Wq.WQ_CHANNEL_TOOL_CALL,
 }
 
 public sealed record ModelSpec(
@@ -30,8 +31,20 @@ public sealed record ModelSpec(
 
 public sealed record LoadProgress(double Progress, string Text);
 
+// Arguments is the JSON text the model wrote. A call the engine could not parse
+// has an empty name and the raw call text as its arguments.
+public sealed record EngineToolCall(string Id, string Name, string Arguments);
+
+public sealed record ToolSpec(string Name, string Description, string ParametersJson);
+
 // Reasoning: the think block that preceded an assistant reply's content.
-public sealed record ChatMessage(string Role, string Content, string? Reasoning = null);
+// ToolCallId: role "tool" only, the call this message answers.
+public sealed record ChatMessage(
+    string Role,
+    string Content,
+    string? Reasoning = null,
+    IReadOnlyList<EngineToolCall>? ToolCalls = null,
+    string? ToolCallId = null);
 
 public sealed record ChatRequest(
     IReadOnlyList<ChatMessage> Messages,
@@ -39,9 +52,11 @@ public sealed record ChatRequest(
     double? Temperature = null,
     double? TopP = null,
     long? Seed = null,
-    bool EnableThinking = true);
+    bool EnableThinking = true,
+    IReadOnlyList<ToolSpec>? Tools = null);
 
-public readonly record struct ChatDelta(ChatChannel Channel, string Text);
+// A ToolCall delta has an empty Text and carries the whole call.
+public readonly record struct ChatDelta(ChatChannel Channel, string Text, EngineToolCall? ToolCall = null);
 
 public sealed record ChatResult(
     int PromptTokens,
@@ -143,31 +158,7 @@ public sealed unsafe class Engine : IChatEngine, IDisposable
     {
         var op = new ChatOp();
         using var strings = new Utf8Strings();
-        var messages = new wq_message[request.Messages.Count];
-        for (int i = 0; i < messages.Length; i++)
-        {
-            var m = request.Messages[i];
-            messages[i] = new wq_message
-            {
-                role = strings.Add(m.Role),
-                content = strings.Add(m.Content),
-                reasoning = m.Reasoning != null ? strings.Add(m.Reasoning) : null,
-            };
-        }
-        fixed (wq_message* p = messages)
-        {
-            var r = new wq_chat_request
-            {
-                messages = p,
-                message_count = (nuint)messages.Length,
-                max_tokens = request.MaxTokens,
-                temperature = request.Temperature ?? double.NaN,
-                top_p = request.TopP ?? double.NaN,
-                seed = request.Seed ?? -1,
-                enable_thinking = request.EnableThinking ? 1 : 0,
-            };
-            Wq.wq_chat(Handle, &r, &OnDelta, &OnChatDone, op.Pin());
-        }
+        Wq.wq_chat(Handle, strings.Add(ChatRequestJson.Write(request)), &OnDelta, &OnChatDone, op.Pin());
         if (cancellationToken.CanBeCanceled)
         {
             var registration = cancellationToken.Register(Interrupt);
@@ -354,7 +345,11 @@ public sealed unsafe class Engine : IChatEngine, IDisposable
     {
         try
         {
-            Op.Get<ChatOp>(user).Deltas.Writer.TryWrite(new ChatDelta((ChatChannel)channel, Encoding.UTF8.GetString(text, checked((int)length))));
+            string s = Encoding.UTF8.GetString(text, checked((int)length));
+            var delta = channel == Wq.WQ_CHANNEL_TOOL_CALL
+                ? new ChatDelta(ChatChannel.ToolCall, "", ChatRequestJson.ReadToolCall(s))
+                : new ChatDelta((ChatChannel)channel, s);
+            Op.Get<ChatOp>(user).Deltas.Writer.TryWrite(delta);
         }
         catch
         {

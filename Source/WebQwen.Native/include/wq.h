@@ -40,22 +40,6 @@ typedef struct wq_model {
     int32_t context_window_size;  // <= 0: the model's default
 } wq_model;
 
-typedef struct wq_message {
-    const char* role;  // "system", "user" or "assistant"
-    const char* content;
-    const char* reasoning;  // assistant only: the think block that preceded content; null: none
-} wq_message;
-
-typedef struct wq_chat_request {
-    const wq_message* messages;
-    size_t message_count;
-    int32_t max_tokens;  // <= 0: until the model stops or the context is full
-    double temperature;  // NaN: the model's default
-    double top_p;        // NaN: the model's default
-    int64_t seed;        // < 0: unseeded
-    int32_t enable_thinking;  // 0: the model answers without a think block
-} wq_chat_request;
-
 typedef struct wq_usage {
     int32_t prompt_tokens;
     int32_t completion_tokens;
@@ -75,7 +59,9 @@ typedef struct wq_score {
 // error is null when ok != 0.
 typedef void (*wq_done_fn)(void* user, int32_t ok, const char* error);
 typedef void (*wq_progress_fn)(void* user, double progress, const char* text);
-enum wq_channel { WQ_CHANNEL_CONTENT = 0, WQ_CHANNEL_REASONING = 1 };
+// WQ_CHANNEL_TOOL_CALL: one finished tool call per delta, as JSON
+// {"index":0,"id":"...","name":"...","arguments":"<JSON text the model wrote>"}.
+enum wq_channel { WQ_CHANNEL_CONTENT = 0, WQ_CHANNEL_REASONING = 1, WQ_CHANNEL_TOOL_CALL = 2 };
 typedef void (*wq_delta_fn)(void* user, int32_t channel, const char* text, size_t length);
 // usage and finish_reason are null when ok == 0.
 typedef void (*wq_chat_done_fn)(void* user, int32_t ok, const char* error, const wq_usage* usage, const char* finish_reason);
@@ -95,9 +81,13 @@ WQ_API void wq_free(void* p);
 // Loads a model, replacing any loaded one. progress may be null.
 WQ_API void wq_load_model(wq_engine* engine, const wq_model* model, wq_progress_fn progress, wq_done_fn done, void* user);
 
-// Runs a chat completion, streaming text deltas. The conversation's KV cache is
-// reused when messages extend the previous request's.
-WQ_API void wq_chat(wq_engine* engine, const wq_chat_request* request, wq_delta_fn delta, wq_chat_done_fn done, void* user);
+// Runs a chat completion, streaming deltas. request_json is an OpenAI-shaped chat
+// request: {"messages":[...], "tools":[...], "max_tokens":n, "temperature":x,
+// "top_p":x, "seed":n, "enable_thinking":bool}, every member but messages
+// optional. Assistant messages carry "reasoning_content" and "tool_calls"; tool
+// messages "tool_call_id". The conversation's KV cache is reused when messages
+// extend the previous request's.
+WQ_API void wq_chat(wq_engine* engine, const char* request_json, wq_delta_fn delta, wq_chat_done_fn done, void* user);
 
 // Stops the running chat completion; it completes with what it generated so far.
 WQ_API void wq_interrupt(wq_engine* engine);

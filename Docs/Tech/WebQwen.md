@@ -14,7 +14,8 @@ Local model runtime provider. Runs the WebQwen inference engine outside the brow
 
 - The WebQwen engine (built JS plus the model library `.wasm`) runs unchanged in an embedded V8. One engine source serves the browser and WebQwen.exe.
 - A native library does the inference: V8 plus WebGPU, behind a small C API.
-- The C API is typed and tailored to inference (loading a model, running a request, streaming its output), not a generic script host. The managed side mirrors it 1:1. Both ship together in one release, so the API has no versioning or backward compatibility.
+- The C API is tailored to inference (loading a model, running a request, streaming its output), not a generic script host. The managed side mirrors it 1:1. Both ship together in one release, so the API has no versioning or backward compatibility.
+- A chat request crosses the C API as one OpenAI-shaped JSON string (messages, tools, sampling, thinking), which the trampoline parses and hands to the engine. Structs would have to marshal nested messages, tool calls and schemas, and a request is rare next to the work it starts. Streamed output comes back through one delta callback with a channel: content, reasoning, or a finished tool call as JSON.
 - The engine bundle (web-llm, from the WebQwen dist) and the trampolines are embedded in `wq.dll`. The bundle is vendored as the dist's tarball and manifest; the build checks the tarball against the manifest's sha256 and embeds only the engine script. Engine, trampolines and native bindings version as one unit.
 - `wq.dll` owns one engine thread. Every C API call queues its work and returns; results and streamed output arrive through callbacks on that thread, which the managed side surfaces as tasks and async streams.
 - Scripts reach only the functions WebQwen.exe installs. There is no file system, network or process access from script, so the runtime exposes nothing to the user's machine beyond what the engine needs.

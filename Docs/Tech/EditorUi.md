@@ -12,6 +12,7 @@
 
 ## Chat
 
+- Each tool call shows as a dim line in the reply's bubble, `name arguments -> result`. The text after a tool call starts a new bubble.
 - Each reply shows its reasoning in a collapsible Thinking block above the answer. The block is expanded while the reasoning streams and collapses when the answer starts.
 - During a turn the Send button becomes Stop. Enter only sends; it never stops a turn.
 - `/clear` starts a new chat; a running turn is stopped first.

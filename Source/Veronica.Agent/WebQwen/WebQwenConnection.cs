@@ -41,11 +41,14 @@ public sealed class WebQwenConnection
 
     public async Task ChatAsync(
         IReadOnlyList<ChatMessage> messages,
+        IReadOnlyList<ToolDefinition> tools,
         int maxTokens,
         bool thinking,
         Action<StreamDelta> onDelta,
         CancellationToken cancellationToken)
     {
+        var wireTools = tools.Count > 0 ? tools.Select(ToWire).ToList() : null;
+        var wireMessages = messages.Select(ToWire).ToList();
         await Ready.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         var pending = new Pending(Interlocked.Increment(ref _nextId), onDelta);
@@ -59,7 +62,7 @@ public sealed class WebQwenConnection
         }
         try
         {
-            var command = new ChatCommand(pending.Id, messages.Select(ToWire).ToList(), maxTokens, thinking);
+            var command = new ChatCommand(pending.Id, wireMessages, maxTokens, thinking, wireTools);
             await SendAsync(command).ConfigureAwait(false);
             using (cancellationToken.Register(() => _ = SendAsync(new InterruptCommand(pending.Id))))
                 await pending.Done.Task.ConfigureAwait(false);
@@ -76,16 +79,22 @@ public sealed class WebQwenConnection
 
     private static WireMessage ToWire(ChatMessage message)
     {
-        if (message.ToolCalls != null || message.Role == ChatRole.Tool)
-            throw new NotSupportedException("WebQwen does not carry tool calls yet.");
         string role = message.Role switch
         {
             ChatRole.System => "system",
             ChatRole.User => "user",
             ChatRole.Assistant => "assistant",
+            ChatRole.Tool => "tool",
             _ => throw new ArgumentOutOfRangeException(nameof(message)),
         };
-        return new WireMessage(role, message.Content, message.Reasoning);
+        var calls = message.ToolCalls?.Select(c => new WireToolCall(c.Id, c.Name, c.Arguments)).ToList();
+        return new WireMessage(role, message.Content, message.Reasoning, calls, message.ToolCallId);
+    }
+
+    private static WireTool ToWire(ToolDefinition tool)
+    {
+        using var schema = JsonDocument.Parse(tool.Parameters);
+        return new WireTool(tool.Name, tool.Description, schema.RootElement.Clone());
     }
 
     private async Task SendAsync(Command command)
@@ -160,6 +169,9 @@ public sealed class WebQwenConnection
             case DeltaEvent d when Current(d.Id) is { } pending:
                 pending.OnDelta(d.Channel == Channels.Reasoning ? new ReasoningDelta(d.Text) : new TextDelta(d.Text));
                 break;
+            case ToolCallEvent t when Current(t.Id) is { } pending:
+                pending.OnDelta(new ToolCallDelta(pending.ToolCalls++, t.Call.Id, t.Call.Name, t.Call.Arguments));
+                break;
             case DoneEvent d when Current(d.Id) is { } pending:
                 pending.OnDelta(new StatsDelta(new RoundStats(d.PromptTokens, d.CompletionTokens, d.PrefillTokensPerS, d.DecodeTokensPerS)));
                 pending.OnDelta(new DoneDelta(d.FinishReason));
@@ -198,5 +210,8 @@ public sealed class WebQwenConnection
         public long Id { get; } = id;
         public Action<StreamDelta> OnDelta { get; } = onDelta;
         public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Read-loop thread only.
+        public int ToolCalls { get; set; }
     }
 }

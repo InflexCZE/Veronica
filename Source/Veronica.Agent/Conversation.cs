@@ -1,7 +1,7 @@
 namespace Veronica.Agent;
 
 // The chat's transcript and its provider session. One turn at a time.
-public sealed class Conversation(IProviderSession session, string systemPrompt, TurnLimits limits) : IDisposable
+public sealed class Conversation(IProviderSession session, string systemPrompt, TurnLimits limits, IReadOnlyList<ToolDefinition> tools) : IDisposable
 {
     private readonly List<ChatMessage> _transcript = [];
 
@@ -10,7 +10,7 @@ public sealed class Conversation(IProviderSession session, string systemPrompt, 
     public async Task SendAsync(string text, ITurnHost host, CancellationToken cancellationToken)
     {
         _transcript.Add(new ChatMessage(ChatRole.User, text));
-        var request = new TurnRequest(systemPrompt, _transcript.ToList(), [], limits);
+        var request = new TurnRequest(systemPrompt, _transcript.ToList(), tools, limits);
         await session.RunTurnAsync(request, new Recorder(_transcript, host), cancellationToken).ConfigureAwait(false);
     }
 

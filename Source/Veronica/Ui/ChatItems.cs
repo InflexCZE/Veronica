@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -49,6 +50,8 @@ public sealed class AssistantItem : ChatItem
         }
     }
 
+    public ObservableCollection<ToolActivity> Tools { get; } = new();
+
     public bool HasReasoning => _reasoning.Length > 0;
 
     public bool HasText => _text.Length > 0;
@@ -72,6 +75,20 @@ public sealed class AssistantItem : ChatItem
             ThinkingExpanded = false;
         Text += delta;
     }
+}
+
+public sealed class ToolActivity(string call) : ChatItem
+{
+    private readonly string _call = call;
+    private string _text = call;
+
+    public string Text
+    {
+        get => _text;
+        private set => Set(ref _text, value);
+    }
+
+    public void Complete(string result) => Text = $"{_call} -> {result}";
 }
 
 public sealed class NoticeItem(string text, bool isError) : ChatItem
