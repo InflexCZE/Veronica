@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <DepsDir>$(RepoRoot).deps\</DepsDir>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)Directory.Build.local.props" Condition="Exists('$(RepoRoot)Directory.Build.local.props')" />
+</Project>

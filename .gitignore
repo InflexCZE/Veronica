@@ -1,3 +1,8 @@
 .tmp/
+.deps/
 bin/
 obj/
+.vs/
+x64/
+*.user
+Directory.Build.local.props

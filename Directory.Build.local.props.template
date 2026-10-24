@@ -1,0 +1,7 @@
+<!-- Copy to Directory.Build.local.props (untracked) and adjust for this machine. -->
+<Project>
+  <PropertyGroup>
+    <LLVMInstallDir>C:\Program Files\LLVM</LLVMInstallDir>
+    <LLVMToolsVersion>22</LLVMToolsVersion>
+  </PropertyGroup>
+</Project>
