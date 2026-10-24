@@ -32,6 +32,11 @@ A plugin compiled against VRage build N does not load into an Editor with a lowe
 
 `Directory.Build.local.props` (untracked, from the template) sets `SE2Root`, the Editor source checkout. `Directory.Build.props` derives `EditorDir`, `GameDir`, `GameDataDir` and `EngineDataDir` from it, using `SE2Config` (default `Debug`) for the Editor and game build folders. Each derived folder can be overridden on its own, for example to point `EditorDir` at a retail Editor install.
 
+## Dependencies
+
+- `Veronica.Agent.dll` (providers, tool loop, WebQwen client) is a private dependency and sits beside `Veronica.dll`.
+- Until WebQwen is installed by Veronica, the plugin runs `WebQwen.exe` from this repo's build output (`Source/WebQwen/bin/x64/<Configuration>/net9.0`), with the Bonsai model from `.deps/models`. The build writes the exe path into `Veronica.dll` as assembly metadata.
+
 ## Dev mod
 
 - `Assets/VeronicaDevMod` is a hand-written Mod project that depends on Vanilla by GUID and loads `Veronica.dll` from `Source/Veronica/bin/Debug`. It holds no machine paths.

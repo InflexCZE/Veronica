@@ -10,6 +10,15 @@
 - The saved layout is user-wide and keeps the Veronica tab itself. On the next start the panel reuses that tab, so its position is remembered. A project that does not load Veronica shows the tab empty; Veronica is assumed to be loaded in every project.
 - The panel docks in `MainRightDockGroup`. If the user's layout has no such group, it goes to the first tabbed group in the layout, with a log line; a dock item whose group is missing is never shown.
 
+## Chat
+
+- Each reply shows its reasoning in a collapsible Thinking block above the answer. The block is expanded while the reasoning streams and collapses when the answer starts.
+- During a turn the Send button becomes Stop. Enter only sends; it never stops a turn.
+- `/clear` starts a new chat; a running turn is stopped first.
+- A status line under the input shows the model's state and the last round's speed.
+- Notices (round budget) and errors appear in the chat as plain lines.
+- The view follows a streaming reply unless the user has scrolled up.
+
 ## Menu
 
 The Window menu is built before plugins load and has no extension point. Veronica adds a top-level `Veronica` menu to the main menu bar with `Show Veronica`, which re-adds the panel if needed and selects it. This covers a closed tab and a restored layout.

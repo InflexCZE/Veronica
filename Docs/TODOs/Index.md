@@ -8,7 +8,11 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EngineLoopPolling.md](EngineLoopPolling.md) | WebQwen: engine thread busy-polls while the GPU works (owner decision) |
 | [ModelDownloads.md](ModelDownloads.md) | WebQwen: C# downloads of manifest, library and weights |
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run the model, including free VRAM |
-| [VeronicaProtocol.md](VeronicaProtocol.md) | Veronica.dll and WebQwen.exe talk to each other |
+| [InstallStrategy.md](InstallStrategy.md) | Where Veronica finds WebQwen.exe and the model (owner decision) |
+| [ToolWire.md](ToolWire.md) | Tools over the WebQwen protocol and C API |
+| [ContextFull.md](ContextFull.md) | Chat: full context window (owner decision) |
+| [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
+| [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
 | [ReleaseLayout.md](ReleaseLayout.md) | WebQwen: release folder and publish |

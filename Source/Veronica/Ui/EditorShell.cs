@@ -66,7 +66,7 @@ public sealed class EditorShell
             return;
         }
 
-        _panel ??= ChatPanelViewModel.Current = new ChatPanelViewModel();
+        _panel ??= ChatPanelViewModel.Current = CreatePanel();
 
         if (!dock.ContainsViewModel(_panel))
         {
@@ -85,6 +85,14 @@ public sealed class EditorShell
         }
 
         _panel.Select();
+    }
+
+    private static ChatPanelViewModel CreatePanel()
+    {
+        var provider = LocalModel.CreateProvider();
+        var panel = new ChatPanelViewModel(provider.OpenSession());
+        provider.StatusChanged += panel.ShowStatus;
+        return panel;
     }
 
     private static string? PickDockGroup(DockManager dock)

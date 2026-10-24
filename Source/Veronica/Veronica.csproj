@@ -23,6 +23,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Veronica.Agent\Veronica.Agent.csproj" />
+  </ItemGroup>
+
+  <!-- Development wiring until WebQwen is installed: the exe from this repo's build output. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="WebQwenExe" Value="$(RepoRoot)Source\WebQwen\bin\x64\$(Configuration)\net9.0\WebQwen.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="$(EditorDir)Avalonia.Base.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Controls.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />

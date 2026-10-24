@@ -43,6 +43,7 @@ typedef struct wq_model {
 typedef struct wq_message {
     const char* role;  // "system", "user" or "assistant"
     const char* content;
+    const char* reasoning;  // assistant only: the think block that preceded content; null: none
 } wq_message;
 
 typedef struct wq_chat_request {
@@ -52,6 +53,7 @@ typedef struct wq_chat_request {
     double temperature;  // NaN: the model's default
     double top_p;        // NaN: the model's default
     int64_t seed;        // < 0: unseeded
+    int32_t enable_thinking;  // 0: the model answers without a think block
 } wq_chat_request;
 
 typedef struct wq_usage {

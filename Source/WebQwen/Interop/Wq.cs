@@ -29,6 +29,7 @@ internal unsafe struct wq_message
 {
     public byte* role;
     public byte* content;
+    public byte* reasoning;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -40,6 +41,7 @@ internal unsafe struct wq_chat_request
     public double temperature;
     public double top_p;
     public long seed;
+    public int enable_thinking;
 }
 
 [StructLayout(LayoutKind.Sequential)]

@@ -70,7 +70,18 @@
 
   const chat = async (op, r) => {
     const e = loaded()
-    const request = { messages: r.messages, stream: true, stream_options: { include_usage: true }, slot }
+    // An assistant reply goes back with its think block: without it the
+    // template renders an empty one and the cached prefix no longer matches.
+    const messages = r.messages.map((m) =>
+      m.reasoning !== undefined ? { role: m.role, content: m.content, reasoning_content: m.reasoning } : m,
+    )
+    const request = {
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      extra_body: { enable_thinking: r.enableThinking },
+      slot,
+    }
     if (r.maxTokens > 0) request.max_tokens = r.maxTokens
     if (!Number.isNaN(r.temperature)) request.temperature = r.temperature
     if (!Number.isNaN(r.topP)) request.top_p = r.topP

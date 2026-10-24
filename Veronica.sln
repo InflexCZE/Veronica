@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebQwen.Tests", "Source\Web
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica", "Source\Veronica\Veronica.csproj", "{AC4B2DCC-7715-45E2-A8E7-32EFA39D0864}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Agent", "Source\Veronica.Agent\Veronica.Agent.csproj", "{22E77F97-C97B-4913-A0A5-52C11BABA9DD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Tests", "Source\Veronica.Tests\Veronica.Tests.csproj", "{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -39,6 +43,14 @@ Global
 		{AC4B2DCC-7715-45E2-A8E7-32EFA39D0864}.Debug|x64.Build.0 = Debug|Any CPU
 		{AC4B2DCC-7715-45E2-A8E7-32EFA39D0864}.Release|x64.ActiveCfg = Release|Any CPU
 		{AC4B2DCC-7715-45E2-A8E7-32EFA39D0864}.Release|x64.Build.0 = Release|Any CPU
+		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Debug|x64.Build.0 = Debug|Any CPU
+		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Release|x64.ActiveCfg = Release|Any CPU
+		{22E77F97-C97B-4913-A0A5-52C11BABA9DD}.Release|x64.Build.0 = Release|Any CPU
+		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Debug|x64.ActiveCfg = Debug|x64
+		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Debug|x64.Build.0 = Debug|x64
+		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Release|x64.ActiveCfg = Release|x64
+		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

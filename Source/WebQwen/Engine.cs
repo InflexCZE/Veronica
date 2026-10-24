@@ -30,14 +30,16 @@ public sealed record ModelSpec(
 
 public sealed record LoadProgress(double Progress, string Text);
 
-public sealed record ChatMessage(string Role, string Content);
+// Reasoning: the think block that preceded an assistant reply's content.
+public sealed record ChatMessage(string Role, string Content, string? Reasoning = null);
 
 public sealed record ChatRequest(
     IReadOnlyList<ChatMessage> Messages,
     int MaxTokens = 0,
     double? Temperature = null,
     double? TopP = null,
-    long? Seed = null);
+    long? Seed = null,
+    bool EnableThinking = true);
 
 public readonly record struct ChatDelta(ChatChannel Channel, string Text);
 
@@ -64,7 +66,7 @@ public interface IResourceProvider
 }
 
 // The WebQwen engine. Operations run in order on the engine's own thread.
-public sealed unsafe class Engine : IDisposable
+public sealed unsafe class Engine : IChatEngine, IDisposable
 {
     private readonly IResourceProvider _resources;
     private readonly Action<LogLevel, string>? _log;
@@ -143,7 +145,15 @@ public sealed unsafe class Engine : IDisposable
         using var strings = new Utf8Strings();
         var messages = new wq_message[request.Messages.Count];
         for (int i = 0; i < messages.Length; i++)
-            messages[i] = new wq_message { role = strings.Add(request.Messages[i].Role), content = strings.Add(request.Messages[i].Content) };
+        {
+            var m = request.Messages[i];
+            messages[i] = new wq_message
+            {
+                role = strings.Add(m.Role),
+                content = strings.Add(m.Content),
+                reasoning = m.Reasoning != null ? strings.Add(m.Reasoning) : null,
+            };
+        }
         fixed (wq_message* p = messages)
         {
             var r = new wq_chat_request
@@ -154,6 +164,7 @@ public sealed unsafe class Engine : IDisposable
                 temperature = request.Temperature ?? double.NaN,
                 top_p = request.TopP ?? double.NaN,
                 seed = request.Seed ?? -1,
+                enable_thinking = request.EnableThinking ? 1 : 0,
             };
             Wq.wq_chat(Handle, &r, &OnDelta, &OnChatDone, op.Pin());
         }

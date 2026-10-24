@@ -18,9 +18,20 @@
     </Style>
     <Style Selector="SelectableTextBlock.message">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="{DynamicResource MediumFontSize}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+    </Style>
+    <Style Selector="SelectableTextBlock.reasoning">
+      <Setter Property="Opacity" Value="0.6" />
     </Style>
     <Style Selector="TextBox">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+    </Style>
+    <Style Selector="TextBlock.author">
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+      <Setter Property="Foreground" Value="{DynamicResource HighlightedTextColor}" />
     </Style>
     <Style Selector="Border.message">
       <Setter Property="Background" Value="{DynamicResource SemiDarkGrayColor}" />
@@ -32,46 +43,74 @@
       <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
       <Setter Property="Margin" Value="24,0,0,6" />
     </Style>
+    <Style Selector="Border.message.notice">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style Selector="Border.message.notice.error SelectableTextBlock">
+      <Setter Property="Foreground" Value="IndianRed" />
+    </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto" Margin="6">
+  <Grid RowDefinitions="*,Auto,Auto" Margin="6">
     <ScrollViewer x:Name="MessagesScroll" Grid.Row="0">
       <ItemsControl ItemsSource="{Binding Messages}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="ui:ChatMessage">
-            <Border Classes="message" Classes.user="{Binding FromUser}">
+        <ItemsControl.DataTemplates>
+          <DataTemplate DataType="ui:UserItem">
+            <Border Classes="message user">
               <StackPanel>
-                <TextBlock Text="{Binding Author}"
-                           FontWeight="Bold"
-                           FontSize="{DynamicResource SmallFontSize}"
-                           Foreground="{DynamicResource HighlightedTextColor}" />
-                <SelectableTextBlock Classes="message"
-                                     Text="{Binding Text}"
-                                     TextWrapping="Wrap"
-                                     FontSize="{DynamicResource MediumFontSize}"
-                                     Foreground="{DynamicResource PrimaryTextColor}" />
+                <TextBlock Classes="author" Text="You" />
+                <SelectableTextBlock Classes="message" Text="{Binding Text}" />
               </StackPanel>
             </Border>
           </DataTemplate>
-        </ItemsControl.ItemTemplate>
+          <DataTemplate DataType="ui:AssistantItem">
+            <Border Classes="message">
+              <StackPanel>
+                <TextBlock Classes="author" Text="Veronica" />
+                <Expander Header="Thinking"
+                          IsVisible="{Binding HasReasoning}"
+                          IsExpanded="{Binding ThinkingExpanded, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch"
+                          Margin="0,2,0,2">
+                  <SelectableTextBlock Classes="message reasoning" Text="{Binding Reasoning}" />
+                </Expander>
+                <SelectableTextBlock Classes="message" Text="{Binding Text}" IsVisible="{Binding HasText}" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+          <DataTemplate DataType="ui:NoticeItem">
+            <Border Classes="message notice" Classes.error="{Binding IsError}">
+              <SelectableTextBlock Classes="message reasoning" Text="{Binding Text}" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.DataTemplates>
       </ItemsControl>
     </ScrollViewer>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
       <TextBox Grid.Column="0"
                Text="{Binding Draft}"
-               Watermark="Ask Veronica..."
+               Watermark="Ask Veronica... (/clear starts a new chat)"
                TextWrapping="Wrap"
                MaxHeight="120">
         <TextBox.KeyBindings>
-          <KeyBinding Gesture="Enter" Command="{Binding SendCommand}" />
+          <KeyBinding Gesture="Enter" Command="{Binding SubmitCommand}" />
         </TextBox.KeyBindings>
       </TextBox>
       <Button Grid.Column="1"
-              Content="Send"
+              Content="{Binding SendLabel}"
               Margin="6,0,0,0"
               VerticalAlignment="Bottom"
               Command="{Binding SendCommand}" />
     </Grid>
+
+    <TextBlock Grid.Row="2"
+               Text="{Binding Status}"
+               Margin="2,4,0,0"
+               FontSize="{DynamicResource SmallFontSize}"
+               Foreground="{DynamicResource PrimaryTextColor}"
+               Opacity="0.6"
+               TextTrimming="CharacterEllipsis" />
   </Grid>
 </UserControl>
