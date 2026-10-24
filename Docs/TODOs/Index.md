@@ -12,3 +12,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
 | [ReleaseLayout.md](ReleaseLayout.md) | WebQwen: release folder and publish |
+| [WebQwenResidency.md](WebQwenResidency.md) | WebQwen: evict and restore its own buffers (owner decision) |
+| [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict the engine device around a turn |
+| [VramSharingHardware.md](VramSharingHardware.md) | VRAM sharing measured on one NVIDIA card only |
+| [VramSharingBigCards.md](VramSharingBigCards.md) | VRAM sharing: keep the Editor live when everything fits (owner decision) |
