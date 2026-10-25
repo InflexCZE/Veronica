@@ -56,15 +56,40 @@ internal static class Content
         }
     }
 
+    // One item on its own line, e.g. a read header: a dependency's item names its project instead of a reason.
     public static string Describe(ExplorerItem item)
+    {
+        string line = Line(item);
+        return item.Project.IsReadOnly ? $"{line} in {item.Project.Name} (read-only)" : line;
+    }
+
+    // An item inside a per-project listing, whose header already says when the whole project is read-only.
+    public static string Line(ExplorerItem item)
     {
         var parts = new List<string>();
         if (DefinitionTypeName(item) is { } type)
             parts.Add(type);
-        if (item.CurrentReadOnly is { IsReadOnly: true } state)
+        if (!item.Project.IsReadOnly && item.CurrentReadOnly is { IsReadOnly: true } state)
             parts.Add($"read-only: {state.Reason ?? "locked"}");
         return parts.Count == 0 ? Shown(item) : $"{Shown(item)} ({string.Join(", ", parts)})";
     }
+
+    // Items grouped under one header per project: the mod first, then its dependencies in load order.
+    public static List<string> ByProject(LoadedProject root, IEnumerable<ExplorerItem> items)
+    {
+        var order = ProjectOrder(root);
+        var lines = new List<string>();
+        foreach (var group in items.GroupBy(i => i.Project).OrderBy(g => order.GetValueOrDefault(g.Key, int.MaxValue)))
+        {
+            lines.Add($"{group.Key.Name}{(group.Key.IsReadOnly ? " (read-only)" : "")}:");
+            lines.AddRange(group.Select(i => "  " + Line(i)));
+        }
+        return lines;
+    }
+
+    // The mod first, then its dependencies in load order.
+    public static Dictionary<LoadedProject, int> ProjectOrder(LoadedProject root) =>
+        root.EnumerateProjectDAG().Select((p, i) => (p, i)).ToDictionary(x => x.p, x => x.i);
 
     public static string Shown(ExplorerItem item) => item.ProjectRelativePath.Length == 0 ? "(project root)" : item.ProjectRelativePath;
 

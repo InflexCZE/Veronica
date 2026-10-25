@@ -29,10 +29,12 @@ public sealed class FindContentTool : ITool
     {
         string root = ContentNames.Normalize(folder ?? "");
         string scope = root.Length == 0 ? "" : root + "\\";
+        var order = Content.ProjectOrder(project);
         var matches = project.GetAvailableFiles().OfType<ExplorerAssetFile>()
             .Where(f => scope.Length == 0 || ContentNames.Normalize(f.ProjectRelativePath).StartsWith(scope, StringComparison.OrdinalIgnoreCase))
             .Where(f => ContentNames.QueryMatches(query, f.Name, Content.DefinitionTypeName(f)))
-            .OrderBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(f => order.GetValueOrDefault(f.Project, int.MaxValue))
+            .ThenBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (matches.Count == 0 && scope.Length > 0 && !project.EnumerateProjectDAG().Any(p => HasFolder(p, root)))
@@ -40,7 +42,7 @@ public sealed class FindContentTool : ITool
         if (matches.Count == 0)
             return scope.Length == 0 ? $"Nothing matches '{query}'." : $"Nothing under '{folder}' matches '{query}'.";
 
-        var lines = matches.Take(MaxResults).Select(Content.Describe).ToList();
+        var lines = Content.ByProject(project, matches.Take(MaxResults));
         if (matches.Count > MaxResults)
             lines.Add($"... {matches.Count - MaxResults} more; narrow the query or pass folder.");
         return string.Join("\n", lines);

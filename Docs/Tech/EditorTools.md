@@ -27,6 +27,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - **Read-only:** the tools use the Editor's own flag, `ExplorerItem.CurrentReadOnly`. Edits check it on the target file and creation checks it on the target folder. When it is set, the error quotes its `Reason` (for example "Project read-only", "File in use").
 - **Project:** every call uses the currently loaded project, reached through `VRageCore.Instance.Engine`. With none loaded, the tool says so.
 - **Stop:** a call the user stopped before it reached the UI thread changes nothing.
+- **Single items** outside a listing (the `read` header, error candidates) name their project when it is a read-only dependency: `path (Type) in Vanilla (read-only)`.
 - **Errors** are short, name the bad part, and list the valid alternatives where there are any: sibling field names, candidate paths, enum names, templates, concrete types.
 - **Threading:** tools run on a worker thread and do their project work on the UI thread.
 
@@ -83,7 +84,7 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - `find_content` matches when every word of `query` is part of the file name or the definition type name (case-insensitive; spaces, `/`, `\`, `_` and `-` separate words), across the mod and its dependencies. "particle configuration" finds `ParticleEffectsBudgetConfiguration.def`.
   - `folder` limits the search to that folder's subtree.
-  - Output: `path (DefinitionType)` lines, capped at about 50 with a truncation marker.
+  - Output is grouped by project, the mod first and then its dependencies in load order. Each group has one header naming the project and whether it is read-only, then `path (DefinitionType)` lines. An item only carries its own read-only reason when its project is writable (for example "File in use"). Capped at 50 items with a truncation marker.
 - `list_folder` lists direct children only.
   - When the path exists in several projects (the mod and Vanilla), there is one section per project.
   - Subfolders print as `Name\ (N items)` and files as `Name (DefinitionType)`.
