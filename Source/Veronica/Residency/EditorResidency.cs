@@ -1,6 +1,8 @@
 using System.Reflection;
 using Avalonia.Threading;
 using Keen.VRage.Core;
+using Keen.VRage.DCS.Builders;
+using Keen.VRage.DCS.Scenes;
 using Keen.VRage.Editor.Utils;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.Render.EngineComponents;
@@ -22,6 +24,7 @@ internal static class EditorResidency
 
     private static ParkedRender? _parked;
     private static DispatcherAppLoop? _stoppedLoop;
+    private static (Scene Scene, int Job)? _pausedFrameCommits;
 
     public static Task FreeAsync() => Task.Run(FreeCoreAsync);
 
@@ -48,11 +51,13 @@ internal static class EditorResidency
         {
             DropUnusedTextures();
             StopEngineLoop();
+            PauseFrameCommits(render);
             FrozenViewBadge.Show();
         });
 
-        // The update loop is stopped first: it blocks the UI thread once the render thread is
-        // 30 frames behind, and the parked render thread never catches up.
+        // Updates stop committing frames first: the UI thread blocks once the render thread is
+        // 30 frames behind, and the parked render thread never catches up. Stopping the loop
+        // is not enough, the Editor also ticks the scene itself, as when it unloads a preview.
         var parked = new ParkedRender(render);
         _parked = parked;
         render.DefinitionsQueue.Enqueue(parked.Run);
@@ -70,6 +75,7 @@ internal static class EditorResidency
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                ResumeFrameCommits();
                 StartEngineLoop();
                 FrozenViewBadge.Hide();
             });
@@ -96,6 +102,21 @@ internal static class EditorResidency
         _stoppedLoop = null;
     }
 
+    private static void PauseFrameCommits(RenderSide render)
+    {
+        render.Scene.SetJobEnabled(render.FrameCommitJob, false);
+        _pausedFrameCommits = (render.Scene, render.FrameCommitJob);
+    }
+
+    // Commands recorded while paused stay in the open frame and go to the render thread with
+    // the first commit after the turn.
+    private static void ResumeFrameCommits()
+    {
+        if (_pausedFrameCommits is { } paused)
+            paused.Scene.SetJobEnabled(paused.Job, true);
+        _pausedFrameCommits = null;
+    }
+
     private static RenderEngineComponent RenderEngine =>
         VRageCore.Instance.Engine?.TryGet<RenderEngineComponent>() ?? throw new InvalidOperationException("The Editor has no renderer.");
 
@@ -111,6 +132,8 @@ internal static class EditorResidency
         public readonly ContinuationQueue DefinitionsQueue;
         public readonly object FrameDispatcher;
         public readonly MethodInfo FlushAllQueuesAndWaitCpu;
+        public readonly Scene Scene;
+        public readonly int FrameCommitJob;
         private readonly object _resourcePool;
         private readonly FieldInfo _parallelWork;
         private readonly PropertyInfo _parallelWorkDone;
@@ -135,6 +158,37 @@ internal static class EditorResidency
             var engine = RenderEngine;
             _concurrent = Field(engine.GetType(), "_concurrent").GetValue(engine) ?? throw new InvalidOperationException("Render12 is not initialized.");
             _continueLooping = Field(_concurrent.GetType(), "ContinueLooping");
+            Scene = VRageCore.Instance.Engine.Scene;
+            var commit = engine.GetType().GetMethod("RenderDeviceAfterUpdate", AnyInstance, Type.EmptyTypes)
+                ?? throw new EngineChangedException("Render12 has no RenderDeviceAfterUpdate job.");
+            FrameCommitJob = JobIndex(Scene, commit);
+        }
+
+        // A built scene keeps no job methods, only their invocation stubs' entry points.
+        private static int JobIndex(Scene scene, MethodInfo job)
+        {
+            var resolve = typeof(SceneBuilder).GetMethod("ResolveInvocationStub", AnyStatic, [typeof(MethodInfo)])
+                ?? throw new EngineChangedException("DCS has no SceneBuilder.ResolveInvocationStub(MethodInfo).");
+            var resolved = resolve.Invoke(null, [job])!;
+            var stub = resolved.GetType().GetField("Item1")?.GetValue(resolved) as MethodInfo
+                ?? throw new EngineChangedException("SceneBuilder.ResolveInvocationStub no longer returns the stub method.");
+            var entry = stub.MethodHandle.GetFunctionPointer();
+
+            var runtimes = Field(typeof(Scene), "_jobRuntimes").GetValue(scene) as Array
+                ?? throw new EngineChangedException("The DCS scene's job runtimes are not an array.");
+            var target = Field(runtimes.GetType().GetElementType()!, "InvocationTarget");
+            var found = -1;
+            for (var i = 0; i < runtimes.Length; i++)
+            {
+                if (target.GetValue(runtimes.GetValue(i)) is not IntPtr pointer)
+                    throw new EngineChangedException("The DCS scene's job runtimes no longer hold a function pointer.");
+                if (pointer != entry)
+                    continue;
+                if (found >= 0)
+                    throw new EngineChangedException($"The DCS scene runs {job.Name} more than once.");
+                found = i;
+            }
+            return found >= 0 ? found : throw new EngineChangedException($"The DCS scene does not run {job.Name}.");
         }
 
         // The Editor is closing: it waits for the render thread to finish its loop.

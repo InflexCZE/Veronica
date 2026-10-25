@@ -71,7 +71,9 @@ A freshly loaded Editor holds about 2 GB, measured with `MemoryHierarchy.DumpGPU
 
 - The Editor freezes only for WebQwen work: from the start to the end of each agent turn, and for a model load until it completes, even when the user stops the turn that started it.
 - **Turn start:**
-  1. Stop the Editor's engine update loop on the UI thread. The update blocks once the render thread is 30 frames behind, so stopping it keeps the UI and chat live. The render thread keeps looping without updates.
+  1. On the UI thread, stop updates from reaching the render thread. An update blocks the UI thread once the render thread is 30 frames behind.
+     - Stop the Editor's engine update loop. The render thread keeps looping without updates.
+     - Disable the job that commits each update's frame to the render thread. The Editor also ticks the scene outside the loop, for example when a content push puts an open asset preview on hold, so stopping the loop alone does not stop the frames. The ticks still run; their render work reaches the render thread after the turn.
   2. Queue a job on the render thread through `CoreSystems.DefinitionPostProcesses.OnDefinitionsChangedQueue`. Render12 runs that queue every frame, after Present and before message processing and Draw. The engine's own shader recompile waits for the GPU at the same point.
   3. That job:
      - waits for Render12's resource worker (`GPUResourcePool._parallelWork`), which disposes and creates resources and may still be running;
@@ -81,7 +83,7 @@ A freshly loaded Editor holds about 2 GB, measured with `MemoryHierarchy.DumpGPU
   4. If the job has not run within 10 s, the turn fails.
 - **DirectStorage:** when the Editor uses it, the turn fails. Its workers write straight into GPU textures outside the engine's fences, and nothing can pause them. It is off in the Editor today.
 - **The snapshot** AddRefs every object it evicts and releases them after the restore. An object the engine disposes during the turn therefore stays valid until then.
-- **Turn end:** after WebQwen's last engine operation has released its VRAM, make the snapshot resident, release it, unblock the render thread, and restart the update loop.
+- **Turn end:** after WebQwen's last engine operation has released its VRAM, make the snapshot resident, release it, unblock the render thread, enable the commit job, and restart the update loop.
 - Tool calls change scene data on the UI thread during the turn. Their effects render on the first frame after the turn.
 - Objects created during the turn are not in the snapshot and stay resident.
 

@@ -17,7 +17,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ReleaseLayout.md](ReleaseLayout.md) | WebQwen: release folder and publish |
 | [SplitLoad.md](SplitLoad.md) | Split model load: Editor live during shader compile (owner decision) |
 | [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict around a turn, edge cases not yet tested live |
-| [ReloadDuringTurn.md](ReloadDuringTurn.md) | Editor: a project reload during a turn blocks the UI until the turn ends |
+| [ReloadDuringTurn.md](ReloadDuringTurn.md) | Editor: a project reload during a turn, untested with the commit job disabled |
 | [VramSharingHardware.md](VramSharingHardware.md) | VRAM sharing measured on one NVIDIA card only |
 | [VramSharingBigCards.md](VramSharingBigCards.md) | VRAM sharing: keep the Editor live when everything fits (owner decision) |
 | [EditorVersionFloor.md](EditorVersionFloor.md) | Editor: oldest Editor build a release supports (owner decision) |
