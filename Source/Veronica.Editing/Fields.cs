@@ -205,6 +205,20 @@ public static class Fields
         return null;
     }
 
+    // Immutable mergeable lists are edited through the list they wrap, as the inspector does.
+    public static MemberReference Unwrap(MemberReference member) => member.TryGetImmutableMergeableListData() ?? member;
+
+    // A mergeable list keys its elements with new ids itself; other keyed lists need a key with every element.
+    public static bool GeneratesOwnKeys(Type collection)
+    {
+        for (Type? t = collection; t != null; t = t.BaseType)
+        {
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Keen.VRage.Library.Collections.MergeableList<>))
+                return true;
+        }
+        return false;
+    }
+
     // Key type of a keyed list (KeyedCollection<TKey, TItem>), or null for a plain list.
     public static Type? KeyedListKeyType(Type collection)
     {

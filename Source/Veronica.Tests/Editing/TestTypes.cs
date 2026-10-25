@@ -1,4 +1,5 @@
 using Keen.VRage.ContentPipeline.Definitions.Utility;
+using Keen.VRage.Library.Collections;
 using Keen.VRage.Core.Model;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Localization;
@@ -39,6 +40,9 @@ public partial class Sample
     public List<DummyTypeDefinition?> Types = [];
     public Entry Required = new();
     public Shape? Form;
+    public MergeableList<ModelDummy> Merged = new();
+    public ImmutableMergeableList<Entry> Frozen = ImmutableMergeableList<Entry>.Empty;
+    public KeyedList<string, Entry> Named = new();
 
     public Entry Settings { get; } = new();
 

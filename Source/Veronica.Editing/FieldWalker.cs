@@ -33,6 +33,7 @@ public static class FieldWalker
                     RequireValue(member, canonical);
                     member = Child(member, canonical, segment.Text);
                     canonical = FieldPath.Member(canonical, member.Name);
+                    member = Fields.Unwrap(member);
                     break;
                 default:
                     throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; its items cannot be addressed.");

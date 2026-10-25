@@ -85,9 +85,10 @@ public sealed class FieldReader
         {
             if (_truncated)
                 return;
-            if (Fields.IsComputed(child))
+            var field = Fields.Unwrap(child);
+            if (Fields.IsComputed(field))
                 continue;
-            DumpField(child, FieldPath.Member(path, child.Name), depth);
+            DumpField(field, FieldPath.Member(path, child.Name), depth);
         }
     }
 

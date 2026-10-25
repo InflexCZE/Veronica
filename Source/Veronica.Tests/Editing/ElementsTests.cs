@@ -81,6 +81,32 @@ public sealed class ElementsTests
     }
 
     [Fact]
+    public void Mergeable_lists_key_their_own_elements()
+    {
+        Assert.StartsWith("Added Merged[0]:", Add("Merged"));
+        Assert.StartsWith("Added Merged[1]:", Add("Merged", key: "ignored"));
+        Assert.Equal(2, _sample.Merged.Count);
+    }
+
+    [Fact]
+    public void Immutable_mergeable_lists_read_and_grow_like_lists()
+    {
+        Assert.StartsWith("Added Frozen[0]:", Add("Frozen"));
+        Assert.Equal(1, _sample.Frozen.Count);
+        Assert.Contains("Frozen[0].Speed = 0 (float)", FieldReader.Read(Root, "", _links));
+        Remove("Frozen[0]");
+        Assert.Equal(0, _sample.Frozen.Count);
+    }
+
+    [Fact]
+    public void Other_keyed_lists_need_a_key()
+    {
+        Assert.Contains("pass key", Fails(() => Add("Named")));
+        Add("Named", key: "Main");
+        Assert.Equal("Main", _sample.Named.Keys[0]);
+    }
+
+    [Fact]
     public void Not_a_collection() => Assert.Contains("not a list or dictionary", Fails(() => Add("Power")));
 
     [Fact]

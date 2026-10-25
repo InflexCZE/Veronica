@@ -30,7 +30,7 @@ public static class Elements
         bool dictionary = collection.MemberKind == MemberValueKind.Dictionary;
         Type? keyType = dictionary
             ? Fields.DictionaryTypes(collection.DeclaredMemberType)?.Key
-            : Fields.KeyedListKeyType(collection.DeclaredMemberType);
+            : Fields.GeneratesOwnKeys(collection.DeclaredMemberType) ? null : Fields.KeyedListKeyType(collection.DeclaredMemberType);
         Type? elementType = dictionary
             ? Fields.DictionaryTypes(collection.DeclaredMemberType)?.Value
             : Fields.ElementType(collection.DeclaredMemberType);

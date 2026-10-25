@@ -74,6 +74,8 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - `element_add(target, path, key?, type?)` adds a default element and returns its path, for example `Dummies[2]` or `ThrustClasses[Water]`, followed by the element's fields. The model fills it with `write`.
   - A list gets the element at its end. A dictionary, or a keyed list, needs `key`; an existing key is an error that points at the entry to write instead.
+  - A mergeable list (`MergeableList`, how definitions such as `Dummies` store their lists) keys its elements with new ids itself, as the inspector's add button relies on, so it takes no key; one that is given is ignored.
+  - An `ImmutableMergeableList` field is read, written and grown through the list it wraps, as the inspector shows it: it looks like a plain list.
   - A null collection, and null objects on its path, are created first.
   - An element of a definition-reference collection starts empty (`none`); `write` points it at an item.
   - `type` matters only for a collection whose element type is abstract. Without `type`, the error lists the types the inspector's add button offers for it (at most 50). `type` matches by short name, or by full name when short names collide.
