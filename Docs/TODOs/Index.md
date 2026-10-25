@@ -29,3 +29,4 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
 | [ConditionalWritability.md](ConditionalWritability.md) | Editor tools: conditional read-only rules of the inspector are ignored |
 | [SamePathAcrossProjects.md](SamePathAcrossProjects.md) | Editor tools: one path in the mod and Vanilla cannot be told apart (owner decision) |
+| [PrefabComponentVisibility.md](PrefabComponentVisibility.md) | Editor tools: prefab definitions show internal component fields the inspector hides |
