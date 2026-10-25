@@ -6,6 +6,9 @@ using Veronica.Editing;
 namespace Veronica.Tools;
 
 // Content items as the tools name them: project-relative paths, or bare file names when unique.
+// The Editor holds the item for a moment; trying again shortly is expected to work.
+internal sealed class ItemBusy(string message) : Exception(message);
+
 internal static class Content
 {
     public const int MaxCandidates = 10;
@@ -36,8 +39,12 @@ internal static class Content
     public static void RequireWritable(ExplorerItem item)
     {
         var state = item.CurrentReadOnly;
-        if (state.IsReadOnly)
-            throw new EditError($"'{Shown(item)}' is read-only: {state.Reason ?? "the Editor locks it"}.");
+        if (!state.IsReadOnly)
+            return;
+        // A file of a writable project is locked only while the Editor works on it, e.g. right after it was created.
+        if (item is ExplorerFile && !item.Project.IsReadOnly)
+            throw new ItemBusy($"'{Shown(item)}' stayed locked by the Editor: {state.Reason ?? "in use"}.");
+        throw new EditError($"'{Shown(item)}' is read-only: {state.Reason ?? "the Editor locks it"}.");
     }
 
     // The same path an inspector edit ends in: mark modified, auto-save, and rebuild an open inspector.
@@ -64,15 +71,9 @@ internal static class Content
     }
 
     // An item inside a per-project listing, whose header already says when the whole project is read-only.
-    public static string Line(ExplorerItem item)
-    {
-        var parts = new List<string>();
-        if (DefinitionTypeName(item) is { } type)
-            parts.Add(type);
-        if (!item.Project.IsReadOnly && item.CurrentReadOnly is { IsReadOnly: true } state)
-            parts.Add($"read-only: {state.Reason ?? "locked"}");
-        return parts.Count == 0 ? Shown(item) : $"{Shown(item)} ({string.Join(", ", parts)})";
-    }
+    // A file's own lock is not shown: it passes, and changes wait it out.
+    public static string Line(ExplorerItem item) =>
+        DefinitionTypeName(item) is { } type ? $"{Shown(item)} ({type})" : Shown(item);
 
     // Items grouped under one header per project: the mod first, then its dependencies in load order.
     public static List<string> ByProject(LoadedProject root, IEnumerable<ExplorerItem> items)

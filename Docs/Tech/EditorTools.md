@@ -24,7 +24,8 @@ The first set of agent tools that act on the loaded project. The target is build
 - **Edits** go through the Editor's own definition data layer (`ObjectManipulator` / `MemberReference`), the same layer the Property Inspector uses. No UI is automated. For a `.partialdef`, reads see the merged definition and writes are recorded as overrides automatically.
 - **Saving:** every successful change saves the way an inspector edit does, and an open Property Inspector shows the new value. There is no save tool. As with inspector edits, a failed disk write only reaches the Editor log.
 - **No undo:** edits are not Ctrl-Z steps. The user reverts with version control.
-- **Read-only:** the tools use the Editor's own flag, `ExplorerItem.CurrentReadOnly`. Edits check it on the target file and creation checks it on the target folder. When it is set, the error quotes its `Reason` (for example "Project read-only", "File in use").
+- **Read-only:** the tools use the Editor's own flag, `ExplorerItem.CurrentReadOnly`. Edits check it on the target file and creation checks it on the target folder. When it is set, the error quotes its `Reason` (for example "Project read-only").
+- **Busy files:** a file of the writable mod is locked only while the Editor works on it, for example for a few seconds after `create_prefab` wrote it ("File in use"). A change that finds its file locked retries every half second, waiting off the UI thread, and fails only after 15 s. Listings never show this passing lock.
 - **Project:** every call uses the currently loaded project, reached through `VRageCore.Instance.Engine`. With none loaded, the tool says so.
 - **Stop:** a call the user stopped before it reached the UI thread changes nothing.
 - **Single items** outside a listing (the `read` header, error candidates) name their project when it is a read-only dependency: `path (Type) in Vanilla (read-only)`.
@@ -84,7 +85,7 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - `find_content` matches when every word of `query` is part of the file name or the definition type name (case-insensitive; spaces, `/`, `\`, `_` and `-` separate words), across the mod and its dependencies. "particle configuration" finds `ParticleEffectsBudgetConfiguration.def`.
   - `folder` limits the search to that folder's subtree.
-  - Output is grouped by project, the mod first and then its dependencies in load order. Each group has one header naming the project and whether it is read-only, then `path (DefinitionType)` lines. An item only carries its own read-only reason when its project is writable (for example "File in use"). Capped at 50 items with a truncation marker.
+  - Output is grouped by project, the mod first and then its dependencies in load order. Each group has one header naming the project and whether it is read-only, then `path (DefinitionType)` lines. Capped at 50 items with a truncation marker.
 - `list_folder` lists direct children only.
   - When the path exists in several projects (the mod and Vanilla), there is one section per project.
   - Subfolders print as `Name\ (N items)` and files as `Name (DefinitionType)`.
