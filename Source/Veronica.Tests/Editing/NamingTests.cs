@@ -34,6 +34,16 @@ public sealed class NamingTests
     [InlineData(@"Mods\Thruster\Engine.def", "", false)]
     public void Content_names(string path, string query, bool matches) => Assert.Equal(matches, ContentNames.Matches(path, query));
 
+    [Theory]
+    [InlineData("particle configuration", "ParticleEffectsBudgetConfiguration.def", null, true)]
+    [InlineData("particle configuration", "Override of X.partialdef", "ParticleEffectsConfiguration", true)]
+    [InlineData("ion_thruster", "IonThrusterDefinition.def", null, true)]
+    [InlineData("ThrusterDefinition", "Engine.partialdef", "ThrusterDefinition", true)]
+    [InlineData("particle water", "ParticleEffectsConfiguration.def", null, false)]
+    [InlineData(" ", "Anything.def", null, false)]
+    public void Find_content_needs_every_word(string query, string fileName, string? typeName, bool matches) =>
+        Assert.Equal(matches, ContentNames.QueryMatches(query, fileName, typeName));
+
     private static readonly string[] All =
     [
         "Blocks/Breakable/Ion Thrusters",

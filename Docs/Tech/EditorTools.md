@@ -81,7 +81,7 @@ The first set of agent tools that act on the loaded project. The target is build
 
 ## find_content and list_folder
 
-- `find_content` matches `query` case-insensitively as a substring of file names and definition type names, across the mod and its dependencies.
+- `find_content` matches when every word of `query` is part of the file name or the definition type name (case-insensitive; spaces, `/`, `\`, `_` and `-` separate words), across the mod and its dependencies. "particle configuration" finds `ParticleEffectsBudgetConfiguration.def`.
   - `folder` limits the search to that folder's subtree.
   - Output: `path (DefinitionType)` lines, capped at about 50 with a truncation marker.
 - `list_folder` lists direct children only.

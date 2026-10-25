@@ -12,10 +12,10 @@ public sealed class FindContentTool : ITool
 
     public string Name => "find_content";
 
-    public string Description => "Finds content items whose file name or definition type contains query. Searches the mod and the projects it depends on, such as Vanilla.";
+    public string Description => "Finds content items whose file name or definition type contains every word of query. Searches the mod and the projects it depends on, such as Vanilla.";
 
     public string Parameters => """
-        {"type":"object","properties":{"query":{"type":"string","description":"Part of a file name or definition type, e.g. IonThruster or ThrusterDefinition"},"folder":{"type":"string","description":"Only search inside this folder"}},"required":["query"]}
+        {"type":"object","properties":{"query":{"type":"string","description":"Words of a file name or definition type, e.g. ion thruster or ThrusterDefinition"},"folder":{"type":"string","description":"Only search inside this folder"}},"required":["query"]}
         """;
 
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
@@ -31,8 +31,7 @@ public sealed class FindContentTool : ITool
         string scope = root.Length == 0 ? "" : root + "\\";
         var matches = project.GetAvailableFiles().OfType<ExplorerAssetFile>()
             .Where(f => scope.Length == 0 || ContentNames.Normalize(f.ProjectRelativePath).StartsWith(scope, StringComparison.OrdinalIgnoreCase))
-            .Where(f => f.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
-                || (Content.DefinitionTypeName(f)?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Where(f => ContentNames.QueryMatches(query, f.Name, Content.DefinitionTypeName(f)))
             .OrderBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
             .ToList();
 

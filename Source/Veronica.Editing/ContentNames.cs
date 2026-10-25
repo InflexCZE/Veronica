@@ -25,6 +25,15 @@ public static class ContentNames
         return Same(name, wanted) || Same(Path.GetFileNameWithoutExtension(name), wanted);
     }
 
+    // find_content: every word of the query is part of the file name or the definition type.
+    public static bool QueryMatches(string query, string fileName, string? typeName)
+    {
+        string[] words = query.Split([' ', '\t', '/', '\\', '_', '-'], StringSplitOptions.RemoveEmptyEntries);
+        return words.Length > 0 && words.All(w =>
+            fileName.Contains(w, StringComparison.OrdinalIgnoreCase)
+            || (typeName?.Contains(w, StringComparison.OrdinalIgnoreCase) ?? false));
+    }
+
     private static string WithoutExtension(string path)
     {
         int dot = path.LastIndexOf('.');
