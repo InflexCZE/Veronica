@@ -21,17 +21,18 @@ public static class Templates
         if (leaf.Count > 0)
             return leaf;
 
-        return Filter(all, query);
+        return Sorted(all.Where(t => wanted.All(Words(t).Contains)));
     }
 
+    // Discovery is looser than create_prefab: a filter word only has to be part of the path ("thrust").
     public static List<string> Filter(IEnumerable<string> templates, string? filter)
     {
         string[] wanted = Words(filter ?? "");
-        return templates
-            .Where(t => wanted.All(Words(t).Contains))
-            .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        return Sorted(templates.Where(t => wanted.All(w => t.Contains(w, StringComparison.OrdinalIgnoreCase))));
     }
+
+    private static List<string> Sorted(IEnumerable<string> templates) =>
+        templates.OrderBy(t => t, StringComparer.OrdinalIgnoreCase).ToList();
 
     private static string[] Words(string text) =>
         text.Split(['/', '\\', ' ', '\t'], StringSplitOptions.RemoveEmptyEntries).Select(w => w.ToLowerInvariant()).ToArray();

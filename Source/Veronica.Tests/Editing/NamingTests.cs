@@ -71,5 +71,7 @@ public sealed class NamingTests
     {
         Assert.Equal(All.OrderBy(t => t, StringComparer.OrdinalIgnoreCase), Templates.Filter(All, null));
         Assert.Equal(3, Templates.Filter(All, "breakable").Count);
+        Assert.Equal(3, Templates.Filter(All, "Thrust").Count);
+        Assert.Equal(["Blocks/Breakable/Hydrogen Thrusters"], Templates.Filter(All, "hydro thrust"));
     }
 }

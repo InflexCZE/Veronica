@@ -101,11 +101,11 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
 
 - A template is an entry of the Editor's Create Prefab menu, named by its menu path below the menu's own top group, for example `Blocks/Breakable/Ion Thrusters`. The list is read from the generator that builds the menu, so it is exactly what the menu offers, empty prefabs included.
 - Matching is case-insensitive, and `/`, `\` and runs of spaces separate words.
-- `find_template(filter?)` lists the templates whose path contains every word of `filter`. Without a filter it lists all of them. Capped at about 50.
+- `find_template(filter?)` lists the templates whose path contains every word of `filter` as a substring ("thrust" finds "Ion Thrusters"). Without a filter it lists all of them. Capped at about 50.
 - `create_prefab` resolves `template` in tiers and stops at the first tier with any match:
   1. the exact full path;
   2. the exact last segment ("Ion Thrusters");
-  3. every word of `template` appears in the path.
+  3. every word of `template` is a whole word of the path (no guessing at plurals when creating).
 
   One match generates the prefab. Several matches are an error that lists them.
 - `name` names the generated files: it answers the name the template asks for, and the template's own name check applies. A template that never asks (empty prefabs, single-file templates) has its files' shared name prefix replaced by `name`.
