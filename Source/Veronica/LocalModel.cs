@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Text;
 using Keen.VRage.Library.Diagnostics;
+using Veronica.Agent;
 using Veronica.Agent.WebQwen;
+using Veronica.Residency;
 
 namespace Veronica;
 
@@ -14,7 +16,9 @@ internal static class LocalModel
     {
         var exe = typeof(LocalModel).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .Single(a => a.Key == "WebQwenExe").Value!;
-        var provider = new WebQwenProvider(new WebQwenLaunch(exe, ModelId), line => Log.Default.WriteLine($"[WebQwen] {AsciiOnly(line)}"));
+        var gpu = new GpuShare(EditorResidency.FreeAsync, EditorResidency.RestoreAsync, line => Log.Default.WriteLine($"[Veronica] {line}"));
+        var provider = new WebQwenProvider(new WebQwenLaunch(exe, ModelId), line => Log.Default.WriteLine($"[WebQwen] {AsciiOnly(line)}"), gpu);
+        EditorResidency.DropUnusedTextures();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => provider.Dispose();
         return provider;
     }

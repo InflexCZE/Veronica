@@ -7,6 +7,7 @@ using Keen.VRage.Library.Serialization;
 using Keen.VRage.Library.Serialization.ObjectBuilders;
 using Keen.VRage.Plugin.Editor;
 using Keen.VRage.Plugin.Editor.Preview;
+using Veronica.Residency;
 using Veronica.Ui;
 
 namespace Veronica;
@@ -16,6 +17,12 @@ public sealed class VeronicaPlugin : IProjectPlugin
 {
     // The Editor creates a new plugin instance on every project load; the UI it adds outlives them.
     private static readonly EditorShell Shell = new();
+
+    // Runs before Render12 creates its device and pools, which is when pool tracking must be on.
+    static VeronicaPlugin()
+    {
+        EngineAllocations.TrackBorrows();
+    }
 
     public void ObjectBuilderLoadingContextConfigurator(ref ObjectBuilderLoadingContext.Builder contextBuilder, Entity engineEntity)
     {

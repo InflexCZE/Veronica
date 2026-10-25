@@ -24,6 +24,13 @@
 
 The Window menu is built before plugins load and has no extension point. Veronica adds a top-level `Veronica` menu to the main menu bar with `Show Veronica`, which re-adds the panel if needed and selects it. This covers a closed tab and a restored layout.
 
+## Frozen viewport
+
+- While the Editor is frozen for the local model (`VramSharing.md`), each visible viewport shows a small "Veronica is working..." badge in its bottom-right corner, dark grey with a lighter border so it stands out against the skybox. The last frame stays visible underneath.
+- A viewport is a native child window, and Avalonia cannot draw over it. The badge is a `Popup`, which is a top-level window, as the Editor's own flyouts over the viewport are.
+- The popup gets the viewport as its logical parent (`ISetLogicalParent`, as Avalonia's `ContextMenu` does). Without one, its window finds no theme and opens empty and zero-sized.
+- A badge that fails to show is logged and never fails the freeze.
+
 ## Fonts
 
 - The Editor's theme declares its `Roboto` font with a relative URI and sets it on every `TextBlock`. Avalonia's glyph fallback throws on relative font URIs. Any character missing from Roboto and the system default font (emoji, CJK, many symbols) crashes the whole Editor during layout, whichever panel shows it.

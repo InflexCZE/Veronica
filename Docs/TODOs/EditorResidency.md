@@ -1,8 +1,13 @@
-# Editor: freeze and evict around a turn
+# Editor: freeze and evict around a turn, edge cases
 
-**Exists:** `Docs/Tech/VramSharing.md` decides that the Editor stops all engine-device submits and evicts every engine heap and committed resource for the length of a turn (and for the weight upload of a model load), then makes them resident and resumes. Nothing implements it.
+**Exists:** `Docs/Tech/VramSharing.md` (Editor residency) is implemented in `Source/Veronica/Residency` and passed the owner's live test: local turns ran with the Editor frozen and evicted (about 2.2 GB on a fresh Editor) and came back without issues.
 
-**Missing:**
-- Engine hook (VRAGE3): stop every engine queue (graphics, compute, copy, streaming) and wait for it to go idle; enumerate every engine-owned pageable for `ID3D12Device::Evict`; restore with `EnqueueMakeResident` (or `MakeResident`) and wait before the first frame.
-- A guarantee that no engine work is submitted while evicted: any access faults the GPU.
-- Veronica: drive the sequence (Editor evict, WebQwen resident, turn, WebQwen evict, Editor resident) through the Veronica/WebQwen protocol.
+**Missing:** edge cases the live test did not specifically cover:
+- Nothing faults the GPU while evicted:
+  - `FileTexture` heap allocations from a worker;
+  - Media Foundation decode threads, when a scene has a video player;
+  - asset previews and thumbnails generated during a turn.
+- Tools during a turn, with the update loop stopped: `write` and `create_prefab` waiting for file locks or generators that need engine ticks (the 15 s busy retry).
+- Project unload during a turn: whether `UnloadProject` waits on the parked render thread (see `ReloadDuringTurn.md` for reload).
+- An Editor started without a project: the startup log must still say "GPU resource pool tracking is on".
+- Turn-start and turn-end cost against the spike's numbers.

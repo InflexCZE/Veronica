@@ -21,7 +21,7 @@ The Editor (D3D12) and `WebQwen.exe` (Dawn on D3D12) run on one GPU. On the 8 GB
 
 Exactly one side keeps its working set resident at a time. The same path runs on every card.
 
-- **Turn start:** the Editor stops submitting work on its engine device and evicts every engine heap and committed resource. WebQwen makes its buffers resident, then runs inference.
+- **Turn start:** the Editor stops submitting work on its engine device and evicts most of its VRAM (see Editor residency). WebQwen makes its buffers resident, then runs inference.
 - **During the turn:** tool calls touch scene data only; the Editor stays frozen for the whole agent turn. The Editor UI renders on its own stack and stays live, so the chat streams.
 - **Turn end:** WebQwen evicts its buffers. The Editor makes all its engine resources resident and resumes rendering.
 - Nothing is destroyed or re-created; every handle stays valid on both sides.
@@ -39,6 +39,55 @@ Exactly one side keeps its working set resident at a time. The same path runs on
 - The eviction runs in the queue-idle callback itself, and waits again if work was queued since the release started. Destroying a device evicts its buffers at once, since Dawn keeps their memory until the device is released.
 - Dawn's own residency management is disabled (`use_d3d12_residency_management` off).
 - Lazy `Evict` is measured behaviour, not documented. The documentation says only that `Evict` "enables page-out", that `MakeResident` and `Evict` are reference-counted, and that `Evict` must follow the GPU's last use of the object.
+
+## Editor residency
+
+`Veronica.dll` freezes and evicts the Editor without engine changes and without D3D12 hooks. It finds the Editor's allocations through Render12's own managed objects.
+
+### What the Editor holds
+
+A freshly loaded Editor holds about 2 GB, measured with `MemoryHierarchy.DumpGPUResources`:
+
+- Most of it is fixed render-pipeline memory: raytracing, light clustering, per-frame render targets, shadow maps, and hologram and probe targets.
+- The only eager asset loads are all the particle atlases (about 300 MB) and the skybox (128 MB).
+- Texture streaming may grow to about 5 GB. Its budget follows the DXGI budget, has a 2 GB floor, and keeps textures it no longer needs (caching).
+
+### Finding the allocations
+
+- D3D12 cannot list a device's allocations, so Veronica walks the engine's owners instead.
+- **Pool tracking:** almost every big allocation is borrowed from Render12's `GPUResourcePool`, whose pools can keep a set of borrowed items.
+  - The plugin's constructor calls `PoolManager.Instance.TrackBorrowsForPoolType(GPUResourcePool+Token)`.
+  - It runs about 4.7 s before Render12 creates its device. Tracking is fixed when each pool is created, so a later call would track nothing.
+- **Other roots:** the raytracing structure pools (`CoreSystems.RASBuffers`) and the placed-resource heap containers (`CoreSystems.D3DHeap`'s buffer and texture heaps, and the local-light shadow-mask heaps).
+- **What is evicted:**
+  - every `ID3D12Heap`, and every committed resource held in a `D3DCommittedResourceWrap`, found in those objects;
+  - default-heap memory only, so upload and readback memory, already in system memory, is skipped;
+  - no size threshold;
+  - placed resources are evicted through their heaps.
+- The walk covers about 88% of the Editor's VRAM. The rest is driver and shader memory, the swap chain, and descriptor and query heaps.
+- A missing type, field or lock means the engine changed: the turn fails with an error. Every turn logs the MB evicted.
+
+### Freeze
+
+- The Editor freezes only for WebQwen work: from the start to the end of each agent turn, and for a model load until it completes, even when the user stops the turn that started it.
+- **Turn start:**
+  1. Stop the Editor's engine update loop on the UI thread. The update blocks once the render thread is 30 frames behind, so stopping it keeps the UI and chat live. The render thread keeps looping without updates.
+  2. Queue a job on the render thread through `CoreSystems.DefinitionPostProcesses.OnDefinitionsChangedQueue`. Render12 runs that queue every frame, after Present and before message processing and Draw. The engine's own shader recompile waits for the GPU at the same point.
+  3. That job:
+     - waits for Render12's resource worker (`GPUResourcePool._parallelWork`), which disposes and creates resources and may still be running;
+     - waits for the engine queues to go idle (`FrameDispatcher.FlushAllQueuesAndWaitCpu`);
+     - takes the snapshot and evicts it;
+     - blocks until the turn ends.
+  4. If the job has not run within 10 s, the turn fails.
+- **DirectStorage:** when the Editor uses it, the turn fails. Its workers write straight into GPU textures outside the engine's fences, and nothing can pause them. It is off in the Editor today.
+- **The snapshot** AddRefs every object it evicts and releases them after the restore. An object the engine disposes during the turn therefore stays valid until then.
+- **Turn end:** after WebQwen's last engine operation has released its VRAM, make the snapshot resident, release it, unblock the render thread, and restart the update loop.
+- Tool calls change scene data on the UI thread during the turn. Their effects render on the first frame after the turn.
+- Objects created during the turn are not in the snapshot and stay resident.
+
+### Texture growth
+
+While WebQwen is the active provider, texture caching is off: textures that are no longer needed are dropped instead of kept up to the streaming budget.
 
 ## Model load
 

@@ -61,6 +61,7 @@
 - Stop while WebQwen.exe is starting or loading the model ends the turn, and the load continues. The user's message stays in the transcript.
 - When WebQwen.exe exits or breaks the protocol, the running round fails, the turn shows the error, and the next round starts a new process. A failed request (an `error` event with an id) fails the round but keeps the process.
 - The status line shows the start, the load progress, ready, and each round's prompt and decode speed.
+- The provider holds the Editor's VRAM (`IGpuShare`, `VramSharing.md`) for each whole turn and for each model load until it completes. `GpuShare` counts the holds: the first one frees the Editor's VRAM, the last one gives it back. A hold that cannot free the VRAM fails the turn.
 
 ## Testing
 

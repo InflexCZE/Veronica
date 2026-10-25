@@ -45,7 +45,12 @@
     <Reference Include="$(EditorDir)VRage.Editor.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Plugin.Editor.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Render.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.UI.UniDock.dll" Private="false" />
+    <Reference Include="$(EditorDir)SharpGen.Runtime.dll" Private="false" />
+    <Reference Include="$(EditorDir)SharpGen.Runtime.COM.dll" Private="false" />
+    <Reference Include="$(EditorDir)Vortice.Direct3D12.dll" Private="false" />
+    <Reference Include="$(EditorDir)Vortice.DirectX.dll" Private="false" />
   </ItemGroup>
 
   <!-- Git does not keep the dev mod's empty content folders. -->
