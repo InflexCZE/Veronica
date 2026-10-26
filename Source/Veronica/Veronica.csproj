@@ -30,6 +30,7 @@
   <!-- Development wiring until WebQwen is installed: the exe from this repo's build output. -->
   <ItemGroup>
     <AssemblyMetadata Include="WebQwenExe" Value="$(RepoRoot)Source\WebQwen\bin\x64\$(Configuration)\net9.0\WebQwen.exe" />
+    <AssemblyMetadata Include="SkillsDir" Value="$(MSBuildProjectDirectory)\Skills" />
   </ItemGroup>
 
   <ItemGroup>

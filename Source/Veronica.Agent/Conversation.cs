@@ -1,22 +1,26 @@
 namespace Veronica.Agent;
 
 // The chat's transcript and its provider session. One turn at a time.
-public sealed class Conversation(IProviderSession session, string systemPrompt, TurnLimits limits, IReadOnlyList<ToolDefinition> tools) : IDisposable
+// The system prompt is built anew on every clear, so edited skill files take effect without a restart.
+public sealed class Conversation(IProviderSession session, Func<string> systemPrompt, TurnLimits limits, IReadOnlyList<ToolDefinition> tools) : IDisposable
 {
     private readonly List<ChatMessage> _transcript = [];
+    private string _systemPrompt = systemPrompt();
 
     public IReadOnlyList<ChatMessage> Transcript => _transcript;
 
     public async Task SendAsync(string text, ITurnHost host, CancellationToken cancellationToken)
     {
         _transcript.Add(new ChatMessage(ChatRole.User, text));
-        var request = new TurnRequest(systemPrompt, _transcript.ToList(), tools, limits);
+        var request = new TurnRequest(_systemPrompt, _transcript.ToList(), tools, limits);
         await session.RunTurnAsync(request, new Recorder(_transcript, host), cancellationToken).ConfigureAwait(false);
     }
 
     public Task ClearAsync()
     {
+        var fresh = systemPrompt();
         _transcript.Clear();
+        _systemPrompt = fresh;
         return session.ResetAsync();
     }
 

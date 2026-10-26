@@ -48,12 +48,13 @@
 
 | setting | value |
 |---|---|
-| system prompt | "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely." |
+| system prompt | "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely." and "When a task needs a file or value you cannot find in the project, ask the user for it.", then the skill index (`Skills.md`) |
 | thinking | on |
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 |
 | length nudge | up to 2 per turn |
-| tools | the Editor tools (`EditorTools.md`) |
+| tools | the Editor tools (`EditorTools.md`) and `skill` (`Skills.md`) |
+| free rounds | rounds that call only `skill` |
 
 ## WebQwen provider
 

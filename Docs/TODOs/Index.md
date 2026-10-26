@@ -25,7 +25,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |
 | [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps (owner decision) |
 | [ValidationTool.md](ValidationTool.md) | Editor tools: agent cannot see validation issues |
-| [EditorSkills.md](EditorSkills.md) | Editor tools: no skill checklists for the model (owner decision) |
+| [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
+| [Wiki.md](Wiki.md) | Skills: the wiki the model asks for background knowledge |
 | [PartialPrefabs.md](PartialPrefabs.md) | Editor tools: no partial copies or overrides of prefabs |
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |

@@ -19,7 +19,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private Task? _turnTask;
     private bool _clearing;
 
-    public ChatPanelViewModel(IProviderSession session, ToolSet tools)
+    public ChatPanelViewModel(IProviderSession session, ToolSet tools, Func<string> systemPrompt)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -27,7 +27,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         CanFloat = true;
 
         _tools = tools;
-        _conversation = new Conversation(session, Prompts.System, Prompts.ChatLimits, tools.Definitions);
+        _conversation = new Conversation(session, systemPrompt, Prompts.ChatLimits, tools.Definitions);
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
     }

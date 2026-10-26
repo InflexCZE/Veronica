@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.UI.UniDock.Docking;
+using Veronica.Agent;
 using Veronica.Agent.Tools;
 using Veronica.Tools;
 
@@ -89,8 +90,11 @@ public sealed class EditorShell
         _panel.Select();
     }
 
+    private static readonly SkillShelf Skills = new();
+
     private static readonly ITool[] Tools =
     [
+        new SkillTool(() => Skills.Current),
         new FindContentTool(),
         new ListFolderTool(),
         new ReadTool(),
@@ -108,7 +112,7 @@ public sealed class EditorShell
     private static ChatPanelViewModel CreatePanel()
     {
         var provider = LocalModel.CreateProvider();
-        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools));
+        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools), Skills.SystemPrompt);
         provider.StatusChanged += panel.ShowStatus;
         return panel;
     }

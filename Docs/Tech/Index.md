@@ -8,4 +8,5 @@
 | [EditorUi.md](EditorUi.md) | Veronica's panel, menu, fonts and theme inside the Editor |
 | [Agent.md](Agent.md) | `Veronica.Agent.dll`: providers, tool loop, conversation |
 | [EditorTools.md](EditorTools.md) | Agent tools for content authoring: find, read, write, create prefab, partial and definition, show |
+| [Skills.md](Skills.md) | Skills and wiki: how the model learns to reach modding goals |
 | [WebQwenProtocol.md](WebQwenProtocol.md) | How `Veronica.dll` runs `WebQwen.exe` and talks to it |
