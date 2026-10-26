@@ -64,8 +64,27 @@
 - The status line shows the start, the load progress, ready, and each round's prompt and decode speed.
 - The provider holds the Editor's VRAM (`IGpuShare`, `VramSharing.md`) for each whole turn and for each model load until it completes. `GpuShare` counts the holds: the first one frees the Editor's VRAM, the last one gives it back. A hold that cannot free the VRAM fails the turn.
 
+## OpenAI-compatible provider
+
+- Any server that speaks OpenAI chat completions; the target is a local llama.cpp server. It uses one streamed request per round, run by `ClientToolLoop`.
+- It is selected by environment variables; there is no UI yet (`Docs/TODOs/ProviderSelection.md`). Without them, WebQwen is the provider.
+
+| variable | value |
+|---|---|
+| `VERONICA_PROVIDER` | `openai` |
+| `VERONICA_OPENAI_URL` | base URL including the API prefix, e.g. `http://localhost:8080/v1` |
+| `VERONICA_OPENAI_MODEL` | optional; unset takes the first model the server lists |
+| `VERONICA_OPENAI_API_KEY` | optional bearer token |
+
+- The request body is plain chat completions plus `max_tokens`, which llama.cpp takes and OpenAI's own reasoning models reject. Thinking stays at the server's default, which is on for thinking models.
+- Reasoning is read from `reasoning_content` or `reasoning`. Each assistant message sends its reasoning back as `reasoning_content` (see Conversation).
+- Round stats come from llama.cpp's `timings`; other servers show none.
+- Any server certificate is accepted: locally hosted servers are typically self-signed.
+- The Editor keeps its VRAM: the server may be remote or on another GPU.
+
 ## Testing
 
 - `Veronica.Tests` covers `ClientToolLoop` with scripted rounds, and the editing layer behind the Editor tools (see `EditorTools.md`).
 - It also runs WebQwen.exe's `Server` and the plugin's `WebQwenConnection` against each other over in-memory pipes, with a scripted engine in place of the model.
+- The OpenAI-compatible provider runs against a scripted HTTP handler.
 - Process lifetime and the live model are tested by hand in the Editor.

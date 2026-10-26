@@ -8,6 +8,7 @@ Veronica is a modding assistant integrated into the VRage3 / Space Engineers 2 E
 - **Providers**: the model that drives the MCP tools. The plugin works with any of them through the same tools.
   - `WebQwen.exe`: local model runtime. The plugin downloads it to the user's machine, starts it and interoperates with it.
   - `claude -p`: Claude Code CLI.
+  - Any OpenAI-compatible server, local or remote.
 
 ## Distribution
 

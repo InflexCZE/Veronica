@@ -111,9 +111,9 @@ public sealed class EditorShell
 
     private static ChatPanelViewModel CreatePanel()
     {
-        var provider = LocalModel.CreateProvider();
-        var panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools), Skills.SystemPrompt);
-        provider.StatusChanged += panel.ShowStatus;
+        ChatPanelViewModel? panel = null;
+        var provider = ModelProvider.Create(status => panel?.ShowStatus(status));
+        panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools), Skills.SystemPrompt);
         return panel;
     }
 

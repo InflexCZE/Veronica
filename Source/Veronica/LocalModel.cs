@@ -25,7 +25,7 @@ internal static class LocalModel
 
     // The Editor's Console shows the log in a font whose glyph fallback crashes the Editor
     // on characters it lacks (Docs/TODOs/EditorTextOutside.md).
-    private static string AsciiOnly(string text)
+    public static string AsciiOnly(string text)
     {
         if (text.All(char.IsAscii))
             return text;
