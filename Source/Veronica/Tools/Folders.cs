@@ -6,7 +6,8 @@ namespace Veronica.Tools;
 // Folders of the loaded mod, created like mkdir -p.
 internal static class Folders
 {
-    public static (ExplorerFolder Folder, bool Created) Ensure(LoadedProject project, string folderPath)
+    // assetsOnly: a folder for definitions, refused under AssetSources before anything is created there.
+    public static (ExplorerFolder Folder, bool Created) Ensure(LoadedProject project, string folderPath, bool assetsOnly = false)
     {
         string[] segments = ContentNames.Segments(folderPath);
         if (segments.Length == 0)
@@ -16,6 +17,8 @@ internal static class Folders
         bool created = false;
         foreach (string segment in segments)
         {
+            if (assetsOnly && folder is ExplorerAssetSourcesFolder)
+                throw new EditError($"{Content.Shown(folder)} holds source files; create definitions under Assets.");
             switch (folder.GetItemByName(segment))
             {
                 case ExplorerFolder existing:
@@ -31,6 +34,8 @@ internal static class Folders
             folder = made;
             created = true;
         }
+        if (assetsOnly && folder is ExplorerAssetSourcesFolder)
+            throw new EditError($"{Content.Shown(folder)} holds source files; create definitions under Assets.");
         return (folder, created);
     }
 }

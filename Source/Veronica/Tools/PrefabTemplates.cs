@@ -58,8 +58,8 @@ internal static class PrefabTemplates
     }
 }
 
-// Answers the generator's name dialog with the tool's name argument.
-internal sealed class NameAnswer(string name) : IAssetGeneratorInteractivity
+// Answers the generator's name dialog with the tool's name argument, or with the dialog's own suggestion when there is none.
+internal sealed class NameAnswer(string? name) : IAssetGeneratorInteractivity
 {
     // Some templates name their files themselves and never ask.
     public bool Asked { get; private set; }
@@ -67,8 +67,9 @@ internal sealed class NameAnswer(string name) : IAssetGeneratorInteractivity
     public Task<string?> QueryStringAsync(string title, string description, Func<string, string?>? validator = null, string? suggestedText = null, string? hintText = null)
     {
         Asked = true;
-        if (validator?.Invoke(name) is { } problem)
-            throw new EditError($"The name '{name}' is not accepted: {problem}");
-        return Task.FromResult<string?>(name);
+        string answer = name ?? suggestedText ?? throw new EditError("Give a name.");
+        if (validator?.Invoke(answer) is { } problem)
+            throw new EditError($"The name '{answer}' is not accepted: {problem}");
+        return Task.FromResult<string?>(answer);
     }
 }

@@ -15,6 +15,9 @@ The first set of agent tools that act on the loaded project. The target is build
 | `create_folder(folder_path)` | creates a folder and any missing parents |
 | `find_template(filter?)` | lists prefab templates |
 | `create_prefab(template, name, folder)` | generates a prefab's definition set from a template |
+| `create_partial(source, kind, folder, name?)` | creates a partial override or copy of a definition |
+| `create_definition(type, name, folder)` | creates a new definition of a type, with its defaults |
+| `show(target)` | selects an item in the Editor and opens it in the Render View |
 
 `add(a, b)` is removed when these land.
 
@@ -114,11 +117,35 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
 - After writing, generated assets whose processing failed are reprocessed, as the Editor's own create does: some need the files written after them.
 - The reply is one line per generated file, with its project-relative path and definition type: `Assets/MyThruster/MyThruster_IonThrusterDefinition.partialdef (ThrusterDefinition)`. Each path is a valid target.
 
+## create_partial
+
+- The Editor's "Create Partial Definition" menu, through the Editor's own generator, so the Editor's rules apply and come back as its errors: an override only of a read-only dependency's definition, one override per definition, no copies of configurations.
+  - **Override** changes the source wherever it is used.
+  - **Copy** is a new definition that starts as the source.
+  - In both, unchanged values follow the source.
+- Prefabs are refused (`Docs/TODOs/PartialPrefabs.md`).
+- `name` is optional: the default is the Editor's own suggestion (`Override of <source>`).
+- A name already used in the folder is an error rather than the Editor's rename prompt.
+
+## create_definition
+
+- The Editor's "Create Definition" menu, with the type picker and the rename replaced by `type` and `name`. It offers the menu's types and builds the definition as the menu does.
+- `type` is never guessed: an unknown type lists the types that contain its words.
+- The inspector's "Create New Definition" on a reference field is `create_definition` followed by `write`, so the model learns no extra syntax.
+
+## show
+
+- What a click and a double-click on the item do: select it in the Project Explorer and Property Inspector, and open it in the Render View.
+- The selection and the open are internal to the Editor, so the tool reaches them by reflection.
+- An item without a preview of its own is opened through the asset that owns it, as a prefab is through its prefab binding. The model names any file of the thing and the tool finds the preview.
+- An item with no preview at all is only selected, and the reply gives the Editor's reason.
+- Items that open their own editor or an external app (FMOD projects, particle effects, ...) are only selected; opening them is the user's call.
+
 ## Assemblies
 
 | assembly | holds | tested by |
 |---|---|---|
-| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
+| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
 | `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation) and the `ITool` wrappers | by hand in the Editor: a full thruster build on the dev mod, reverted with git |
 
 - `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.

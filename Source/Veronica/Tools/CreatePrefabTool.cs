@@ -38,9 +38,7 @@ public sealed class CreatePrefabTool : ITool
             throw new EditError($"'{name}' cannot be part of a file name.");
 
         var (templatePath, option) = PrefabTemplates.Resolve(project, template);
-        var (folder, _) = Folders.Ensure(project, folderPath);
-        if (folder is ExplorerAssetSourcesFolder)
-            throw new EditError($"{Content.Shown(folder)} holds source files; create prefabs under Assets.");
+        var (folder, _) = Folders.Ensure(project, folderPath, assetsOnly: true);
         Content.RequireWritable(folder);
 
         var answer = new NameAnswer(name);

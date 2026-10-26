@@ -74,4 +74,37 @@ public sealed class NamingTests
         Assert.Equal(3, Templates.Filter(All, "Thrust").Count);
         Assert.Equal(["Blocks/Breakable/Hydrogen Thrusters"], Templates.Filter(All, "hydro thrust"));
     }
+
+    private sealed class BlockKindDefinition;
+    private sealed class BlockGroupDefinition;
+    private sealed class VoxelMaterialDefinition;
+    private sealed class VoxelRenderMaterialDefinition;
+
+    private static readonly Type[] DefinitionChoices =
+        [typeof(BlockKindDefinition), typeof(BlockGroupDefinition), typeof(VoxelMaterialDefinition), typeof(VoxelRenderMaterialDefinition)];
+
+    [Theory]
+    [InlineData("BlockKindDefinition")]
+    [InlineData("blockkind")]
+    [InlineData(" BlockKind ")]
+    public void Definition_type_by_short_name_with_or_without_suffix(string query) =>
+        Assert.Equal(typeof(BlockKindDefinition), DefinitionTypes.Pick(DefinitionChoices, query));
+
+    [Fact]
+    public void Definition_type_by_full_name() =>
+        Assert.Equal(typeof(VoxelMaterialDefinition), DefinitionTypes.Pick(DefinitionChoices, typeof(VoxelMaterialDefinition).FullName!));
+
+    [Fact]
+    public void Definition_type_never_guesses_from_words()
+    {
+        var e = Assert.Throws<EditError>(() => DefinitionTypes.Pick(DefinitionChoices, "voxel material"));
+        Assert.Contains("types containing its words: VoxelMaterialDefinition, VoxelRenderMaterialDefinition.", e.Message);
+    }
+
+    [Fact]
+    public void Definition_type_without_candidates_says_so()
+    {
+        var e = Assert.Throws<EditError>(() => DefinitionTypes.Pick(DefinitionChoices, "Thruster"));
+        Assert.Contains("none contains its words", e.Message);
+    }
 }

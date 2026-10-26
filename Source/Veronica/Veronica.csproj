@@ -37,6 +37,8 @@
     <Reference Include="$(EditorDir)Avalonia.Controls.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.Xaml.dll" Private="false" />
+    <Reference Include="$(EditorDir)Microsoft.Extensions.Logging.Abstractions.dll" Private="false" />
+    <Reference Include="$(EditorDir)ReactiveUI.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.ContentPipeline.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.ContentPipeline.Game.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Core.dll" Private="false" />
@@ -46,6 +48,7 @@
     <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Plugin.Editor.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Render.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.UI.Shared.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.UI.UniDock.dll" Private="false" />
     <Reference Include="$(EditorDir)SharpGen.Runtime.dll" Private="false" />
     <Reference Include="$(EditorDir)SharpGen.Runtime.COM.dll" Private="false" />

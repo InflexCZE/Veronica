@@ -100,6 +100,9 @@ public sealed class EditorShell
         new CreateFolderTool(),
         new FindTemplateTool(),
         new CreatePrefabTool(),
+        new CreatePartialTool(),
+        new CreateDefinitionTool(),
+        new ShowTool(),
     ];
 
     private static ChatPanelViewModel CreatePanel()
