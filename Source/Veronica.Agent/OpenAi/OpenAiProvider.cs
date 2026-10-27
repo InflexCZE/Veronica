@@ -242,7 +242,10 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             (int)promptTokens,
             (int)completionTokens,
             promptMs > 0 ? promptTokens * 1000 / promptMs : 0,
-            completionMs > 0 ? completionTokens * 1000 / completionMs : 0);
+            completionMs > 0 ? completionTokens * 1000 / completionMs : 0)
+        {
+            CachedTokens = Number(timings, "cache_n") is { } cached ? (int)cached : null,
+        };
     }
 
     private static async Task<string> ErrorMessageAsync(HttpResponseMessage response, CancellationToken cancellationToken)

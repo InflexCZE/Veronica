@@ -7,7 +7,7 @@
 - A provider opens sessions. A session runs one whole assistant turn, tool rounds included: `IProviderSession.RunTurnAsync(TurnRequest, ITurnHost, CancellationToken)`.
 - The chat sees only `ITurnHost` callbacks, in model order: round start, text and reasoning deltas, round stats, tool calls, notices, transcript appends. Every provider drives the same host.
 - Providers whose wire protocol is one model request per round (WebQwen) implement a `StreamRound` function. `ClientToolLoop` wraps it into a session.
-- Providers that run their own loop (`claude -p`) implement `RunTurnAsync` directly.
+- Providers that run their own loop (`claude -p`, `ClaudeProvider.md`) implement `RunTurnAsync` directly.
 
 ## Tool loop
 

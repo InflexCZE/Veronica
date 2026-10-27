@@ -112,8 +112,9 @@ public sealed class EditorShell
     private static ChatPanelViewModel CreatePanel()
     {
         ChatPanelViewModel? panel = null;
-        var provider = ModelProvider.Create(status => panel?.ShowStatus(status));
-        panel = new ChatPanelViewModel(provider.OpenSession(), new ToolSet(Tools), Skills.SystemPrompt);
+        var tools = new ToolSet(Tools);
+        var provider = ModelProvider.Create(status => panel?.ShowStatus(status), tools);
+        panel = new ChatPanelViewModel(provider.OpenSession(), tools, Skills.SystemPrompt);
         return panel;
     }
 

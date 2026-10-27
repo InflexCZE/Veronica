@@ -95,7 +95,7 @@ public sealed class OpenAiProviderTests
             "{\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}",
             "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c1\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"pa\"}}]}}]}",
             "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"th\\\":1}\"}}]}}]}",
-            "{\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}],\"timings\":{\"prompt_n\":100,\"prompt_ms\":500,\"predicted_n\":20,\"predicted_ms\":1000}}"));
+            "{\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}],\"timings\":{\"cache_n\":880,\"prompt_n\":100,\"prompt_ms\":500,\"predicted_n\":20,\"predicted_ms\":1000}}"));
         using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null), server);
 
         var deltas = await Stream(provider);
@@ -107,7 +107,7 @@ public sealed class OpenAiProviderTests
             new TextDelta("Hello"),
             new ToolCallDelta(0, "c1", "read", "{\"pa"),
             new ToolCallDelta(0, null, null, "th\":1}"),
-            new StatsDelta(new RoundStats(100, 20, 200, 20)),
+            new StatsDelta(new RoundStats(100, 20, 200, 20) { CachedTokens = 880 }),
             new DoneDelta("tool_calls"),
         ], deltas);
     }

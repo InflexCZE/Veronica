@@ -34,7 +34,13 @@ public sealed record ToolResult(string Output, bool EarnedReward = false);
 public sealed record ToolCallContext(bool LastRound);
 
 // PromptTokens counts only the tokens actually prefilled, not those served from the KV cache.
-public sealed record RoundStats(int PromptTokens, int CompletionTokens, double PrefillTokensPerSecond, double DecodeTokensPerSecond);
+// CachedTokens are the ones served from it, when the server reports them.
+public sealed record RoundStats(int PromptTokens, int CompletionTokens, double PrefillTokensPerSecond, double DecodeTokensPerSecond)
+{
+    public int? CachedTokens { get; init; }
+
+    public int? ContextTokens => CachedTokens + PromptTokens + CompletionTokens;
+}
 
 public sealed record LengthNudge(Func<string> Message, int? MaxNudges = null);
 
