@@ -18,7 +18,7 @@ Environment variables, read once when the panel is created, like the OpenAI-comp
 - Each turn starts one `claude -p` process. The first turn of a conversation passes a new `--session-id`, later turns `--resume` it. `/clear` starts a new session id.
 - The user message goes on stdin.
 - The working directory is `%LOCALAPPDATA%\Veronica\Claude`. It holds the system prompt file and the MCP config each turn passes.
-- Claude Code keeps the conversation. Veronica's transcript mirrors what the stream reports; it is not sent back to Claude.
+- Claude Code keeps the conversation. Veronica's transcript mirrors what the stream reports, for the chat and for eval runs (`Eval.md`); it is not sent back to Claude.
 - The round limit is `--max-turns 100`. Reaching it ends the turn with the same "continue" notice as the other providers. The other turn limits (free rounds, rewards, nudges, thinking, max tokens) do not apply.
 - Stop kills the process tree. A tool that is running gets cancelled. The next turn resumes normally: Claude sees that its last call was interrupted.
 - The provider holds no VRAM.
@@ -68,7 +68,7 @@ Claude sees Veronica's tools and nothing else from the user's Claude Code setup.
 - It listens only with the Claude provider: from its first turn until the provider is disposed. A port already in use fails the turn with an error naming the port.
 - The server is named `veronica`, so Claude sees each tool as `mcp__veronica__<tool>`. The tools are the conversation's `ToolSet`.
 - During a turn, every call goes through the turn, whichever client sent it: it shows in the chat and obeys Stop. The transcript holds only the calls Claude reports in its stream.
-- A call from Claude carries the id of its tool call in the stream: the endpoint matches the call by tool name and arguments, so the chat and the transcript agree.
+- A call from Claude carries the id of its tool call in the stream: the endpoint matches the call by tool name and arguments, so the chat, the transcript and eval timings agree.
 - Outside a turn, a call runs directly and leaves no trace.
 - One tool runs at a time, across all calls. A call that arrived during a turn and was still waiting when the turn ended does not run.
 

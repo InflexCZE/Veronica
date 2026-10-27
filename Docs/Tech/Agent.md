@@ -40,7 +40,7 @@
 ## Conversation
 
 - `Conversation` holds the transcript and the session. It sends one turn at a time: the user message is appended, then the turn's messages as the loop reports them.
-- The transcript lives in memory only and is lost when the Editor exits.
+- The transcript lives in memory only and is lost when the Editor exits. Eval runs also record it to a file (`Eval.md`).
 - `/clear` empties it and resets the session.
 - Assistant messages keep their reasoning. Thinking models need their own earlier reasoning: their chat template otherwise renders an empty think block, and the model stops closing `</think>`. WebQwen also reuses its KV cache only when every earlier reply comes back exactly as it was generated.
 

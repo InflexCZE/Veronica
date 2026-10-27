@@ -3,6 +3,7 @@ using System.Globalization;
 using Avalonia.Threading;
 using Keen.VRage.Editor.Services.Docking;
 using Veronica.Agent;
+using Veronica.Agent.Eval;
 using Veronica.Agent.Tools;
 
 namespace Veronica.Ui;
@@ -65,6 +66,9 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         }
     }
 
+    // Set when an eval run drives or records this chat.
+    public RunControl? Run { get; set; }
+
     public bool IsBusy => _turn != null;
 
     public string SendLabel => IsBusy ? "Stop" : "Send";
@@ -98,21 +102,51 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         if (_turn != null || text.Length == 0)
             return;
         Draft = "";
+        Start(text);
+    }
 
+    // UI thread. Null when the message was taken, else why not.
+    public string? TrySend(string text)
+    {
+        text = text.Trim();
+        if (text.Length == 0)
+            return "The message is empty.";
+        if (_clearing)
+            return "The chat is being cleared.";
+        if (_turn != null)
+            return "A turn is running.";
+        Start(text);
+        return null;
+    }
+
+    // UI thread.
+    public void StopTurn() => _turn?.Cancel();
+
+    private void Start(string text)
+    {
         Messages.Add(new UserItem(text));
         _turnTask = RunTurnAsync(text);
     }
 
     private async Task RunTurnAsync(string text)
     {
-        _turn = new CancellationTokenSource();
+        var turn = _turn = new CancellationTokenSource();
         BusyChanged();
+        var run = Run;
+        var outcome = TurnOutcome.Answered;
+        string? error = null;
         try
         {
-            await _conversation.SendAsync(text, new UiHost(this), _turn.Token);
+            run?.TurnStarted(text);
+            ITurnHost host = new UiHost(this);
+            await _conversation.SendAsync(text, run?.Wrap(host) ?? host, turn.Token);
+            if (turn.IsCancellationRequested)
+                outcome = TurnOutcome.Stopped;
         }
         catch (Exception e)
         {
+            outcome = turn.IsCancellationRequested ? TurnOutcome.Stopped : TurnOutcome.Failed;
+            error = e.Message;
             Messages.Add(new NoticeItem(e.Message, true));
         }
         finally
@@ -120,6 +154,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             // Not disposed: Stop can complete the turn inline, inside the token's own Cancel().
             _turn = null;
             BusyChanged();
+            run?.TurnEnded(outcome, error);
         }
     }
 

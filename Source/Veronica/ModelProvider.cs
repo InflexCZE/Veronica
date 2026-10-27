@@ -17,6 +17,11 @@ internal static class ModelProvider
 
     private static bool IsClaude => Provider.Equals("claude", StringComparison.OrdinalIgnoreCase);
 
+    public static string Describe() =>
+        IsOpenAi ? $"openai {Environment.GetEnvironmentVariable("VERONICA_OPENAI_URL")} model={Environment.GetEnvironmentVariable("VERONICA_OPENAI_MODEL") ?? "(first listed)"}"
+        : IsClaude ? $"claude model={ReadClaudeSettings().Model}"
+        : "webqwen";
+
     public static IProvider Create(Action<string> showStatus, ToolSet tools)
     {
         if (IsOpenAi)
