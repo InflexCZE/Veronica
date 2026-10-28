@@ -21,7 +21,8 @@ public sealed class CreatePartialTool : ITool
     public string Description =>
         "Creates a partial definition of an existing definition in a mod folder. override changes the original wherever it is used " +
         "(only for read-only definitions such as Vanilla's, one per definition); copy makes a new definition that starts as the original. " +
-        "Unchanged values follow the original.";
+        "Unchanged values follow the original. A copy belongs to no prefab and nothing uses it until something references it: " +
+        "a new block's values are written on the definitions create_prefab listed.";
 
     public string Parameters => """
         {"type":"object","properties":{"source":{"type":"string","description":"The definition to override or copy, e.g. IonThruster100_ThrusterEffectsComponentDefinition"},"kind":{"type":"string","enum":["override","copy"]},"folder":{"type":"string","description":"Folder inside the mod, e.g. Assets/MyMod"},"name":{"type":"string","description":"File name without extension; default 'Override of <source>' or 'Copy of <source>'"}},"required":["source","kind","folder"]}

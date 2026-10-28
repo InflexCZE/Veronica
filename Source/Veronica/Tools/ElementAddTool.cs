@@ -24,6 +24,7 @@ public sealed class ElementAddTool : ITool
         return new ToolResult(await EditorProject.RunAsync(project =>
         {
             var (asset, fields) = Content.Definition(project, target);
+            Prefabs.RequireNotBinding(asset);
             Content.RequireWritable(asset);
             string reply = Elements.Add(fields.Root, path, key, type, new ProjectLinks(project, asset));
             Content.Save(asset);

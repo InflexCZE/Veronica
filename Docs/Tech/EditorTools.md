@@ -57,6 +57,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - A transform (a struct of a position and a quaternion, such as a dummy's `Transform.Transform`) prints on one line too, as the inspector shows it: the position and Euler angles in degrees, never the quaternion: `{Position: {X: 0.125, Y: 0.125, Z: 0.646}, Euler: {X: 0, Y: 0, Z: 0}}`. A pointer to read further reads to a small model as a transform with no position; the quaternion beside Euler angles would say the same rotation twice. Euler angles near X = +-90 degrees are in gimbal lock, where Y and Z can show as 180 instead of 0, as in the inspector; writing only some axes keeps the others as shown. A transform cannot be written `null`, since its default holds a zero quaternion.
 - The Euler angles are the stored Euler hint while it still matches the quaternion, else angles derived from the quaternion, the same rule as the inspector's. Euler hint fields themselves are hidden, as the inspector hides them.
 - An empty reference prints `none`. A null object prints `= null`.
+- A prefab binding (the item a prefab is named by) shows no fields of its own, so reading it lists the block's definitions instead, in `create_prefab`'s form: its prefabs, their compositions and the component definitions those point at, from the binding's own project only, since components shared with other blocks are not part of this one. Reading a field path on it, or writing or editing elements on it, fails with the same list. An empty definition reads to a small model as the place to look for the block's fields.
 - Reading an enum field by its exact path also lists the enum's values.
 - Limits:
   - A list shows its first 5 elements, then `... (+N more, read "Dummies[5]" and on)`.
@@ -129,6 +130,7 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
   - **Override** changes the source wherever it is used.
   - **Copy** is a new definition that starts as the source.
   - In both, unchanged values follow the source.
+  - The description says a copy belongs to no prefab and nothing uses it until something references it, so a new block's values go on the definitions `create_prefab` listed: a small model copies a block's definitions and edits the copies, which the block never uses.
 - Prefabs are refused (`Docs/TODOs/PartialPrefabs.md`).
 - `name` is optional: the default is the Editor's own suggestion (`Override of <source>`).
 - A name already used in the folder is an error rather than the Editor's rename prompt.

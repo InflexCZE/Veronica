@@ -26,6 +26,7 @@ public sealed class WriteTool : ITool
         return new ToolResult(await EditorProject.RunAsync(project =>
         {
             var (asset, fields) = Content.Definition(project, target);
+            Prefabs.RequireNotBinding(asset);
             Content.RequireWritable(asset);
             string reply = FieldWriter.Write(fields.Root, path, value, new ProjectLinks(project, asset));
             Content.Save(asset);

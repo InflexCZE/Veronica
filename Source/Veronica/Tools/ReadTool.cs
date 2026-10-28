@@ -22,6 +22,9 @@ public sealed class ReadTool : ITool
         return new ToolResult(await EditorProject.RunAsync(project =>
         {
             var (asset, fields) = Content.Definition(project, target);
+            if (path.Length == 0 && Prefabs.IsBinding(asset))
+                return $"{Content.Describe(asset)}:\nA prefab binding, with no fields of its own; {Prefabs.Definitions(asset)}";
+            Prefabs.RequireNotBinding(asset);
             return $"{Content.Describe(asset)}:\n{FieldReader.Read(fields.Root, path, new ProjectLinks(project, asset))}";
         }, cancellationToken));
     }
