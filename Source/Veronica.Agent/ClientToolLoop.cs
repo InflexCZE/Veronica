@@ -12,7 +12,7 @@ public static class ClientToolLoop
         $"Stopped after {maxRounds} tool rounds in one turn. Send a new message (e.g. \"continue\") if the work is unfinished.";
 
     public static string SilentWaitOutput(string tool) =>
-        $"You wrote nothing for the user with this call, so there is nothing for them to answer. Write your question to the user as text, in the same reply as {tool}.";
+        $"You wrote nothing for the user with this call, so there is nothing for them to answer. In one reply, write your question to the user and call {tool}.";
 
     public static IProviderSession CreateSession(StreamRound stream) => new Session(stream);
 
