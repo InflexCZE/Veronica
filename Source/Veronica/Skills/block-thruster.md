@@ -1,6 +1,6 @@
 ---
 name: block-thruster
-description: Use when a new block made with create-block produces thrust.
+description: Use after create-block made the block, when it produces thrust; it does not create the block.
 ---
 Needs:
 - thrust class: Ion, Hydrogen or Atmospheric (Ion and Atmospheric draw Electricity, Hydrogen draws Hydrogen)
