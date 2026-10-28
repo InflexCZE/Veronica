@@ -86,6 +86,19 @@ public sealed class SkillTests
 
         var result = await tool.ExecuteAsync(Args("""{"name":"Create-Block"}"""), CancellationToken.None);
 
+        Assert.StartsWith("the steps\n\nTo work this skill, call activate_skill(\"create-block\") first", result.Output);
+    }
+
+    [Fact]
+    public async Task Tool_DoesNotAskToActivateTheActiveSkill()
+    {
+        var skill = new Skill("create-block", "d", "the steps", ["a"]);
+        var plan = new SkillPlan();
+        plan.Activate(skill);
+        var tool = new SkillTool(() => [skill], plan);
+
+        var result = await tool.ExecuteAsync(Args("""{"name":"create-block"}"""), CancellationToken.None);
+
         Assert.Equal("the steps", result.Output);
     }
 

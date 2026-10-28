@@ -144,7 +144,11 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
         if (skill == null)
             return Task.FromResult(new ToolResult(notFound));
         plan.MarkRead(skill.Name);
-        return Task.FromResult(new ToolResult(skill.Body));
+        // Small models that read a skill tend to follow its steps without activating it, and then lose the plan.
+        var activate = string.Equals(plan.ActiveSkill, skill.Name, StringComparison.OrdinalIgnoreCase)
+            ? ""
+            : $"\n\nTo work this skill, call {ActivateSkillTool.ToolName}(\"{skill.Name}\") first: its plan is then tracked item by item.";
+        return Task.FromResult(new ToolResult(skill.Body + activate));
     }
 
     public static Skill? Find(IReadOnlyList<Skill> all, JsonElement arguments, out string notFound)

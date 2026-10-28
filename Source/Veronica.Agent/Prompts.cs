@@ -8,7 +8,7 @@ public static class Prompts
         "Messages in <harness> tags come from the Editor, not the user; the user has not seen them.";
 
     public const string SkillIntro =
-        "Skills are plans and step lists for modding tasks. Read the one that covers the task with skill(name), " +
+        "Skills are plans and step lists for modding tasks. Before using any other tool, read the one that covers the task with skill(name), " +
         "then call activate_skill(name) on the one that best fits the next steps and work its plan one item at a time.";
 
     public static string SystemWith(IReadOnlyList<Skill> skills) =>
