@@ -17,7 +17,7 @@ Plan:
 - Next skill: activate the skill of what the block does; without one, mirror a vanilla block's values and show the block
 
 Steps:
-1. Ask the user for the name and folder, unless the task gives them, and wait for the answer.
+1. activate_skill("create-block"), then ask the user for the name and folder, unless the task gives them, and wait for the answer.
 2. find_template("<what it does>") and pick the template of that function. Breakable templates expect fractured and deformed models, NonBreakable ones do not.
 3. create_prefab(template, name, folder). The reply lists every generated file with its definition type; name files from that list, as file names differ per template.
 4. On the block definition (its type ends in BlockDefinition, e.g. PowerableBlockDefinition):
