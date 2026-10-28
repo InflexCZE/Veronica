@@ -13,7 +13,7 @@ public static class Prompts
         "How we work:\n" +
         "1. Understand the task. Ask the user for what you cannot find in the project.\n" +
         "2. Read the skills that may cover it with skill(name).\n" +
-        "3. Activate the one that fits the task best with activate_skill(name). The Editor then gives you its plan one item at a time.\n" +
+        "3. Activate the one that fits the task best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item only, using the skill's steps. When its work is done, call mark_completed with a short proof of what you did; " +
         "when it does not apply, call mark_skipped with the reason. The Editor then names the next item.\n\n" +
         "Skills:";
