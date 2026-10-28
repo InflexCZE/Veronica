@@ -22,6 +22,8 @@ public sealed class FieldReader
 
     public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines)
     {
+        if (Transforms.WalkEuler(root, path) is { } euler)
+            return Transforms.ReadEuler(euler);
         var (member, canonical) = path.Trim().Length == 0 ? (root, "") : FieldWalker.Walk(root, path);
         return Dump(member, canonical, links, maxLines);
     }

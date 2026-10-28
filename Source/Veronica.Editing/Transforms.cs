@@ -8,6 +8,8 @@ namespace Veronica.Editing;
 
 // A transform prints and writes as {Position: {...}, Euler: {X, Y, Z}} with Euler in degrees, as the
 // inspector shows it; the quaternion behind it never appears.
+public sealed record EulerPath(MemberReference Orientation, string Path, string? Axis);
+
 public static class Transforms
 {
     public const string EulerName = "Euler";
@@ -15,9 +17,80 @@ public static class Transforms
     public static string Render(MemberReference position, MemberReference orientation, IContentLinks links) =>
         $"{{{position.Name}: {FieldReader.Describe(position, links)}, {EulerName}: {RenderVector(EulerDegrees(orientation))}}}";
 
+    // "<transform>.Euler" and "<transform>.Euler.X" address the angles; they are not fields, so the walker
+    // never sees them. Null when the path does not end at a transform's Euler.
+    public static EulerPath? WalkEuler(MemberReference root, string path)
+    {
+        var segments = FieldPath.Parse(path);
+        int at = -1;
+        for (int i = segments.Count - 1; i >= 0 && i >= segments.Count - 2; i--)
+        {
+            if (!segments[i].Bracketed && string.Equals(segments[i].Text, EulerName, StringComparison.OrdinalIgnoreCase))
+            {
+                at = i;
+                break;
+            }
+        }
+        if (at <= 0)
+            return null;
+
+        var prefix = new System.Text.StringBuilder();
+        foreach (var segment in segments.Take(at))
+            prefix.Append(segment.Bracketed ? $"[{segment.Text}]" : (prefix.Length == 0 ? segment.Text : "." + segment.Text));
+        var (member, canonical) = FieldWalker.Walk(root, prefix.ToString());
+        if (!Fields.TryGetTransform(member, out _, out var orientation))
+            return null;
+
+        canonical = FieldPath.Member(canonical, EulerName);
+        if (at == segments.Count - 1)
+            return new EulerPath(orientation, canonical, null);
+        var last = segments[^1];
+        string axis = last.Text.ToUpperInvariant();
+        if (last.Bracketed || axis is not ("X" or "Y" or "Z"))
+            throw new EditError($"'{last.Text}' is not a field of '{canonical}'. Fields: X, Y, Z.");
+        return new EulerPath(orientation, FieldPath.Member(canonical, axis), axis);
+    }
+
+    public static string ReadEuler(EulerPath euler)
+    {
+        var degrees = EulerDegrees(euler.Orientation);
+        return euler.Axis == null
+            ? $"{euler.Path} = {RenderVector(degrees)} (Euler degrees)"
+            : $"{euler.Path} = {Axis(degrees, euler.Axis).ToString(CultureInfo.InvariantCulture)} (float, degrees)";
+    }
+
+    public static string WriteEuler(EulerPath euler, JsonElement value)
+    {
+        if (!Fields.IsWritable(euler.Orientation))
+            throw new EditError($"'{euler.Path}' is read-only.");
+        string before = Describe(euler);
+        string text;
+        if (euler.Axis != null)
+            text = $"{{{euler.Axis}: {(value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText())}}}";
+        else if (value.ValueKind == JsonValueKind.Object)
+            text = "{" + string.Join(", ", value.EnumerateObject().Select(p => $"{p.Name}: {(p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() : p.Value.GetRawText())}")) + "}";
+        else if (value.ValueKind == JsonValueKind.String)
+            text = value.GetString()!;
+        else
+            throw new EditError($"'{euler.Path}' takes {{X: ..., Y: ..., Z: ...}} in degrees; axes left out keep their value.");
+        SetEuler(euler.Orientation, ParseEuler(euler.Path, text, EulerDegrees(euler.Orientation)));
+        return $"{euler.Path}: {before} -> {Describe(euler)}";
+    }
+
+    private static string Describe(EulerPath euler)
+    {
+        var degrees = EulerDegrees(euler.Orientation);
+        return euler.Axis == null ? RenderVector(degrees) : Axis(degrees, euler.Axis).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static float Axis(Vector3 v, string axis) => axis switch { "X" => v.X, "Y" => v.Y, _ => v.Z };
+
+    // Field names of a transform as the tools show them: the quaternion is replaced by its Euler angles.
+    public static string FieldNames(MemberReference position) => $"{position.Name}, {EulerName}";
+
     public static void Write(string path, MemberReference position, MemberReference orientation, JsonElement value)
     {
-        string fieldList = $"{position.Name}, {EulerName}";
+        string fieldList = FieldNames(position);
         Dictionary<string, string> given = value.ValueKind switch
         {
             JsonValueKind.Object => value.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString()! : p.Value.GetRawText(), StringComparer.OrdinalIgnoreCase),
@@ -43,12 +116,15 @@ public static class Transforms
         foreach (var (field, parsed) in positionUpdates)
             field.SetValue<object?>(parsed);
         if (euler is { } degrees)
-        {
-            orientation.SetValue<object?>(Quaternion.CreateFromEuler(ToRadians(degrees)));
-            var hint = FindHint(orientation);
-            if (!hint.IsDefault)
-                hint.SetValue<object?>(degrees);
-        }
+            SetEuler(orientation, degrees);
+    }
+
+    private static void SetEuler(MemberReference orientation, Vector3 degrees)
+    {
+        orientation.SetValue<object?>(Quaternion.CreateFromEuler(ToRadians(degrees)));
+        var hint = FindHint(orientation);
+        if (!hint.IsDefault)
+            hint.SetValue<object?>(degrees);
     }
 
     // The inspector shows the stored hint while it still matches the quaternion, else angles derived from it.

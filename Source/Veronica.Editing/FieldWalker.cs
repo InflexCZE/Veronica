@@ -68,6 +68,11 @@ public static class FieldWalker
     private static MemberReference Child(MemberReference parent, string parentPath, string name)
     {
         var visible = Fields.VisibleMembers(parent);
+        // A transform's quaternion is never addressed: its angles are the Euler path (Transforms.WalkEuler).
+        bool transform = Fields.TryGetTransform(parent, out var position, out var orientation);
+        if (transform)
+            visible.RemoveAll(m => m.Name == orientation.Name);
+
         var exact = visible.Where(m => m.Name == name).ToList();
         if (exact.Count == 1)
             return exact[0];
@@ -76,7 +81,8 @@ public static class FieldWalker
         if (loose.Count == 1)
             return loose[0];
 
-        string fields = visible.Count == 0 ? "(none)" : string.Join(", ", visible.Select(m => m.Name));
+        string fields = transform ? Transforms.FieldNames(position)
+            : visible.Count == 0 ? "(none)" : string.Join(", ", visible.Select(m => m.Name));
         throw new EditError($"'{name}' is not a field of {Where(parentPath)}. Fields: {fields}.");
     }
 

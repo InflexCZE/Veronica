@@ -10,6 +10,8 @@ public static class FieldWriter
     {
         if (path.Trim().Length == 0)
             throw new EditError("Give the path of the field to write, e.g. 'UIData.Name'.");
+        if (Transforms.WalkEuler(root, path) is { } euler)
+            return Transforms.WriteEuler(euler, value);
 
         return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links));
     }

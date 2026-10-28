@@ -243,6 +243,37 @@ public sealed class FieldEditTests
     }
 
     [Fact]
+    public void Transform_euler_reads_and_writes_by_path()
+    {
+        Write("Dummies[0].Transform.Transform.Euler", "\"{X: 90}\"");
+        Write("Dummies[0].Transform.Transform.Euler.Z", "30");
+
+        var transform = _sample.Dummies[0].Transform;
+        Assert.Equal(new Vector3(90, 0, 30), transform.EulerHint);
+        Assert.Equal(Quaternion.CreateFromEuler(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(30))), transform.Transform.Orientation);
+        Assert.Equal("Dummies[0].Transform.Transform.Euler = {X: 90, Y: 0, Z: 30} (Euler degrees)", Read("Dummies[0].Transform.Transform.Euler"));
+        Assert.Equal("Dummies[0].Transform.Transform.Euler.X = 90 (float, degrees)", Read("dummies[0].transform.transform.euler.x"));
+    }
+
+    [Fact]
+    public void Transform_euler_takes_json_and_refuses_other_axes()
+    {
+        Write("Dummies[0].Transform.Transform.Euler", "{\"Y\": 45}");
+        Assert.Equal(new Vector3(0, 45, 0), _sample.Dummies[0].Transform.EulerHint);
+        Assert.Contains("Fields: X, Y, Z", Fails(() => Write("Dummies[0].Transform.Transform.Euler.W", "1")));
+    }
+
+    [Fact]
+    public void Transform_quaternion_is_not_addressable_and_errors_name_euler()
+    {
+        string read = Fails(() => Read("Dummies[0].Transform.Transform.Orientation"));
+        Assert.Contains("Fields: Position, Euler", read);
+        Assert.DoesNotContain("Orientation,", read);
+        Assert.Contains("Fields: Position, Euler", Fails(() => Write("Dummies[0].Transform.Transform.Orientation", "\"{X: 90}\"")));
+        Assert.Equal(Quaternion.Identity, _sample.Dummies[0].Transform.Transform.Orientation);
+    }
+
+    [Fact]
     public void Transform_parts_stay_writable_by_path()
     {
         Write("Dummies[0].Transform.Transform.Position", "\"{X: 1}\"");
