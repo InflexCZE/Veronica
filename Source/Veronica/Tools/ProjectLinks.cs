@@ -15,7 +15,7 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
 
     public ContentLink Find(string name, ReferenceSpec spec)
     {
-        var named = project.GetAvailableFiles().Where(f => ContentNames.Matches(f.ProjectRelativePath, name)).ToList();
+        var named = Content.Pick(project.GetAvailableFiles().ToList(), name);
         if (named.Count == 0)
             throw new EditError($"No content item named '{name}'; look it up with find_content.");
 
@@ -24,7 +24,7 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
         {
             1 => new ContentLink(fitting[0].AssetID, fitting[0].ProjectRelativePath),
             0 => throw new EditError($"'{name}' cannot go in this field, which takes {Expected(spec)}. Found: {string.Join(", ", named.Take(Content.MaxCandidates).Select(Content.Describe))}."),
-            _ => throw new EditError($"'{name}' matches several items; use a full path: {Content.Paths(fitting)}."),
+            _ => throw new EditError(Content.Ambiguous(name, fitting)),
         };
     }
 

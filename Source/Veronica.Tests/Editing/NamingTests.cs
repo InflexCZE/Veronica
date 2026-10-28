@@ -35,6 +35,77 @@ public sealed class NamingTests
     public void Content_names(string path, string query, bool matches) => Assert.Equal(matches, ContentNames.Matches(path, query));
 
     [Theory]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", @"Blocks/Ion/100/Models/Deformed", true)]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", @"Models\Deformed.model", true)]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", @"/100/models/deformed/", true)]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", @"Ion\Models\Deformed", false)]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", "Deformed", false)]
+    [InlineData(@"Assets\Blocks\Ion\100\Models\Deformed.model", @"odels\Deformed", false)]
+    public void Path_endings_match_whole_segments(string path, string query, bool matches) =>
+        Assert.Equal(matches, ContentNames.EndsWithPath(path, query));
+
+    private static readonly (string Path, string Project)[] Items =
+    [
+        (@"Assets\Blocks\Ion\100\Models\Deformed.model", "Vanilla"),
+        (@"Assets\Blocks\Ion\200\Models\Deformed.model", "Vanilla"),
+        (@"Assets\Mk2\Deformed.model", "MyMod"),
+        (@"Assets\Vanilla\Note.def", "MyMod"),
+    ];
+
+    private static List<string> Pick(string query) => ContentNames.Pick(Items, i => i.Path, i => i.Project, query).Select(i => i.Path).ToList();
+
+    [Theory]
+    [InlineData(@"Blocks/Ion/100/Models/Deformed", @"Assets\Blocks\Ion\100\Models\Deformed.model")]
+    [InlineData(@"100\Models\Deformed", @"Assets\Blocks\Ion\100\Models\Deformed.model")]
+    [InlineData(@"Vanilla/Assets/Blocks/Ion/200/Models/Deformed.model", @"Assets\Blocks\Ion\200\Models\Deformed.model")]
+    [InlineData(@"MyMod\Deformed", @"Assets\Mk2\Deformed.model")]
+    [InlineData(@"Vanilla\Note", @"Assets\Vanilla\Note.def")]
+    public void Pick_takes_shortened_paths_and_project_names(string query, string expected) => Assert.Equal([expected], Pick(query));
+
+    [Fact]
+    public void Pick_returns_every_candidate_when_ambiguous()
+    {
+        Assert.Equal(3, Pick("Deformed").Count);
+        Assert.Equal(2, Pick(@"Models\Deformed").Count);
+        Assert.Equal(2, Pick(@"Vanilla\Deformed").Count);
+    }
+
+    private static List<string> Pick((string Path, string Project)[] items, string query) =>
+        ContentNames.Pick(items, i => i.Path, i => i.Project, query).Select(i => $"{i.Project}:{i.Path}").ToList();
+
+    [Fact]
+    public void Pick_prefers_exact_names_over_endings() =>
+        Assert.Equal(["MyMod:Assets\\Mk2\\Deformed.model"], Pick(
+        [
+            (@"Assets\Mk2\Deformed.model", "MyMod"),
+            (@"Assets\Other\Assets\Mk2\Deformed.model", "Vanilla"),
+        ], @"Assets\Mk2\Deformed"));
+
+    [Fact]
+    public void Pick_lets_an_exact_path_beat_a_project_named_assets() =>
+        Assert.Equal(["MyMod:Assets\\Mk2\\Deformed.model"], Pick(
+        [
+            (@"Assets\Mk2\Deformed.model", "MyMod"),
+            (@"Assets\X\Mk2\Deformed.model", "Assets"),
+        ], @"Assets\Mk2\Deformed"));
+
+    [Fact]
+    public void Pick_prefers_a_global_ending_over_none_in_a_project_named_like_a_folder() =>
+        Assert.Equal(["Vanilla:Assets\\Blocks\\Ion\\Models\\Deformed.model"], Pick(
+        [
+            (@"Assets\Blocks\Ion\Models\Deformed.model", "Vanilla"),
+            (@"Assets\Other\Models\Deformed.model", "Blocks"),
+        ], @"Blocks\Ion\Models\Deformed"));
+
+    [Fact]
+    public void Pick_narrows_to_a_project_named_like_a_folder_when_nothing_is_exact() =>
+        Assert.Equal(["Blocks:Assets\\Mine\\Ion\\Models\\Deformed.model"], Pick(
+        [
+            (@"Assets\Blocks\Ion\Models\Deformed.model", "Vanilla"),
+            (@"Assets\Mine\Ion\Models\Deformed.model", "Blocks"),
+        ], @"Blocks\Ion\Models\Deformed"));
+
+    [Theory]
     [InlineData("particle configuration", "ParticleEffectsBudgetConfiguration.def", null, true)]
     [InlineData("particle configuration", "Override of X.partialdef", "ParticleEffectsConfiguration", true)]
     [InlineData("ion_thruster", "IonThrusterDefinition.def", null, true)]

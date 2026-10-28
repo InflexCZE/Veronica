@@ -27,32 +27,31 @@ public sealed class FindContentTool : ITool
 
     private static string Find(LoadedProject project, string query, string? folder)
     {
-        string root = ContentNames.Normalize(folder ?? "");
-        string scope = root.Length == 0 ? "" : root + "\\";
+        string scope = "";
+        HashSet<LoadedProject>? inProjects = null;
+        if (ContentNames.Normalize(folder ?? "").Length > 0)
+        {
+            var found = Folders.Existing(project, folder!);
+            if (found.Count == 0)
+                throw new EditError($"No folder '{folder}' in the mod or its dependencies; see list_folder.");
+            scope = ContentNames.Normalize(found[0].Folder.ProjectRelativePath) + "\\";
+            inProjects = found.Select(f => f.Owner).ToHashSet();
+        }
         var order = Content.ProjectOrder(project);
         var matches = project.GetAvailableFiles().OfType<ExplorerAssetFile>()
+            .Where(f => inProjects == null || inProjects.Contains(f.Project))
             .Where(f => scope.Length == 0 || ContentNames.Normalize(f.ProjectRelativePath).StartsWith(scope, StringComparison.OrdinalIgnoreCase))
             .Where(f => ContentNames.QueryMatches(query, f.Name, Content.DefinitionTypeName(f)))
             .OrderBy(f => order.GetValueOrDefault(f.Project, int.MaxValue))
             .ThenBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        if (matches.Count == 0 && scope.Length > 0 && !project.EnumerateProjectDAG().Any(p => HasFolder(p, root)))
-            throw new EditError($"No folder '{folder}' in the mod or its dependencies; see list_folder.");
         if (matches.Count == 0)
-            return scope.Length == 0 ? $"Nothing matches '{query}'." : $"Nothing under '{folder}' matches '{query}'.";
+            return scope.Length == 0 ? $"Nothing matches '{query}'." : $"Nothing under '{scope.TrimEnd('\\')}' matches '{query}'.";
 
         var lines = Content.ByProject(project, matches.Take(MaxResults));
         if (matches.Count > MaxResults)
             lines.Add($"... {matches.Count - MaxResults} more; narrow the query or pass folder.");
         return string.Join("\n", lines);
-    }
-
-    private static bool HasFolder(LoadedProject project, string path)
-    {
-        ExplorerFolder? folder = project.GetRootFolder();
-        foreach (string segment in ContentNames.Segments(path))
-            folder = folder?.GetItemByName(segment) as ExplorerFolder;
-        return folder != null;
     }
 }

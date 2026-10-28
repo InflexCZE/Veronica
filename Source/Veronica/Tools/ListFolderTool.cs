@@ -26,17 +26,7 @@ public sealed class ListFolderTool : ITool
 
     private static string List(LoadedProject project, string folderPath)
     {
-        string[] segments = ContentNames.Segments(folderPath);
-        var found = new List<(LoadedProject Owner, ExplorerFolder Folder)>();
-        foreach (var owner in project.EnumerateProjectDAG())
-        {
-            ExplorerFolder? folder = owner.GetRootFolder();
-            foreach (string segment in segments)
-                folder = folder?.GetItemByName(segment) as ExplorerFolder;
-            if (folder != null)
-                found.Add((owner, folder));
-        }
-
+        var found = Folders.Existing(project, folderPath);
         if (found.Count == 0)
             throw new EditError($"No folder '{folderPath}' in the mod or its dependencies; list a parent folder to see what exists.");
 

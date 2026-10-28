@@ -15,18 +15,33 @@ internal static class Content
 
     public static ExplorerAssetFile Resolve(LoadedProject project, string target)
     {
-        var matches = project.GetAvailableFiles().OfType<ExplorerAssetFile>()
-            .Where(f => ContentNames.Matches(f.ProjectRelativePath, target))
-            .ToList();
+        var matches = Pick(project.GetAvailableFiles().OfType<ExplorerAssetFile>().ToList(), target);
         return matches.Count switch
         {
             1 => matches[0],
-            0 => throw new EditError(project.GetAvailableFiles().Any(f => ContentNames.Matches(f.ProjectRelativePath, target))
+            0 => throw new EditError(Pick(project.GetAvailableFiles().ToList(), target).Count > 0
                 ? $"'{target}' is a source file, not a definition or asset."
                 : $"No content item named '{target}'; look it up with find_content."),
-            _ => throw new EditError($"'{target}' matches several items; use a full path: {Paths(matches)}."),
+            _ => throw new EditError(Ambiguous(target, matches)),
         };
     }
+
+    // Several projects can hold one path; only the project name in front tells them apart.
+    public static string Ambiguous(string target, IReadOnlyCollection<ExplorerItem> items)
+    {
+        var list = items.OrderBy(i => i.ProjectRelativePath, StringComparer.OrdinalIgnoreCase).ThenBy(i => i.Project.Name).ToList();
+        string shown = string.Join(", ", list.Take(MaxCandidates).Select(i => $"{i.ProjectRelativePath} in {i.Project.Name}"));
+        if (list.Count > MaxCandidates)
+            shown += $", ... ({list.Count - MaxCandidates} more)";
+        string message = $"'{target}' matches several items; use a full path: {shown}.";
+        var shared = list.GroupBy(i => i.ProjectRelativePath, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
+        if (shared != null)
+            message += $" To pick one of the same path, lead it with its project name, e.g. {shared.First().Project.Name}/{shared.Key.Replace('\\', '/')}.";
+        return message;
+    }
+
+    public static List<T> Pick<T>(IReadOnlyCollection<T> items, string query) where T : ExplorerItem =>
+        ContentNames.Pick(items, i => i.ProjectRelativePath, i => i.Project.Name, query);
 
     public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(LoadedProject project, string target)
     {
@@ -93,11 +108,4 @@ internal static class Content
         root.EnumerateProjectDAG().Select((p, i) => (p, i)).ToDictionary(x => x.p, x => x.i);
 
     public static string Shown(ExplorerItem item) => item.ProjectRelativePath.Length == 0 ? "(project root)" : item.ProjectRelativePath;
-
-    public static string Paths(IEnumerable<ExplorerItem> items)
-    {
-        var list = items.Select(i => i.ProjectRelativePath).OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-        string shown = string.Join(", ", list.Take(MaxCandidates));
-        return list.Count > MaxCandidates ? $"{shown}, ... ({list.Count - MaxCandidates} more)" : shown;
-    }
 }
