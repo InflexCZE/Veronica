@@ -126,7 +126,7 @@ public sealed class SkillPlan
     private int Current() => _items.FindIndex(i => i.State == PlanItemState.Open);
 
     private string WorkOn(int index) =>
-        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Do only this, then call {CompletePlanItemTool.ToolName}.";
+        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Do only this, yourself, then call {CompletePlanItemTool.ToolName}: completing an item does none of its work.";
 }
 
 public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan) : ITool
@@ -155,7 +155,7 @@ public sealed class CompletePlanItemTool(SkillPlan plan) : ITool
 
     public string Name => ToolName;
 
-    public string Description => "Marks the current item of the active skill's plan done and names the next one.";
+    public string Description => "Marks the current item of the active skill's plan done and names the next one. Call it only after you did the item's work yourself: completing does none of it.";
 
     public string Parameters => """{"type":"object","properties":{}}""";
 
