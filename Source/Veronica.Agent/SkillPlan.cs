@@ -203,7 +203,8 @@ public sealed class MarkSkippedTool(SkillPlan plan) : ITool
 
     public string Name => ToolName;
 
-    public string Description => "Marks the current item of the active skill's plan skipped, when it does not apply to the task, and names the next one.";
+    public string Description => "Marks the current item of the active skill's plan skipped, only when it does not apply to the task, and names the next one. " +
+        "If the item's work is already done, call mark_completed with proof instead.";
 
     public string Parameters => """
         {"type":"object","properties":{"reason":{"type":"string","description":"Why the item does not apply"}},"required":["reason"]}
