@@ -10,6 +10,7 @@ Needs:
 - what the block does: thrusts, lights, stores, ...
 
 Plan:
+- Get the name and folder from the user
 - Create the prefab from the template of what the block does
 - Fill block name and icon
 - Fill the models: model, fractured and deformed
