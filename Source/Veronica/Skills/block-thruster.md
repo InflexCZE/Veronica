@@ -8,7 +8,7 @@ Needs:
 - where each nozzle is on the model, unless the model is a vanilla thruster's, reworked
 
 Plan:
-- Fill thrust power and power use: both, from the comparable thruster unless the user wants more or less force; the template's values are placeholders, never defaults
+- Fill thrust power and power use: both, from the comparable thruster unless the user wants more or less force; the template's values are placeholders, never defaults: write ThrustPower even when the template's value looks close
 - Place the nozzle dummies: move the template's Thruster-type dummy to the nozzle position and scale; add one only for each extra nozzle
 - Set flame and sound if the user asked for it; otherwise skip this item
 - Show the block
