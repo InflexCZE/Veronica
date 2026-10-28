@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Veronica.Agent.Claude;
+namespace Veronica.Agent.Mcp;
 
 // Veronica's tools as an MCP Streamable HTTP endpoint on loopback: plain JSON responses, one request
 // per connection, no authentication.

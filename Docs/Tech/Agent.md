@@ -35,7 +35,7 @@
   - an unknown tool lists the tools there are;
   - arguments that are not a JSON object;
   - an exception thrown by the tool.
-- Tools run on a worker thread.
+- Tools run on a worker thread, one at a time, whichever source calls them: the chat's turn or an MCP client (`McpEndpoint.md`). Concurrent tools are never wanted; a call waits for the running one.
 - The tools are the Editor tools in `EditorTools.md`. Their descriptions say only what the model would not guess; the system prompt carries no tool guidance.
 
 ## Conversation

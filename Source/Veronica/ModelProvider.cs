@@ -1,9 +1,8 @@
-using System.Globalization;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
 using Veronica.Agent.Claude;
+using Veronica.Agent.Mcp;
 using Veronica.Agent.OpenAi;
-using Veronica.Agent.Tools;
 
 namespace Veronica;
 
@@ -22,7 +21,9 @@ internal static class ModelProvider
         : IsClaude ? $"claude model={ReadClaudeSettings().Model}"
         : "webqwen";
 
-    public static IProvider Create(Action<string> showStatus, ToolSet tools)
+    public static bool NeedsEndpoint => IsClaude;
+
+    public static IProvider Create(Action<string> showStatus, McpEndpoint endpoint)
     {
         if (IsOpenAi)
         {
@@ -38,8 +39,8 @@ internal static class ModelProvider
         if (IsClaude)
         {
             var settings = ReadClaudeSettings();
-            Log.Default.WriteLine($"[Veronica] Claude Code provider, model '{LocalModel.AsciiOnly(settings.Model)}', tools on port {settings.McpPort}.");
-            var claude = new ClaudeProvider(settings, tools);
+            Log.Default.WriteLine($"[Veronica] Claude Code provider, model '{LocalModel.AsciiOnly(settings.Model)}'.");
+            var claude = new ClaudeProvider(settings, endpoint);
             claude.StatusChanged += showStatus;
             return claude;
         }
@@ -53,17 +54,9 @@ internal static class ModelProvider
     private static ClaudeSettings ReadClaudeSettings()
     {
         string? model = Environment.GetEnvironmentVariable("VERONICA_CLAUDE_MODEL")?.Trim();
-        string port = Environment.GetEnvironmentVariable("VERONICA_MCP_PORT")?.Trim() ?? "";
-        int mcpPort = ClaudeSettings.DefaultMcpPort;
-        if (port.Length > 0 && !(int.TryParse(port, NumberStyles.None, CultureInfo.InvariantCulture, out mcpPort) && mcpPort is >= 1 and <= 65535))
-        {
-            Log.Default.WriteLine($"[Veronica] VERONICA_MCP_PORT '{LocalModel.AsciiOnly(port)}' is not a port, using {ClaudeSettings.DefaultMcpPort}.");
-            mcpPort = ClaudeSettings.DefaultMcpPort;
-        }
         return new ClaudeSettings(
             string.IsNullOrEmpty(model) ? ClaudeSettings.DefaultModel : model,
             Environment.GetEnvironmentVariable("VERONICA_CLAUDE_EFFORT"),
-            mcpPort,
             ClaudeSettings.DefaultWorkingDirectory);
     }
 }

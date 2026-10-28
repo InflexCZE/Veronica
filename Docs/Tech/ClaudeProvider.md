@@ -11,7 +11,8 @@ Environment variables, read once when the panel is created, like the OpenAI-comp
 | `VERONICA_PROVIDER` | `claude` |
 | `VERONICA_CLAUDE_MODEL` | optional; unset is `sonnet` |
 | `VERONICA_CLAUDE_EFFORT` | optional; unset passes no effort and the CLI's default applies |
-| `VERONICA_MCP_PORT` | optional; unset is 47812 |
+
+The endpoint's port is `VERONICA_MCP_PORT` (`McpEndpoint.md`).
 
 ## Turns
 
@@ -61,18 +62,15 @@ Claude sees Veronica's tools and nothing else from the user's Claude Code setup.
 - Claude Code still adds the signed-in account's email address to the first message. No flag removes it.
 - `--bare` would isolate in one flag but refuses subscription sign-in. `--safe-mode` also drops the MCP servers given on the command line.
 
-## MCP endpoint
+## Tool calls
 
-- MCP Streamable HTTP with plain JSON responses, on 127.0.0.1 at `VERONICA_MCP_PORT`. A raw loopback socket serves it rather than `HttpListener`, which needs a URL reservation for a non-admin user.
-- There is no authentication: any local MCP client can call Veronica's tools.
-- It listens only with the Claude provider: from its first turn until the provider is disposed. A port already in use fails the turn with an error naming the port.
-- The server is named `veronica`, so Claude sees each tool as `mcp__veronica__<tool>`. The tools are the conversation's `ToolSet`.
-- During a turn, every call goes through the turn, whichever client sent it: it shows in the chat and obeys Stop. The transcript holds only the calls Claude reports in its stream.
-- A call from Claude carries the id of its tool call in the stream: the endpoint matches the call by tool name and arguments, so the chat, the transcript and eval timings agree.
-- Outside a turn, a call runs directly and leaves no trace.
-- One tool runs at a time, across all calls. A call that arrived during a turn and was still waiting when the turn ended does not run.
+- The tools reach Claude through the MCP endpoint (`McpEndpoint.md`), which the provider needs: it starts when the panel is created. Each turn passes its URL in the MCP config.
+- During a turn the provider routes every endpoint call into the turn, whichever client sent it: it shows in the chat and obeys Stop. The transcript holds only the calls Claude reports in its stream.
+- A call from Claude carries the id of its tool call in the stream: the provider matches the call by tool name and arguments, so the chat, the transcript and eval timings agree.
+- A call that arrived during a turn and was still waiting when the turn ended does not run.
+- Between turns a call runs directly, like with any provider.
 
 ## Testing
 
-- No unit tests: the provider and the endpoint are thin glue over Claude Code and HTTP, and a unit test may not start Claude Code.
+- No unit tests: the provider is thin glue over Claude Code, and a unit test may not start Claude Code.
 - They are tested by hand: a chat in the Editor with tool calls, Stop during a tool call and the turn after it, `/clear`, and a call from another MCP client between turns.

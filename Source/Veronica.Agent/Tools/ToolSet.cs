@@ -19,6 +19,9 @@ public sealed class ToolSet
 {
     private readonly Dictionary<string, ITool> _tools;
 
+    // One tool at a time, whoever calls: a chat turn, an MCP client, or both at once.
+    private readonly SemaphoreSlim _running = new(1, 1);
+
     public ToolSet(IEnumerable<ITool> tools)
     {
         _tools = tools.ToDictionary(t => t.Name, StringComparer.Ordinal);
@@ -48,6 +51,7 @@ public sealed class ToolSet
         if (arguments.ValueKind != JsonValueKind.Object)
             return new ToolResult($"The arguments of {call.Name} must be a JSON object. Write the call again.");
 
+        await _running.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             return await tool.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
@@ -59,6 +63,10 @@ public sealed class ToolSet
         catch (Exception e)
         {
             return new ToolResult($"{call.Name} failed: {e.Message}");
+        }
+        finally
+        {
+            _running.Release();
         }
     }
 }

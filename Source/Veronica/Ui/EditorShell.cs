@@ -119,9 +119,11 @@ public sealed class EditorShell
     {
         ChatPanelViewModel? panel = null;
         var tools = new ToolSet(Tools);
-        var provider = ModelProvider.Create(status => panel?.ShowStatus(status), tools);
+        var endpoint = ToolEndpoint.Create(tools);
+        var provider = ModelProvider.Create(status => panel?.ShowStatus(status), endpoint);
         panel = new ChatPanelViewModel(provider.OpenSession(), tools, Plan, Skills.SystemPrompt);
         EvalHook.Attach(panel, Skills.SystemPrompt(), tools.Definitions);
+        ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);
         return panel;
     }
 

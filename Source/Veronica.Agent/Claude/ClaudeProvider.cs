@@ -1,15 +1,13 @@
 using System.Diagnostics;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Veronica.Agent.Tools;
+using Veronica.Agent.Mcp;
 
 namespace Veronica.Agent.Claude;
 
-public sealed record ClaudeSettings(string Model, string? Effort, int McpPort, string WorkingDirectory)
+public sealed record ClaudeSettings(string Model, string? Effort, string WorkingDirectory)
 {
     public const string DefaultModel = "sonnet";
-    public const int DefaultMcpPort = 47812;
     public const int MaxTurns = 100;
 
     public static string DefaultWorkingDirectory =>
@@ -17,8 +15,8 @@ public sealed record ClaudeSettings(string Model, string? Effort, int McpPort, s
 }
 
 // Each turn runs one claude -p, which runs its own tool loop. Veronica's tools reach it through the
-// MCP endpoint, which also serves any other local MCP client.
-public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IProvider, IDisposable
+// MCP endpoint.
+public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint) : IProvider
 {
     // How long a tool call waits for its tool_use block to show up on Claude Code's stdout.
     private static readonly TimeSpan MatchWait = TimeSpan.FromSeconds(5);
@@ -32,62 +30,45 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
     };
 
     private readonly object _gate = new();
-    private readonly SemaphoreSlim _toolGate = new(1, 1);
-    private McpServer? _server;
+    private readonly SemaphoreSlim _matchGate = new(1, 1);
     private Turn? _turn;
+    private IDisposable? _routing;
+    private bool _announced;
     private int _externalCalls;
 
     public event Action<string>? StatusChanged;
 
     public IProviderSession OpenSession() => new Session(this);
 
-    public void Dispose()
+    private string StartEndpoint()
     {
+        string url = endpoint.Start();
+        bool announce;
         lock (_gate)
         {
-            _server?.Dispose();
-            _server = null;
+            announce = !_announced;
+            _announced = true;
         }
+        if (announce)
+            StatusChanged?.Invoke($"Claude Code ({settings.Model}), tools at {url}");
+        return url;
     }
 
-    private McpServer Server()
+    // Every call during a turn runs in the turn, whichever client sent it, or not at all when the
+    // turn ended while it waited. One at a time, so each call takes the oldest matching tool_use.
+    private async Task<ToolResult?> RouteAsync(Turn turn, string name, string arguments, CancellationToken stop)
     {
-        lock (_gate)
-        {
-            if (_server != null)
-                return _server;
-            try
-            {
-                _server = new McpServer(settings.McpPort, tools.Definitions, CallToolAsync);
-            }
-            catch (SocketException e)
-            {
-                throw new ClaudeException($"Veronica's tool endpoint cannot listen on 127.0.0.1:{settings.McpPort} ({e.Message}). Set VERONICA_MCP_PORT to a free port.");
-            }
-        }
-        StatusChanged?.Invoke($"Claude Code ({settings.Model}), tools at {_server.Url}");
-        return _server;
-    }
-
-    // One tool at a time, from any client. A call that arrived during a turn runs in that turn, or not
-    // at all when the turn ended while it waited.
-    private async Task<ToolResult?> CallToolAsync(string name, string arguments, CancellationToken stop)
-    {
-        Turn? arrivedIn = CurrentTurn;
-        await _toolGate.WaitAsync(stop).ConfigureAwait(false);
+        await _matchGate.WaitAsync(stop).ConfigureAwait(false);
         try
         {
-            var turn = CurrentTurn;
-            if (arrivedIn != null && arrivedIn != turn)
+            if (CurrentTurn != turn)
                 return null;
-            if (turn == null)
-                return await tools.ExecuteAsync(new ToolCall(NextId(), name, arguments), stop).ConfigureAwait(false);
             string id = await turn.MatchAsync(name, arguments, MatchWait).ConfigureAwait(false) ?? NextId();
             return await turn.Host.OnToolCallAsync(new ToolCall(id, name, arguments), new ToolCallContext(false), turn.Cancellation).ConfigureAwait(false);
         }
         finally
         {
-            _toolGate.Release();
+            _matchGate.Release();
         }
     }
 
@@ -110,6 +91,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
         {
             if (_turn != null)
                 throw new InvalidOperationException("A Claude turn is already running.");
+            _routing = endpoint.Route((name, arguments, stop) => RouteAsync(turn, name, arguments, stop));
             _turn = turn;
         }
     }
@@ -118,9 +100,13 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
     {
         lock (_gate)
         {
-            if (_turn == turn)
-                _turn = null;
+            if (_turn != turn)
+                return;
+            _turn = null;
+            _routing?.Dispose();
+            _routing = null;
         }
+        turn.End();
     }
 
     private List<string> Arguments(string systemPromptFile, string mcpConfigFile, string sessionFlag, string sessionId)
@@ -164,11 +150,16 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
     private sealed class Turn(ITurnHost host, CancellationToken cancellation)
     {
         private readonly List<ToolCall> _unmatched = [];
+        private readonly CancellationTokenSource _ended = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         private TaskCompletionSource _added = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public ITurnHost Host { get; } = host;
 
-        public CancellationToken Cancellation { get; } = cancellation;
+        // Cancelled by Stop or by the turn's end: a call still waiting for the tool lock then must not
+        // run in a turn that is over.
+        public CancellationToken Cancellation => _ended.Token;
+
+        public void End() => _ended.Cancel();
 
         public void Add(ToolCall call)
         {
@@ -241,7 +232,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
         {
             string message = request.Transcript.LastOrDefault(m => m.Role == ChatRole.User)?.Content
                 ?? throw new ArgumentException("The turn has no user message.", nameof(request));
-            var server = provider.Server();
+            string url = provider.StartEndpoint();
 
             var turn = new Turn(host, cancellationToken);
             provider.Begin(turn);
@@ -252,7 +243,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, ToolSet tools) : IPr
                 string promptFile = Path.Combine(directory, "system-prompt.md");
                 string mcpFile = Path.Combine(directory, "mcp.json");
                 File.WriteAllText(promptFile, request.SystemPrompt);
-                File.WriteAllText(mcpFile, McpConfig(server.Url));
+                File.WriteAllText(mcpFile, McpConfig(url));
                 var arguments = provider.Arguments(promptFile, mcpFile, _started ? "--resume" : "--session-id", _sessionId);
 
                 using var process = ClaudeProcess.Start(arguments, directory, ChildEnvironment, message);
