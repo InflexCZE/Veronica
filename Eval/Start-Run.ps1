@@ -1,10 +1,11 @@
 # Starts one eval run (Docs/Tech/Eval.md): fresh Editor on a clean dev mod, recording into a new run folder.
-# Prints RunDir, Port and Pid as soon as the Editor is started; Wait-Ready.ps1 waits for it to load.
+# Prints RunDir, Port, Pid and McpPort as soon as the Editor is started; Wait-Ready.ps1 waits for it to load.
 param(
     [Parameter(Mandatory = $true)][string]$Task,
     [string]$LlamaUrl = 'http://localhost:8080/v1',
     [string]$Model = '',
-    [int]$Port = 47811
+    [int]$Port = 47811,
+    [int]$McpPort = 47812
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,6 +80,9 @@ $env:VERONICA_OPENAI_URL = $LlamaUrl
 $env:VERONICA_OPENAI_MODEL = $Model
 $env:VERONICA_CONTROL_PORT = "$Port"
 $env:VERONICA_RUN_DIR = $runDir
+# The fork plays the user's Editor steps (moving a dummy) by calling the tools through the MCP endpoint.
+$env:VERONICA_MCP = '1'
+$env:VERONICA_MCP_PORT = "$McpPort"
 
 $editor = Start-Process -FilePath $props.EditorExe -ArgumentList $props.EditorLaunchArgs -WorkingDirectory $props.GameDir -PassThru
 # Windows PowerShell reports no ExitCode unless the handle was opened while the process ran.
@@ -93,9 +97,11 @@ $runJson = [ordered]@{
     editor  = $editorName
     pid     = $editor.Id
     port    = $Port
+    mcpPort = $McpPort
 } | ConvertTo-Json
 [IO.File]::WriteAllText((Join-Path $runDir 'run.json'), $runJson, (New-Object Text.UTF8Encoding $false))
 
 "RunDir=$runDir"
 "Port=$Port"
 "Pid=$($editor.Id)"
+"McpPort=$McpPort"
