@@ -98,8 +98,8 @@ public sealed class EditorShell
     [
         new SkillTool(() => Skills.Current, Plan),
         new ActivateSkillTool(() => Skills.Current, Plan),
-        new CompletePlanItemTool(Plan),
-        new SkipPlanItemTool(Plan),
+        new MarkCompletedTool(Plan),
+        new MarkSkippedTool(Plan),
         new FindContentTool(),
         new ListFolderTool(),
         new ReadTool(),

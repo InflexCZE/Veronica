@@ -11,7 +11,8 @@ public enum PlanItemState
     Skipped,
 }
 
-public sealed record PlanItem(string Text, PlanItemState State, string? SkipReason = null);
+// Note is the model's proof for a completed item, or its reason for a skipped one.
+public sealed record PlanItem(string Text, PlanItemState State, string? Note = null);
 
 // The active skill's plan and the skills the model has read, held outside the transcript.
 // It lasts across turns until the plan is through or the chat is cleared.
@@ -26,7 +27,7 @@ public sealed class SkillPlan
 
     public static IReadOnlySet<string> ToolNames { get; } = new HashSet<string>
     {
-        SkillTool.ToolName, ActivateSkillTool.ToolName, CompletePlanItemTool.ToolName, SkipPlanItemTool.ToolName,
+        SkillTool.ToolName, ActivateSkillTool.ToolName, MarkCompletedTool.ToolName, MarkSkippedTool.ToolName,
     };
 
     public string? ActiveSkill
@@ -59,22 +60,29 @@ public sealed class SkillPlan
     {
         lock (_lock)
         {
-            var result = new StringBuilder();
-            if (_skill != null && Current() >= 0)
-                result.Append($"This replaces the plan of {_skill}, whose open items are dropped. ");
+            int current = Current();
+            if (current >= 0 && string.Equals(_skill, skill.Name, StringComparison.OrdinalIgnoreCase))
+                return $"{_skill} is already active. {WorkOn(current)}";
+            // Only the last item may still be open: in a chain it is the hand-off to the next skill. An earlier
+            // open item would be dropped without a word, so the model has to close it first.
+            var open = Enumerable.Range(0, Math.Max(0, _items.Count - 1))
+                .Where(i => _items[i].State == PlanItemState.Open)
+                .ToList();
+            if (open.Count > 0)
+                return $"{_skill} still has open items: " +
+                    string.Join("; ", open.Select(i => $"{i + 1}. {_items[i].Text}")) +
+                    $". Before activating another skill, call {MarkCompletedTool.ToolName} with proof for each one you did, " +
+                    $"or {MarkSkippedTool.ToolName} with the reason it does not apply.";
             _skill = skill.Name;
             _items = skill.Plan.Select(i => new PlanItem(i, PlanItemState.Open)).ToList();
-            result.Append($"Skill {skill.Name} is active. Its plan:");
-            for (int i = 0; i < _items.Count; i++)
-                result.Append($"\n{i + 1}. {_items[i].Text}");
-            result.Append('\n').Append(WorkOn(0));
+            var result = new StringBuilder($"Skill {skill.Name} is active. ").Append(WorkOn(0));
             if (_read.Add(skill.Name))
-                result.Append("\n\nThe skill:\n").Append(skill.Body);
+                result.Append("\n\nThe skill:\n").Append(skill.Overview);
             return result.ToString();
         }
     }
 
-    public string Complete() => Close(PlanItemState.Done, null);
+    public string Complete(string proof) => Close(PlanItemState.Done, proof);
 
     public string Skip(string reason) => Close(PlanItemState.Skipped, reason);
 
@@ -87,7 +95,7 @@ public sealed class SkillPlan
             if (current < 0 || reply.Contains(EndTurnMarker, StringComparison.Ordinal))
                 return null;
             return $"<harness>You ended your turn, but item {current + 1} of {_items.Count} of {_skill} is still open: {_items[current].Text}. " +
-                $"Continue it, call {CompletePlanItemTool.ToolName} if it is done, or call {SkipPlanItemTool.ToolName} with a reason if it does not fit. " +
+                $"Continue it, call {MarkCompletedTool.ToolName} with proof if you did it, or call {MarkSkippedTool.ToolName} with a reason if it does not apply. " +
                 $"If you asked the user something, they have not seen this reminder and have not answered yet: to wait for their answer, reply with just {EndTurnMarker}</harness>";
         }
     }
@@ -104,15 +112,19 @@ public sealed class SkillPlan
 
     public static string StripEndTurnMarker(string text) => text.Replace(EndTurnMarker, "", StringComparison.Ordinal).Trim();
 
-    private string Close(PlanItemState state, string? reason)
+    private string Close(PlanItemState state, string note)
     {
         lock (_lock)
         {
             int current = Current();
             if (current < 0)
                 return $"No skill is active. Call {ActivateSkillTool.ToolName} first.";
-            var item = _items[current] = _items[current] with { State = state, SkipReason = reason };
-            var closed = state == PlanItemState.Done ? $"Done: {item.Text}." : $"Skipped: {item.Text} ({reason}).";
+            if (note.Length == 0)
+                return state == PlanItemState.Done
+                    ? $"{MarkCompletedTool.ToolName} needs proof: one line on what you did for the item."
+                    : $"{MarkSkippedTool.ToolName} needs a reason.";
+            var item = _items[current] = _items[current] with { State = state, Note = note };
+            var closed = state == PlanItemState.Done ? $"Done: {item.Text} ({note})." : $"Skipped: {item.Text} ({note}).";
             int next = Current();
             if (next >= 0)
                 return $"{closed} {WorkOn(next)}";
@@ -126,7 +138,7 @@ public sealed class SkillPlan
     private int Current() => _items.FindIndex(i => i.State == PlanItemState.Open);
 
     private string WorkOn(int index) =>
-        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Do only this, yourself, then call {CompletePlanItemTool.ToolName}: completing an item does none of its work.";
+        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Do only this, yourself; once its work is done, call {MarkCompletedTool.ToolName} with proof of what you did. Marking does none of the work.";
 }
 
 public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan) : ITool
@@ -136,7 +148,7 @@ public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPl
     public string Name => ToolName;
 
     public string Description =>
-        "Makes a skill the active one and starts its plan, item by item. Replaces the active skill's plan.";
+        "Makes a skill the active one and starts its plan; the Editor then names its items one at a time. Replaces a plan whose only open item is its last.";
 
     public string Parameters => """
         {"type":"object","properties":{"name":{"type":"string","description":"Skill name, e.g. create-block"}},"required":["name"]}
@@ -149,35 +161,43 @@ public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPl
     }
 }
 
-public sealed class CompletePlanItemTool(SkillPlan plan) : ITool
+public sealed class MarkCompletedTool(SkillPlan plan) : ITool
 {
-    public const string ToolName = "complete_plan_item";
+    public const string ToolName = "mark_completed";
 
     public string Name => ToolName;
 
-    public string Description => "Marks the current item of the active skill's plan done and names the next one. Call it only after you did the item's work yourself: completing does none of it.";
-
-    public string Parameters => """{"type":"object","properties":{}}""";
-
-    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
-        Task.FromResult(new ToolResult(plan.Complete()));
-}
-
-public sealed class SkipPlanItemTool(SkillPlan plan) : ITool
-{
-    public const string ToolName = "skip_plan_item";
-
-    public string Name => ToolName;
-
-    public string Description => "Skips the current item of the active skill's plan, when it does not fit the task, and names the next one.";
+    public string Description =>
+        "Marks the current item of the active skill's plan completed and names the next one. Call it only after you did the item's work yourself, " +
+        "with proof: one line on what you did. Marking does none of the work.";
 
     public string Parameters => """
-        {"type":"object","properties":{"reason":{"type":"string","description":"Why the item does not fit"}},"required":["reason"]}
+        {"type":"object","properties":{"proof":{"type":"string","description":"One line on what you did for this item"}},"required":["proof"]}
         """;
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
-        var reason = arguments.TryGetProperty("reason", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString()!.Trim() : "";
-        return Task.FromResult(new ToolResult(reason.Length == 0 ? $"{ToolName} needs a reason." : plan.Skip(reason)));
+        return Task.FromResult(new ToolResult(plan.Complete(Text(arguments, "proof"))));
+    }
+
+    internal static string Text(JsonElement arguments, string name) =>
+        arguments.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString()!.Trim() : "";
+}
+
+public sealed class MarkSkippedTool(SkillPlan plan) : ITool
+{
+    public const string ToolName = "mark_skipped";
+
+    public string Name => ToolName;
+
+    public string Description => "Marks the current item of the active skill's plan skipped, when it does not apply to the task, and names the next one.";
+
+    public string Parameters => """
+        {"type":"object","properties":{"reason":{"type":"string","description":"Why the item does not apply"}},"required":["reason"]}
+        """;
+
+    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new ToolResult(plan.Skip(MarkCompletedTool.Text(arguments, "reason"))));
     }
 }

@@ -48,7 +48,7 @@
 
 | setting | value |
 |---|---|
-| system prompt | who Veronica is, to ask the user for what cannot be found in the project, that `<harness>` messages come from the Editor and the user has not seen them, then how skills are worked and the skill index (`Skills.md`) |
+| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks, read the skills that may cover it, activate the one that fits best, then work its current item only and mark it with proof or a reason. Small models skipped activation or worked from memory when the procedure was spread over separate hints. Without skills, only the ask-the-user rule is left. |
 | thinking | on |
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 |

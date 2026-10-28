@@ -4,15 +4,23 @@ public static class Prompts
 {
     public const string System =
         "You are Veronica, a modding assistant inside the Space Engineers 2 Editor. Answer concisely.\n\n" +
-        "When a task needs a file or value you cannot find in the project, ask the user for it.\n\n" +
         "Messages in <harness> tags come from the Editor, not the user; the user has not seen them.";
 
-    public const string SkillIntro =
-        "Skills are plans and step lists for modding tasks. Before using any other tool, read the one that covers the task with skill(name), " +
-        "then call activate_skill(name) on the one that best fits the next steps and work its plan one item at a time.";
+    public const string AskForMissing =
+        "When a task needs a file or value you cannot find in the project, ask the user for it.";
 
+    public const string HowWeWork =
+        "How we work:\n" +
+        "1. Understand the task. Ask the user for what you cannot find in the project.\n" +
+        "2. Read the skills that may cover it with skill(name).\n" +
+        "3. Activate the one that fits the task best with activate_skill(name). The Editor then gives you its plan one item at a time.\n" +
+        "4. Work on the current item only, using the skill's steps. When its work is done, call mark_completed with a short proof of what you did; " +
+        "when it does not apply, call mark_skipped with the reason. The Editor then names the next item.\n\n" +
+        "Skills:";
+
+    // Without skills there is no plan to work, so only the ask-the-user rule of "How we work" is left.
     public static string SystemWith(IReadOnlyList<Skill> skills) =>
-        skills.Count == 0 ? System : System + "\n\n" + SkillIntro + SkillFiles.Index(skills);
+        skills.Count == 0 ? System + "\n\n" + AskForMissing : System + "\n\n" + HowWeWork + SkillFiles.Index(skills);
 
     public const string LengthNudge =
         "Your reply was cut off: you spent it all thinking. Stop deliberating and write your answer now.";

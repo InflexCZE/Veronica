@@ -4,7 +4,11 @@ using Veronica.Agent.Tools;
 
 namespace Veronica.Agent;
 
-public sealed record Skill(string Name, string Description, string Body, IReadOnlyList<string> Plan);
+public sealed record Skill(string Name, string Description, string Body, IReadOnlyList<string> Plan)
+{
+    // What the model reads: the steps without the plan, which the Editor hands out one item at a time.
+    public string Overview => SkillFiles.WithoutPlan(Body);
+}
 
 public sealed record SkillLoad(IReadOnlyList<Skill> Skills, IReadOnlyList<string> Problems);
 
@@ -117,6 +121,21 @@ public static class SkillFiles
         return block.Select(l => l[2..].Trim()).ToList();
     }
 
+    public static string WithoutPlan(string body)
+    {
+        var lines = body.Split('\n').ToList();
+        int heading = lines.FindIndex(l => l.Trim() == PlanHeading);
+        if (heading < 0)
+            return body;
+        int end = heading + 1;
+        while (end < lines.Count && lines[end].Trim().Length > 0)
+            end++;
+        while (end < lines.Count && lines[end].Trim().Length == 0)
+            end++;
+        lines.RemoveRange(heading, end - heading);
+        return string.Join("\n", lines).Trim();
+    }
+
     public static string Index(IReadOnlyList<Skill> skills)
     {
         var index = new StringBuilder();
@@ -132,7 +151,7 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
 
     public string Name => ToolName;
 
-    public string Description => "Returns a skill from the system prompt's skill list: its plan and steps.";
+    public string Description => "Returns a skill from the system prompt's skill list: what it needs and its steps.";
 
     public string Parameters => """
         {"type":"object","properties":{"name":{"type":"string","description":"Skill name, e.g. create-block"}},"required":["name"]}
@@ -144,11 +163,7 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
         if (skill == null)
             return Task.FromResult(new ToolResult(notFound));
         plan.MarkRead(skill.Name);
-        // Small models that read a skill tend to follow its steps without activating it, and then lose the plan.
-        var activate = string.Equals(plan.ActiveSkill, skill.Name, StringComparison.OrdinalIgnoreCase)
-            ? ""
-            : $"\n\nTo work this skill, call {ActivateSkillTool.ToolName}(\"{skill.Name}\") first: its plan is then tracked item by item.";
-        return Task.FromResult(new ToolResult(skill.Body + activate));
+        return Task.FromResult(new ToolResult(skill.Overview));
     }
 
     public static Skill? Find(IReadOnlyList<Skill> all, JsonElement arguments, out string notFound)

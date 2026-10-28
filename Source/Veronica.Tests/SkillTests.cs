@@ -18,6 +18,15 @@ public sealed class SkillTests
         Assert.Equal("Use for any new block.", skill.Description);
         Assert.Equal("Plan:\n- Do a\n- Do b\n\nSteps:\n1. a", skill.Body);
         Assert.Equal(["Do a", "Do b"], skill.Plan);
+        Assert.Equal("Steps:\n1. a", skill.Overview);
+    }
+
+    [Fact]
+    public void Overview_drops_only_the_plan_section()
+    {
+        var skill = SkillFiles.Parse("---\nname: x\ndescription: d\n---\nNeeds:\n- a\n\nPlan:\n- Do a\n\nIntro.\n\nSteps:\n1. a");
+
+        Assert.Equal("Needs:\n- a\n\nIntro.\n\nSteps:\n1. a", skill.Overview);
     }
 
     [Theory]
@@ -68,7 +77,7 @@ public sealed class SkillTests
 
         Assert.Empty(load.Skills);
         Assert.Empty(load.Problems);
-        Assert.Equal(Prompts.System, Prompts.SystemWith(load.Skills));
+        Assert.Equal(Prompts.System + "\n\n" + Prompts.AskForMissing, Prompts.SystemWith(load.Skills));
     }
 
     [Fact]
@@ -76,28 +85,17 @@ public sealed class SkillTests
     {
         var prompt = Prompts.SystemWith([new Skill("a", "Use for A.", "x", ["a"]), new Skill("b", "Use for B.", "y", ["b"])]);
 
-        Assert.EndsWith(Prompts.SkillIntro + "\n- a: Use for A.\n- b: Use for B.", prompt);
+        Assert.EndsWith(Prompts.HowWeWork + "\n- a: Use for A.\n- b: Use for B.", prompt);
+        Assert.Contains("How we work:", prompt);
+        Assert.Contains("mark_completed", prompt);
     }
 
     [Fact]
-    public async Task Tool_ReturnsBody_IgnoringCase()
+    public async Task Tool_ReturnsOverviewWithoutPlan_IgnoringCase()
     {
-        var tool = new SkillTool(() => [new Skill("create-block", "d", "the steps", ["a"])], new SkillPlan());
+        var tool = new SkillTool(() => [new Skill("create-block", "d", "Plan:\n- a\n\nthe steps", ["a"])], new SkillPlan());
 
         var result = await tool.ExecuteAsync(Args("""{"name":"Create-Block"}"""), CancellationToken.None);
-
-        Assert.StartsWith("the steps\n\nTo work this skill, call activate_skill(\"create-block\") first", result.Output);
-    }
-
-    [Fact]
-    public async Task Tool_DoesNotAskToActivateTheActiveSkill()
-    {
-        var skill = new Skill("create-block", "d", "the steps", ["a"]);
-        var plan = new SkillPlan();
-        plan.Activate(skill);
-        var tool = new SkillTool(() => [skill], plan);
-
-        var result = await tool.ExecuteAsync(Args("""{"name":"create-block"}"""), CancellationToken.None);
 
         Assert.Equal("the steps", result.Output);
     }

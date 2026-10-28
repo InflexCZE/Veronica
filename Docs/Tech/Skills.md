@@ -41,7 +41,7 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 ## Delivery
 
 - The system prompt ends with the skill index, one line per skill, so the model knows which skills exist without paying for their bodies.
-- `skill(name)` returns a skill's plan and steps. Rounds that call only `skill` or the plan tools are free: loading guidance must not cost the task its budget.
+- `skill(name)` returns a skill's overview: everything but its Plan section, so what it needs and its steps. Rounds that call only `skill` or the plan tools are free: loading guidance must not cost the task its budget.
 - A broken skill file is skipped and logged, so one bad edit does not take the other skills down.
 - Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. During development they are read straight from `Source/Veronica/Skills`; where an installed Veronica keeps them is open (`Docs/TODOs/SkillSources.md`).
 
@@ -49,27 +49,31 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 
 Small models drop steps: after a failed write, or after handing off to an appendix skill, they forget the procedure's remaining steps and report the work as done. A plan the harness tracks keeps the remaining work in front of the model.
 
-- Plan items and Steps are separate sections with no link between them. They are written to match and the model reads both. The items are a tuning surface of their own, and the place for deterministic checks later (`Docs/TODOs/PlanChecks.md`).
+- Plan items and Steps are separate sections with no link between them. They are written to match. The model reads the Steps, and gets the items from the Editor one at a time. The items are a tuning surface of their own, and the place for deterministic checks later (`Docs/TODOs/PlanChecks.md`).
+- A skill read shows no plan, and activating a skill names only its current item. Small models seeing the whole list mixed plan item numbers up with step numbers and worked ahead of the item they were on; each item is named when it becomes current, which is when it matters.
 - Items are actionable and lead the model without naming tool calls. A step that only some tasks need has an item that says when ("..., only when the user asks"). The model skips it otherwise.
 - Tools:
 
 | tool | does |
 |---|---|
-| `skill(name)` | reads a skill; the harness remembers it was read |
-| `activate_skill(name)` | makes the skill the active one and starts its plan. The result lists the items and names the first. A skill not read yet comes with its body, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
-| `complete_plan_item()` | marks the current item done and names the next |
-| `skip_plan_item(reason)` | skips the current item, with a reason; names the next |
+| `skill(name)` | reads a skill's overview; the harness remembers it was read |
+| `activate_skill(name)` | makes the skill the active one and starts its plan; the result names the first item. A skill not read yet comes with its overview, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
+| `mark_completed(proof)` | marks the current item completed, with one line on what was done; names the next |
+| `mark_skipped(reason)` | marks the current item skipped, with the reason it does not apply; names the next |
 
-- One active skill at a time. Activating another replaces the plan, open items included. Chained skills hand off through their last item, which names the skill to activate next. Only the last skill of a chain shows the result. Whether models abuse the replace is left to the eval runs.
-- Strict order: completing and skipping take no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so the strict order does not deadlock on an item that does not fit.
+- One active skill at a time. Chained skills hand off through their last item, which names the skill to activate next: activating another skill replaces a plan whose only open item is its last. Only the last skill of a chain shows the result.
+- Activating another skill while an earlier item is still open is refused, naming the open items. A replace used to drop them without a word: in eval runs a failed write was followed by the next skill, and the plan's "Fill the models" item was lost. Each open item now has to be marked completed or skipped first, with its proof or reason.
+- Strict order: marking takes no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so the strict order does not deadlock on an item that does not fit.
+- Marking an item completed needs proof: one line on what the model did. Ticking an item whose work never happened, or skipping one that applies, is a form of hallucination; small models did both, as if marking handed the work to the Editor. Stating what was done makes such a claim visible in the transcript, and the tool says that marking does none of the work.
+- The tools are named as marks in the past tense: they are called after the work, not to do it.
 - The next item is named only in the plan tools' results, not on every tool result: a reminder everywhere is noise the model learns to ignore. The two places a model loses its step also name it: the end gate below, and the length nudge, since a model cut off while thinking has lost track of where it was.
 - The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it; `/clear` drops it with what was read.
 - Rounds that call only the skill and plan tools are free, so bookkeeping does not eat the task's budget.
 - End gate: ending a turn with an item open sends the model back once (the loop's end nudge), naming the open item and the choices. The message is marked as coming from the Editor, and the system prompt says so: unmarked, a model takes it for the user turning down its question. A deliberate stop (asking the user) is a reply with a literal end marker, which the panel hides. Small models do not grasp "end your turn" but do emit a marker. The marker is explained only in that reminder, where it is needed. Ending again is let through, so no model loops. The reminder re-arms only after a tool call outside the skill and plan tools.
 - The end gate and the free rounds belong to the client tool loop. The Claude provider runs its own loop, so it gets the plan tools without them (`ClaudeProvider.md`).
-- Completion is the model's word; no item is checked yet.
+- Completion is the model's word and its proof; no item is checked yet.
 
 ## Testing
 
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads with a plan. The plan tools, the replace, the read tracking, the free rounds and the end gate are covered too.
+- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads with a plan. The plan tools, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds and the end gate are covered too.
 - A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.
