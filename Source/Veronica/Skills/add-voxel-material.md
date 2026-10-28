@@ -8,6 +8,13 @@ Needs:
 - physical behavior: which vanilla VoxelPhysicsMaterialDefinition it acts like (find_content("VoxelPhysicsMaterial") lists them, e.g. IceLikeMaterial)
 - folder: a mod folder, e.g. Assets/VoxelMaterial
 
+Plan:
+- Set the texture scale, when the user wants it
+- Create the voxel material
+- Create the voxel render material
+- Override an asteroid generator to use it
+- Show the material
+
 Steps:
 1. Texture scale, when the user wants it: write(render material, "StandardTiling.BaseScale", n); vanilla asteroid rock uses 6.
 2. create_definition("VoxelMaterialDefinition", <name>VoxelMaterial, folder)

@@ -12,11 +12,12 @@ public sealed class SkillTests
     [Fact]
     public void Parse_ReadsFrontmatterAndBody()
     {
-        var skill = SkillFiles.Parse("---\nname: create-block\ndescription: Use for any\n  new block.\n---\n\nSteps:\n1. a\n");
+        var skill = SkillFiles.Parse("---\nname: create-block\ndescription: Use for any\n  new block.\n---\n\nPlan:\n- Do a\n- Do b\n\nSteps:\n1. a\n");
 
         Assert.Equal("create-block", skill.Name);
         Assert.Equal("Use for any new block.", skill.Description);
-        Assert.Equal("Steps:\n1. a", skill.Body);
+        Assert.Equal("Plan:\n- Do a\n- Do b\n\nSteps:\n1. a", skill.Body);
+        Assert.Equal(["Do a", "Do b"], skill.Plan);
     }
 
     [Theory]
@@ -26,6 +27,10 @@ public sealed class SkillTests
     [InlineData("---\nname: x\n---\nbody", "no description")]
     [InlineData("---\nname: x\ndescription: d\n---\n  \n", "no body")]
     [InlineData("---\nname x\n---\nbody", "line 2")]
+    [InlineData("---\nname: x\ndescription: d\n---\nSteps:\n1. a", "no 'Plan:' section")]
+    [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n\n- a", "needs one '- item' line")]
+    [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n- a\n  wrapped\n- b", "needs one '- item' line")]
+    [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n- a\n-b", "needs one '- item' line")]
     public void Parse_RejectsMalformed(string text, string message)
     {
         var e = Assert.Throws<FormatException>(() => SkillFiles.Parse(text));
@@ -39,9 +44,9 @@ public sealed class SkillTests
         Directory.CreateDirectory(dir);
         try
         {
-            File.WriteAllText(Path.Combine(dir, "good.md"), "---\nname: good\ndescription: d\n---\nbody");
+            File.WriteAllText(Path.Combine(dir, "good.md"), "---\nname: good\ndescription: d\n---\nPlan:\n- a");
             File.WriteAllText(Path.Combine(dir, "broken.md"), "no frontmatter");
-            File.WriteAllText(Path.Combine(dir, "other.md"), "---\nname: renamed\ndescription: d\n---\nbody");
+            File.WriteAllText(Path.Combine(dir, "other.md"), "---\nname: renamed\ndescription: d\n---\nPlan:\n- a");
 
             var load = SkillFiles.Load(dir);
 
@@ -69,7 +74,7 @@ public sealed class SkillTests
     [Fact]
     public void SystemPrompt_ListsOneLinePerSkill()
     {
-        var prompt = Prompts.SystemWith([new Skill("a", "Use for A.", "x"), new Skill("b", "Use for B.", "y")]);
+        var prompt = Prompts.SystemWith([new Skill("a", "Use for A.", "x", ["a"]), new Skill("b", "Use for B.", "y", ["b"])]);
 
         Assert.EndsWith(Prompts.SkillIntro + "\n- a: Use for A.\n- b: Use for B.", prompt);
     }
@@ -77,7 +82,7 @@ public sealed class SkillTests
     [Fact]
     public async Task Tool_ReturnsBody_IgnoringCase()
     {
-        var tool = new SkillTool(() => [new Skill("create-block", "d", "the steps")]);
+        var tool = new SkillTool(() => [new Skill("create-block", "d", "the steps", ["a"])], new SkillPlan());
 
         var result = await tool.ExecuteAsync(Args("""{"name":"Create-Block"}"""), CancellationToken.None);
 
@@ -87,7 +92,7 @@ public sealed class SkillTests
     [Fact]
     public async Task Tool_UnknownNameListsSkills()
     {
-        var tool = new SkillTool(() => [new Skill("create-block", "d", "x"), new Skill("block-thruster", "d", "y")]);
+        var tool = new SkillTool(() => [new Skill("create-block", "d", "x", ["a"]), new Skill("block-thruster", "d", "y", ["b"])], new SkillPlan());
 
         var result = await tool.ExecuteAsync(Args("""{"name":"thruster"}"""), CancellationToken.None);
 
@@ -101,6 +106,7 @@ public sealed class SkillTests
 
         Assert.Empty(load.Problems);
         Assert.NotEmpty(load.Skills);
+        Assert.All(load.Skills, s => Assert.NotEmpty(s.Plan));
         foreach (var file in Directory.EnumerateFiles(Dir(), "*" + SkillFiles.Extension))
         {
             var text = File.ReadAllText(file);

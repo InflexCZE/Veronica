@@ -7,6 +7,13 @@ Needs:
 - a comparable vanilla thruster: same class, closest size. Vanilla thrusters are in Assets/Blocks/Thrusters/<class>/<size in cm>; list_folder shows the sizes.
 - where each nozzle is on the model, unless the model is a vanilla thruster's, reworked
 
+Plan:
+- Read the comparable vanilla thruster
+- Fill thrust power and power use
+- Place the nozzle dummies: position and scale
+- Set flame and sound, only when the user asks
+- Show the block
+
 Steps:
 1. The template is the class's thruster template: find_template("thrust") lists them (Ion Thrusters, Hydrogen Thrusters, Atmospheric Thrusters). Its ThrustClass and ConsumedResource are already right.
 2. read the vanilla thruster's ThrusterDefinition and BlockModelComponentDefinition.

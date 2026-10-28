@@ -7,6 +7,14 @@ Needs:
 - the place: which category, subcategory and tile, each existing or new; for new ones a name, and a tooltip for subcategories and categories
 - folder: a mod folder, e.g. Assets/GScreen
 
+Plan:
+- Create the block kind and point the block at it
+- Find or create the tile and add it to the kind
+- Find or create the subcategory, for a new tile
+- Find or create the category, for a new subcategory
+- Set the order, when the user wants a position
+- Show the block
+
 The G-Screen nests Category > Subcategory > BlockGroup (a tile) > BlockKind (one block in all its sizes). Each level points up to its parents, so build from the bottom. Vanilla ones are in Assets/UI/Screens/GScreen; find_content("SubcategoryDefinition") and the like list them.
 
 Steps:

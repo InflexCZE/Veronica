@@ -7,6 +7,14 @@ Needs:
 - which imported material replaces which part of the vanilla skin (parts are named after the mesh materials: UpSuit, BottomSuit, Helmet, Gloves, Backpack, ...)
 - folder: a mod folder for the overrides, e.g. Assets/Character
 
+Plan:
+- Make the materials skinned
+- Override the character model
+- Override the render model
+- Map the skin materials to the parts
+- Move the jetpack flames, when the backpack moved
+- Show the model
+
 Each change below is an override of a vanilla definition: create_partial(<vanilla>, "override", folder), then write to the override.
 
 Steps:

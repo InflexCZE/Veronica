@@ -14,13 +14,14 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 
     private readonly Conversation _conversation;
     private readonly ToolSet _tools;
+    private readonly SkillPlan _plan;
     private string _draft = "";
     private string _status = "";
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
     private bool _clearing;
 
-    public ChatPanelViewModel(IProviderSession session, ToolSet tools, Func<string> systemPrompt)
+    public ChatPanelViewModel(IProviderSession session, ToolSet tools, SkillPlan plan, Func<string> systemPrompt)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -28,7 +29,8 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         CanFloat = true;
 
         _tools = tools;
-        _conversation = new Conversation(session, systemPrompt, Prompts.ChatLimits, tools.Definitions);
+        _plan = plan;
+        _conversation = new Conversation(session, systemPrompt, Prompts.ChatLimits(plan), tools.Definitions);
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
     }
@@ -167,6 +169,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             if (_turnTask != null)
                 await _turnTask;
             await _conversation.ClearAsync();
+            _plan.Reset();
             Messages.Clear();
         }
         finally

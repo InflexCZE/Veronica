@@ -6,6 +6,13 @@ Needs:
 - what to change and the new value
 - folder: a mod folder for overrides, e.g. Assets/Overrides
 
+Plan:
+- Find the definition that holds the value
+- Read it to find the field
+- Create the override or copy
+- Write each change
+- Show the result
+
 Steps:
 1. Find the definition that holds the value: find_content with words of the thing and of the definition type, e.g. "IonThruster100 ThrusterEffects". Vanilla blocks are in Assets/Blocks/<family>/<name>/<size in cm>, one definition per component: ThrusterDefinition (force), ThrusterEffectsComponentDefinition (flame), BlockEffectsComponentDefinition (sound), PowerableBlockDefinition (name, power, build cost).
 2. read(def) to find the field.

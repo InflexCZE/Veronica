@@ -92,9 +92,14 @@ public sealed class EditorShell
 
     private static readonly SkillShelf Skills = new();
 
+    private static readonly SkillPlan Plan = new();
+
     private static readonly ITool[] Tools =
     [
-        new SkillTool(() => Skills.Current),
+        new SkillTool(() => Skills.Current, Plan),
+        new ActivateSkillTool(() => Skills.Current, Plan),
+        new CompletePlanItemTool(Plan),
+        new SkipPlanItemTool(Plan),
         new FindContentTool(),
         new ListFolderTool(),
         new ReadTool(),
@@ -114,7 +119,7 @@ public sealed class EditorShell
         ChatPanelViewModel? panel = null;
         var tools = new ToolSet(Tools);
         var provider = ModelProvider.Create(status => panel?.ShowStatus(status), tools);
-        panel = new ChatPanelViewModel(provider.OpenSession(), tools, Skills.SystemPrompt);
+        panel = new ChatPanelViewModel(provider.OpenSession(), tools, Plan, Skills.SystemPrompt);
         EvalHook.Attach(panel, Skills.SystemPrompt(), tools.Definitions);
         return panel;
     }

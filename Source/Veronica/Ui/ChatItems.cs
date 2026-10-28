@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Veronica.Agent;
 
 namespace Veronica.Ui;
 
@@ -27,6 +28,7 @@ public sealed class UserItem(string text) : ChatItem
 public sealed class AssistantItem : ChatItem
 {
     private string _reasoning = "";
+    private string _raw = "";
     private string _text = "";
     private bool _thinkingExpanded;
 
@@ -73,7 +75,9 @@ public sealed class AssistantItem : ChatItem
     {
         if (!HasText && HasReasoning)
             ThinkingExpanded = false;
-        Text += delta;
+        // The end marker is for the harness; the user never sees it.
+        _raw += delta;
+        Text = SkillPlan.StripEndTurnMarker(_raw);
     }
 }
 

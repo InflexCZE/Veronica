@@ -14,7 +14,7 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 
 - Skills are cut so the model combines them, not one per finished thing.
   - Procedures: a task's steps, e.g. `create-block`, `override-definition`, `add-to-gscreen`.
-  - Appendices: what one function adds to a procedure, e.g. `block-thruster` for a block that thrusts. A procedure names, at the step where they apply, the appendices to load.
+  - Appendices: what one function adds to a procedure, e.g. `block-thruster` for a block that thrusts. A procedure names, at the step where they apply, the appendices to activate.
   - A function without an appendix is built by reading a comparable vanilla block's definitions and mirroring them. This step is in `create-block`.
 - Each skill is its own file and its own index line. The model loads only what the task needs.
 
@@ -23,6 +23,7 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 - One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence. It carries no instructions.
 - Body sections, in order:
   - **Needs**: the inputs. Each is a file or value the user provides. The system prompt already says to ask for what cannot be found.
+  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. Every skill has one, procedures and appendices alike. See Plan below.
   - **Steps**: numbered, written as the real tool calls. A step that only some tasks need says when.
   - **Show**: the last step shows the result in the Editor (`show`), with one line on what the user should look at. Testing in game is the user's call.
 - No read-back check of the edits: the model sees each change's reply, and the user works alongside it.
@@ -40,11 +41,35 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 ## Delivery
 
 - The system prompt ends with the skill index, one line per skill, so the model knows which skills exist without paying for their bodies.
-- `skill(name)` returns a skill's steps. Rounds that call only `skill` are free: loading guidance must not cost the task its budget.
+- `skill(name)` returns a skill's plan and steps. Rounds that call only `skill` or the plan tools are free: loading guidance must not cost the task its budget.
 - A broken skill file is skipped and logged, so one bad edit does not take the other skills down.
 - Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. During development they are read straight from `Source/Veronica/Skills`; where an installed Veronica keeps them is open (`Docs/TODOs/SkillSources.md`).
 
+## Plan
+
+Small models drop steps: after a failed write, or after handing off to an appendix skill, they forget the procedure's remaining steps and report the work as done. A plan the harness tracks keeps the remaining work in front of the model.
+
+- Plan items and Steps are separate sections with no link between them. They are written to match and the model reads both. The items are a tuning surface of their own, and the place for deterministic checks later (`Docs/TODOs/PlanChecks.md`).
+- Items are actionable and lead the model without naming tool calls. A step that only some tasks need has an item that says when ("..., only when the user asks"). The model skips it otherwise.
+- Tools:
+
+| tool | does |
+|---|---|
+| `skill(name)` | reads a skill; the harness remembers it was read |
+| `activate_skill(name)` | makes the skill the active one and starts its plan. The result lists the items and names the first. A skill not read yet comes with its body, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
+| `complete_plan_item()` | marks the current item done and names the next |
+| `skip_plan_item(reason)` | skips the current item, with a reason; names the next |
+
+- One active skill at a time. Activating another replaces the plan, open items included. Chained skills hand off through their last item, which names the skill to activate next. Only the last skill of a chain shows the result. Whether models abuse the replace is left to the eval runs.
+- Strict order: completing and skipping take no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so the strict order does not deadlock on an item that does not fit.
+- The next item is named only in the plan tools' results, not on every tool result: a reminder everywhere is noise the model learns to ignore. The two places a model loses its step also name it: the end gate below, and the length nudge, since a model cut off while thinking has lost track of where it was.
+- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it; `/clear` drops it with what was read.
+- Rounds that call only the skill and plan tools are free, so bookkeeping does not eat the task's budget.
+- End gate: ending a turn with an item open sends the model back once (the loop's end nudge), naming the open item and the choices. The message is marked as coming from the Editor, and the system prompt says so: unmarked, a model takes it for the user turning down its question. A deliberate stop (asking the user) is a reply with a literal end marker, which the panel hides. Small models do not grasp "end your turn" but do emit a marker. The marker is explained only in that reminder, where it is needed. Ending again is let through, so no model loops. The reminder re-arms only after a tool call outside the skill and plan tools.
+- The end gate and the free rounds belong to the client tool loop. The Claude provider runs its own loop, so it gets the plan tools without them (`ClaudeProvider.md`).
+- Completion is the model's word; no item is checked yet.
+
 ## Testing
 
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads.
+- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads with a plan. The plan tools, the replace, the read tracking, the free rounds and the end gate are covered too.
 - A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.
