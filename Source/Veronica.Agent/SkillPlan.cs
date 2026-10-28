@@ -18,8 +18,6 @@ public sealed record PlanItem(string Text, PlanItemState State, string? Note = n
 // It lasts across turns until the plan is through or the chat is cleared.
 public sealed class SkillPlan
 {
-    public const string EndTurnMarker = "<end_turn>";
-
     private readonly object _lock = new();
     private readonly HashSet<string> _read = new(StringComparer.OrdinalIgnoreCase);
     private string? _skill;
@@ -27,7 +25,7 @@ public sealed class SkillPlan
 
     public static IReadOnlySet<string> ToolNames { get; } = new HashSet<string>
     {
-        SkillTool.ToolName, ActivateSkillTool.ToolName, MarkCompletedTool.ToolName, MarkSkippedTool.ToolName,
+        SkillTool.ToolName, ActivateSkillTool.ToolName, MarkCompletedTool.ToolName, MarkSkippedTool.ToolName, WaitForUserTool.ToolName,
     };
 
     public string? ActiveSkill
@@ -86,17 +84,17 @@ public sealed class SkillPlan
 
     public string Skip(string reason) => Close(PlanItemState.Skipped, reason);
 
-    // Null lets the turn end: no open item, or the model stopped on purpose.
-    public string? EndNudge(string reply)
+    // Null lets the turn end: no item is open. A turn ended by wait_for_user never gets here.
+    public string? EndNudge()
     {
         lock (_lock)
         {
             int current = Current();
-            if (current < 0 || reply.Contains(EndTurnMarker, StringComparison.Ordinal))
+            if (current < 0)
                 return null;
             return $"<harness>You ended your turn, but item {current + 1} of {_items.Count} of {_skill} is still open: {_items[current].Text}. " +
-                $"Continue it, call {MarkCompletedTool.ToolName} with proof if you did it, or call {MarkSkippedTool.ToolName} with a reason if it does not apply. " +
-                $"If you asked the user something, they have not seen this reminder and have not answered yet: to wait for their answer, reply with just {EndTurnMarker}</harness>";
+                $"Continue it, or call {MarkCompletedTool.ToolName} with proof if you did it, or {MarkSkippedTool.ToolName} with a reason only if it does not apply to the task, never to wait. " +
+                $"If you asked the user something, they have not seen this reminder and have not answered yet: to wait for their answer, call {WaitForUserTool.ToolName}.</harness>";
         }
     }
 
@@ -109,8 +107,6 @@ public sealed class SkillPlan
             return current < 0 ? "" : $" You are on item {current + 1} of {_items.Count} of {_skill}: {_items[current].Text}.";
         }
     }
-
-    public static string StripEndTurnMarker(string text) => text.Replace(EndTurnMarker, "", StringComparison.Ordinal).Trim();
 
     private string Close(PlanItemState state, string note)
     {
@@ -200,4 +196,19 @@ public sealed class MarkSkippedTool(SkillPlan plan) : ITool
     {
         return Task.FromResult(new ToolResult(plan.Skip(MarkCompletedTool.Text(arguments, "reason"))));
     }
+}
+
+// Small models act through tool calls; a reply marker beside the plan tools read to them as one more way to close an item.
+public sealed class WaitForUserTool : ITool
+{
+    public const string ToolName = "wait_for_user";
+
+    public string Name => ToolName;
+
+    public string Description => "Ends your turn to wait for the user's answer, after your reply asked them something.";
+
+    public string Parameters => """{"type":"object","properties":{}}""";
+
+    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
+        Task.FromResult(new ToolResult("Waiting for the user."));
 }

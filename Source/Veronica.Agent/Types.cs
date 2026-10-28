@@ -58,6 +58,9 @@ public sealed record TurnLimits
 
     public EndNudge? EndNudge { get; init; }
 
+    // A round that calls one of these runs its calls, then ends the turn without another round.
+    public IReadOnlySet<string> TurnEndingTools { get; init; } = new HashSet<string>();
+
     public bool? Thinking { get; init; }
 
     public int? MaxTokens { get; init; }

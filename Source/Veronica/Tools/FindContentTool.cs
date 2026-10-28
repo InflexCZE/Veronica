@@ -33,8 +33,9 @@ public sealed class FindContentTool : ITool
         {
             var found = Folders.Existing(project, folder!);
             if (found.Count == 0)
-                throw new EditError($"No folder '{folder}' in the mod or its dependencies; see list_folder.");
-            scope = ContentNames.Normalize(found[0].Folder.ProjectRelativePath) + "\\";
+                throw new EditError(Folders.NotFound(project, folder!, "see list_folder"));
+            string root = ContentNames.Normalize(found[0].Folder.ProjectRelativePath);
+            scope = root.Length == 0 ? "" : root + "\\";
             inProjects = found.Select(f => f.Owner).ToHashSet();
         }
         var order = Content.ProjectOrder(project);

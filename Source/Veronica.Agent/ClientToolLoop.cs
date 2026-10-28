@@ -168,6 +168,8 @@ public static class ClientToolLoop
                 if (toolResult.EarnedReward)
                     spentRounds = Math.Max(0, spentRounds - maxRounds / 2);
             }
+            if (result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
+                return;
             if (lastRound)
             {
                 host.OnNotice(RoundCapNotice(maxRounds));

@@ -8,7 +8,7 @@ public sealed class ClientToolLoopTests
     private const string Nudge = "Pick one and go.";
     private const string Poke = "Step 2 is still open.";
 
-    private sealed record Round(string FinishReason, string? Reasoning = null, string? Text = null, string? Call = null, bool Reward = false);
+    private sealed record Round(string FinishReason, string? Reasoning = null, string? Text = null, string? Call = null, bool Reward = false, string? Call2 = null);
 
     private sealed class Run : ITurnHost
     {
@@ -40,6 +40,7 @@ public sealed class ClientToolLoopTests
             DuringRound?.Invoke(Cancel);
             if (round.Text != null) onDelta(new TextDelta(round.Text));
             if (round.Call != null) onDelta(new ToolCallDelta(0, "c1", round.Call, round.Reward ? "{\"reward\":true}" : "{}"));
+            if (round.Call2 != null) onDelta(new ToolCallDelta(1, "c2", round.Call2, "{}"));
             onDelta(new DoneDelta(round.FinishReason));
             return Task.CompletedTask;
         }
@@ -70,6 +71,19 @@ public sealed class ClientToolLoopTests
     };
 
     private const ChatRole A = ChatRole.Assistant, U = ChatRole.User, T = ChatRole.Tool;
+
+    [Fact]
+    public async Task Turn_ending_tool_runs_the_rounds_calls_then_ends_the_turn_without_a_reminder()
+    {
+        var run = new Run([new Round("tool_calls", Text: "What name?", Call: "lookup", Call2: "wait"), new Round("stop", Text: "never")]);
+
+        await run.Go(Poking() with { TurnEndingTools = new HashSet<string> { "wait" } });
+
+        Assert.Equal(["lookup", "wait"], run.ToolsRun);
+        Assert.Equal([A, T, T], run.Roles);
+        Assert.Equal(1, run.Remaining);
+        Assert.Empty(run.Notices);
+    }
 
     [Fact]
     public async Task Plain_reply_ends_the_turn_with_reasoning_kept()

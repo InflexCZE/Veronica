@@ -21,6 +21,7 @@
 - **Reward:** a tool result with `EarnedReward` refunds half the budget. The model is never told.
 - **Length nudge:** a round that hits the token cap with no answer text (cut off while thinking) gets an automatic user message and another round, up to `MaxNudges`. A round cut off mid-answer is not nudged, since the model would start its answer over.
 - **End nudge:** when the model ends its turn, a callback can send it back with a message, once. It re-arms only after a tool call outside `BookkeepingTools`.
+- **Turn-ending tools:** a round that calls one of `TurnEndingTools` runs all its calls, in order, then ends the turn: no further round and no end nudge. It lets the model stop on purpose through a tool call, the way small models act.
 - Nudges count against the round budget.
 - **Stop:** a stopped round keeps what it generated. Its tool calls are not run: each gets a "stopped by the user" result, so the transcript never carries dangling calls. A tool that returns null (stopped while it ran) also ends the turn this way, for every call left in the round.
 - A failed round appends nothing and fails the turn. There are no retries.
@@ -53,9 +54,10 @@
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 |
 | length nudge | up to 2 per turn |
-| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools (`Skills.md`) |
+| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`) |
 | free rounds | rounds that call only `skill` and the plan tools |
-| end nudge | when an item of the active skill's plan is open (`Skills.md`, Plan); the skill and plan tools are its bookkeeping tools |
+| end nudge | when an item of the active skill's plan is open (`Skills.md`, Plan); `skill` and the plan tools are its bookkeeping tools |
+| turn-ending tools | `wait_for_user`. The Claude provider gets it over MCP like every tool, but its own loop decides when a turn ends |
 
 ## WebQwen provider
 

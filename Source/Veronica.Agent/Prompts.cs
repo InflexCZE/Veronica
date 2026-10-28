@@ -33,6 +33,7 @@ public static class Prompts
         MaxTokens = 4000,
         Thinking = true,
         LengthNudge = new LengthNudge(() => LengthNudge + plan.CurrentItemNote(), MaxNudges: 2),
-        EndNudge = new EndNudge(plan.EndNudge, SkillPlan.ToolNames),
+        EndNudge = new EndNudge(_ => plan.EndNudge(), SkillPlan.ToolNames),
+        TurnEndingTools = new HashSet<string> { WaitForUserTool.ToolName },
     };
 }

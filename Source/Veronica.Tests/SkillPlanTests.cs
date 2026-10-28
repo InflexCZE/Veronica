@@ -20,6 +20,7 @@ public sealed class SkillPlanTests
             new ActivateSkillTool(() => [Block, Thruster], Plan),
             new MarkCompletedTool(Plan),
             new MarkSkippedTool(Plan),
+            new WaitForUserTool(),
         ]);
 
         public string Call(string name, string arguments = "{}") =>
@@ -178,24 +179,19 @@ public sealed class SkillPlanTests
     public void End_nudge_names_the_open_item_unless_the_reply_ends_on_purpose()
     {
         var chat = new Chat();
-        Assert.Null(chat.Plan.EndNudge("Done."));
+        Assert.Null(chat.Plan.EndNudge());
 
         chat.Call("activate_skill", """{"name":"create-block"}""");
         Done(chat);
 
-        var nudge = chat.Plan.EndNudge("Done.");
+        var nudge = chat.Plan.EndNudge();
         Assert.NotNull(nudge);
         Assert.StartsWith("<harness>You ended your turn, but item 2 of 3 of create-block is still open: Fill block name.", nudge);
         Assert.Contains("mark_completed", nudge);
         Assert.Contains("mark_skipped", nudge);
-        Assert.EndsWith(SkillPlan.EndTurnMarker + "</harness>", nudge);
-        Assert.Null(chat.Plan.EndNudge("What name? " + SkillPlan.EndTurnMarker));
-    }
-
-    [Fact]
-    public void End_marker_is_hidden_from_display()
-    {
-        Assert.Equal("What name?", SkillPlan.StripEndTurnMarker("What name? <end_turn>"));
+        Assert.Contains("never to wait", nudge);
+        Assert.EndsWith("call wait_for_user.</harness>", nudge);
+        Assert.DoesNotContain("<end_turn>", nudge);
     }
 
     private static string Done(Chat chat) => chat.Call("mark_completed", """{"proof":"did it"}""");
@@ -203,7 +199,8 @@ public sealed class SkillPlanTests
     [Fact]
     public void Plan_tool_names_are_free_and_bookkeeping()
     {
-        Assert.Equal(new HashSet<string> { "skill", "activate_skill", "mark_completed", "mark_skipped" }, SkillPlan.ToolNames);
+        Assert.Equal(new HashSet<string> { "skill", "activate_skill", "mark_completed", "mark_skipped", "wait_for_user" }, SkillPlan.ToolNames);
+        Assert.Equal(new HashSet<string> { "wait_for_user" }, Prompts.ChatLimits(new SkillPlan()).TurnEndingTools);
     }
 
     private sealed record Round(string? Text = null, string? Call = null, string Arguments = "{}");
@@ -282,13 +279,13 @@ public sealed class SkillPlanTests
     }
 
     [Fact]
-    public async Task End_marker_stops_without_a_reminder()
+    public async Task Wait_for_user_ends_the_turn_without_a_reminder()
     {
         var chat = new Chat();
         var run = new Run(chat,
         [
             new(Call: "activate_skill", Arguments: """{"name":"create-block"}"""),
-            new(Text: "What should the block be called? <end_turn>"),
+            new(Text: "What should the block be called?", Call: "wait_for_user"),
             new(Text: "never"),
         ]);
 

@@ -40,7 +40,8 @@ internal static class Folders
     }
 
     // Folders that already exist, named the way targets are: an exact path always wins, then a leading project
-    // name narrows the search, then a shortened path finds its one folder. A folder that exists in several
+    // name narrows the search, then a shortened path finds its one folder, and only then is a bare project name
+    // that project's root, so a project named like a folder never hides the folder. A folder that exists in several
     // projects comes once per project. A folder to create is never looked up this way: Ensure takes its path as given.
     public static List<(LoadedProject Owner, ExplorerFolder Folder)> Existing(LoadedProject project, string folderPath)
     {
@@ -59,7 +60,20 @@ internal static class Folders
             if (inProject.Count > 0)
                 return inProject;
         }
-        return Ending(owners, segments, folderPath);
+        var ending = Ending(owners, segments, folderPath);
+        if (ending.Count > 0)
+            return ending;
+        if (ContentNames.ProjectRoot(owners.Select(o => o.Name), folderPath) is { } root)
+            return owners.Where(o => Same(o.Name, root)).Select(o => (o, (ExplorerFolder)o.GetRootFolder())).ToList();
+        return ending;
+    }
+
+    public static string NotFound(LoadedProject project, string folderPath, string next)
+    {
+        var folders = project.EnumerateProjectDAG().SelectMany(o => All(o.GetRootFolder()));
+        var nearest = ContentNames.Nearest(folders, f => f.ProjectRelativePath, f => f.Project == project, folderPath);
+        string hint = nearest.Count > 0 ? $"; nearest: {string.Join(", ", nearest.Select(f => $"{f.ProjectRelativePath} in {f.Project.Name}"))}" : "";
+        return $"No folder '{folderPath}' in the mod or its dependencies{hint}; {next}.";
     }
 
     private static List<(LoadedProject, ExplorerFolder)> Exact(List<LoadedProject> owners, string[] segments)

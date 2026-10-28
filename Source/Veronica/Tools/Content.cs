@@ -21,9 +21,17 @@ internal static class Content
             1 => matches[0],
             0 => throw new EditError(Pick(project.GetAvailableFiles().ToList(), target).Count > 0
                 ? $"'{target}' is a source file, not a definition or asset."
-                : $"No content item named '{target}'; look it up with find_content."),
+                : NotFound(project, project.GetAvailableFiles().OfType<ExplorerAssetFile>(), target)),
             _ => throw new EditError(Ambiguous(target, matches)),
         };
+    }
+
+    // Hints come from the items the caller can take, so a target never gets a source file it would refuse.
+    public static string NotFound(LoadedProject project, IEnumerable<ExplorerItem> candidates, string target)
+    {
+        var nearest = ContentNames.Nearest(candidates, i => i.ProjectRelativePath, i => i.Project == project, target);
+        string hint = nearest.Count > 0 ? $"; nearest: {string.Join(", ", nearest.Select(i => $"{i.ProjectRelativePath} in {i.Project.Name}"))}" : "";
+        return $"No content item named '{target}'{hint}; look it up with find_content.";
     }
 
     // Several projects can hold one path; only the project name in front tells them apart.

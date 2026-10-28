@@ -63,6 +63,75 @@ public static class ContentNames
         return items.Where(i => EndsWithPath(path(i), query)).ToList();
     }
 
+    // A folder path that is only a project name ("Vanilla", "Vanilla/") names that project's root.
+    public static string? ProjectRoot(IEnumerable<string> projectNames, string folderPath)
+    {
+        string[] segments = Segments(folderPath);
+        return segments.Length == 1 ? projectNames.FirstOrDefault(p => Same(p, segments[0])) : null;
+    }
+
+    // For a name that matched nothing: the few items whose last segment is spelled almost the same, so a slip such
+    // as "X.Client" for "X_Client" is answered with the real name. Separators and case do not count; preferred
+    // items (the mod's) come first on ties. Nothing is offered when nothing is close.
+    public static List<T> Nearest<T>(IEnumerable<T> items, Func<T, string> path, Func<T, bool> preferred, string query, int max = 3)
+    {
+        string wanted = Spelling(Segments(query).LastOrDefault() ?? "");
+        if (wanted.Length == 0)
+            return [];
+        // Below the name's own length, so a short name is never 'near' every other short name.
+        int limit = Math.Min(Math.Max(2, wanted.Length / 4), (wanted.Length - 1) / 2);
+        if (limit < 1)
+            return [];
+        return items
+            .Select(i => (Item: i, Distance: Distance(wanted, path(i), limit)))
+            .Where(c => c.Distance <= limit)
+            .OrderBy(c => c.Distance)
+            .ThenBy(c => preferred(c.Item) ? 0 : 1)
+            .ThenBy(c => path(c.Item), StringComparer.OrdinalIgnoreCase)
+            .Take(max)
+            .Select(c => c.Item)
+            .ToList();
+    }
+
+    // The last segment with and without its extension, so "X.Client" meets "X_Client.partialdef" either way.
+    private static int Distance(string wanted, string candidatePath, int limit)
+    {
+        string last = Segments(candidatePath).LastOrDefault() ?? "";
+        return Math.Min(Levenshtein(wanted, Spelling(last), limit), Levenshtein(wanted, Spelling(WithoutExtension(last)), limit));
+    }
+
+    private static string Spelling(string name)
+    {
+        var chars = name.ToLowerInvariant().Where(c => c is not ('.' or '_' or '-' or ' ')).ToArray();
+        return new string(chars);
+    }
+
+    // Edit distance, given up (limit + 1) once it cannot stay within the limit.
+    private static int Levenshtein(string a, string b, int limit)
+    {
+        if (Math.Abs(a.Length - b.Length) > limit)
+            return limit + 1;
+        var previous = new int[b.Length + 1];
+        var current = new int[b.Length + 1];
+        for (int j = 0; j <= b.Length; j++)
+            previous[j] = j;
+        for (int i = 1; i <= a.Length; i++)
+        {
+            current[0] = i;
+            int best = current[0];
+            for (int j = 1; j <= b.Length; j++)
+            {
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                current[j] = Math.Min(Math.Min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + cost);
+                best = Math.Min(best, current[j]);
+            }
+            if (best > limit)
+                return limit + 1;
+            (previous, current) = (current, previous);
+        }
+        return previous[b.Length];
+    }
+
     // find_content: every word of the query is part of the file name or the definition type.
     public static bool QueryMatches(string query, string fileName, string? typeName)
     {

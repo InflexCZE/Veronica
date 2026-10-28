@@ -28,7 +28,7 @@ public sealed class ListFolderTool : ITool
     {
         var found = Folders.Existing(project, folderPath);
         if (found.Count == 0)
-            throw new EditError($"No folder '{folderPath}' in the mod or its dependencies; list a parent folder to see what exists.");
+            throw new EditError(Folders.NotFound(project, folderPath, "list a parent folder to see what exists"));
 
         var lines = new List<string>();
         foreach (var (owner, folder) in found)

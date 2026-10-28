@@ -17,7 +17,7 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
     {
         var named = Content.Pick(project.GetAvailableFiles().ToList(), name);
         if (named.Count == 0)
-            throw new EditError($"No content item named '{name}'; look it up with find_content.");
+            throw new EditError(Content.NotFound(project, project.GetAvailableFiles(), name));
 
         var fitting = named.Where(f => Fits(f, spec)).ToList();
         return fitting.Count switch

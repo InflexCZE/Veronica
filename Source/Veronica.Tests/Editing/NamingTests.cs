@@ -105,6 +105,46 @@ public sealed class NamingTests
             (@"Assets\Mine\Ion\Models\Deformed.model", "Blocks"),
         ], @"Blocks\Ion\Models\Deformed"));
 
+    private static readonly (string Path, string Project)[] Mod =
+    [
+        (@"Assets\IonThruster100Mk2\Ion Thruster 100 Mk2_Client.partialdef", "Mod"),
+        (@"Assets\IonThruster100Mk2\Ion Thruster 100 Mk2_ClientComposition.partialdef", "Mod"),
+        (@"Assets\IonThruster100Mk2\Ion Thruster 100 Mk2_IonThrusterDefinition.partialdef", "Mod"),
+        (@"Assets\Blocks\Ion@\IonThruster100_Client.def", "Vanilla"),
+        (@"Assets\Blocks\Ion@\Lamp_Client.def", "Vanilla"),
+    ];
+
+    private static List<string> Nearest(string query) =>
+        ContentNames.Nearest(Mod, i => i.Path, i => i.Project == "Mod", query).Select(i => i.Path).ToList();
+
+    [Theory]
+    [InlineData("Ion Thruster 100 Mk2.Client")]
+    [InlineData("Assets/IonThruster100Mk2/Ion Thruster 100 Mk2.Client.partialdef")]
+    [InlineData("ion thruster 100 mk2 client")]
+    public void Nearest_answers_a_misspelled_separator_with_the_real_name(string query) =>
+        Assert.Equal(@"Assets\IonThruster100Mk2\Ion Thruster 100 Mk2_Client.partialdef", Nearest(query)[0]);
+
+    [Fact]
+    public void Nearest_offers_nothing_when_nothing_is_close() => Assert.Empty(Nearest("Hydrogen Tank Large"));
+
+    [Theory]
+    [InlineData("UI")]
+    [InlineData("Lod")]
+    public void Nearest_offers_nothing_for_a_short_name_that_is_not_near(string query) =>
+        Assert.Empty(ContentNames.Nearest(new[] { "Fx", "Ion", "LOD" }.Where(n => !string.Equals(n, query, StringComparison.OrdinalIgnoreCase)), i => i, _ => false, query));
+
+    [Fact]
+    public void Nearest_puts_the_preferred_project_first_on_ties() =>
+        Assert.Equal(["Mod", "Vanilla"], ContentNames.Nearest(new[] { (@"B\Xyz_a.def", "Vanilla"), (@"A\Xyz_b.def", "Mod") }, i => i.Item1, i => i.Item2 == "Mod", "Xyz_c").Select(i => i.Item2).ToList());
+
+    [Theory]
+    [InlineData("Vanilla", "Vanilla")]
+    [InlineData("vanilla/", "Vanilla")]
+    [InlineData("Vanilla/Assets", null)]
+    [InlineData("Assets", null)]
+    public void A_bare_project_name_is_its_root(string folder, string? expected) =>
+        Assert.Equal(expected, ContentNames.ProjectRoot(["Vanilla", "Mod"], folder));
+
     [Theory]
     [InlineData("particle configuration", "ParticleEffectsBudgetConfiguration.def", null, true)]
     [InlineData("particle configuration", "Override of X.partialdef", "ParticleEffectsConfiguration", true)]

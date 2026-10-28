@@ -100,6 +100,7 @@ public sealed class EditorShell
         new ActivateSkillTool(() => Skills.Current, Plan),
         new MarkCompletedTool(Plan),
         new MarkSkippedTool(Plan),
+        new WaitForUserTool(),
         new FindContentTool(),
         new ListFolderTool(),
         new ReadTool(),
