@@ -42,6 +42,14 @@ public sealed class FieldEditTests
     public void Dump_hides_what_the_inspector_hides() => Assert.DoesNotContain("Hidden", Read());
 
     [Fact]
+    public void Dump_shows_hidden_fields_the_Editor_edits_in_its_own_window()
+    {
+        string dump = FieldReader.Read(new ObjectManipulator(new ParticleEffectDefinitionObjectBuilder()).Root, "", _links);
+        Assert.Contains("ParticleEmitters[0].Speed = 1 (float)", dump);
+        Assert.DoesNotContain("Internal", dump);
+    }
+
+    [Fact]
     public void Small_structs_print_inline()
     {
         Assert.Contains("Scale = {X: 1, Y: 1, Z: 1} (Vector3)", Read());

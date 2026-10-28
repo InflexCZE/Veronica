@@ -49,6 +49,7 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - A field is visible when the Property Inspector would show it, as decided by the inspector's own `DefaultObjectInspectorVisibilityStrategy.ShouldGenerate` (HideInInspector, NoSerialize, dev-mode gating, public accessor).
 - Fields marked `[SelectedItemOf]` are always hidden: they are UI selection mirrors and read as empty structs outside the live inspector.
+- A short hardcoded list of fields is always visible: data the inspector hides because the Editor edits it in a dedicated window, which the model otherwise cannot see at all (a particle effect's emitters and lights).
 - Read and write reach visible fields only.
 
 ## read

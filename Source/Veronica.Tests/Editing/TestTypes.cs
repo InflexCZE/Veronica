@@ -52,6 +52,17 @@ public partial class Sample
     public int Hidden;
 }
 
+// Stands in for the engine type of the same name: forced fields are matched by type and field name.
+[Serialize]
+public partial class ParticleEffectDefinitionObjectBuilder
+{
+    [HideInInspector]
+    public List<Entry> ParticleEmitters = [new Entry { Speed = 1 }];
+
+    [HideInInspector]
+    public int Internal;
+}
+
 [Serialize]
 public partial class Entry
 {
