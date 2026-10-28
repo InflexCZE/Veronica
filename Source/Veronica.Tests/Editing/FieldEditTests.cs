@@ -201,9 +201,36 @@ public sealed class FieldEditTests
 
         string dump = Read();
 
-        Assert.Contains("Dummies[0].Transform.Transform = {Position: {X: 0.125, Y: 0.125, Z: 0.5}, Euler: {X: 0, Y: 0, Z: 0}} (RelativeTransform)", dump);
+        Assert.Contains("Dummies[0].Transform = {Position: {X: 0.125, Y: 0.125, Z: 0.5}, Euler: {X: 0, Y: 0, Z: 0}} (RelativeTransformWithEulerHint)", dump);
+        Assert.DoesNotContain("Dummies[0].Transform.Transform", dump);
         Assert.DoesNotContain("Orientation", dump);
-        Assert.DoesNotContain("EulerHint", dump);
+        Assert.DoesNotContain(".EulerHint", dump);
+        Assert.Contains("Dummies[0].Transform.Transform = {Position: {X: 0.125, Y: 0.125, Z: 0.5}, Euler: {X: 0, Y: 0, Z: 0}} (RelativeTransform)", Read("Dummies[0].Transform.Transform"));
+    }
+
+    [Fact]
+    public void Transform_wrapper_writes_in_the_printed_form_and_keeps_the_euler_hint()
+    {
+        Write("Dummies[0].Transform", "\"{Position: {X: 0.125, Y: 0.125, Z: 0.6458988}, Euler: {X: 90}}\"");
+
+        var transform = _sample.Dummies[0].Transform;
+        Assert.Equal(new Vector3(0.125f, 0.125f, 0.6458988f), transform.Transform.Position);
+        Assert.Equal(new Vector3(90, 0, 0), transform.EulerHint);
+        Assert.Equal(Quaternion.CreateFromEuler(new Vector3(MathHelper.ToRadians(90), 0, 0)), transform.Transform.Orientation);
+        Assert.Contains("Euler: {X: 90, Y: 0, Z: 0}", Read("Dummies[0].Transform"));
+    }
+
+    [Fact]
+    public void Transform_wrapper_takes_euler_and_position_paths()
+    {
+        Write("Dummies[0].Transform.Euler.Z", "30");
+        Write("Dummies[0].Transform.Position", "\"{Z: 2}\"");
+
+        var transform = _sample.Dummies[0].Transform;
+        Assert.Equal(new Vector3(0, 0, 2), transform.Transform.Position);
+        Assert.Equal(new Vector3(0, 0, 30), transform.EulerHint);
+        Assert.Equal("Dummies[0].Transform.Euler = {X: 0, Y: 0, Z: 30} (Euler degrees)", Read("Dummies[0].Transform.Euler"));
+        Assert.Contains("Fields: Position, Euler", Fails(() => Write("Dummies[0].Transform.Rotation", "1")));
     }
 
     [Fact]

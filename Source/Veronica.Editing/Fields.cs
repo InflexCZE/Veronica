@@ -172,6 +172,9 @@ public static class Fields
         }
 
         var children = VisibleMembers(member).Where(c => !c.IsReadOnly).ToList();
+        // A wrapper of one transform and its (hidden) Euler hint, such as a dummy's Transform, is that transform.
+        if (children.Count == 1 && HasEulerHint(member))
+            return TryGetTransform(children[0], out position, out orientation);
         if (children.Count != 2)
             return false;
         foreach (var child in children)
@@ -184,6 +187,18 @@ public static class Fields
                 position = child;
         }
         return !position.IsDefault && !orientation.IsDefault;
+    }
+
+    private static bool HasEulerHint(MemberReference member)
+    {
+        try
+        {
+            return member.Members.Any(m => m.GetMemberAttribute<EulerHintAttribute>() != null);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public static string TypeLabel(Type declared)

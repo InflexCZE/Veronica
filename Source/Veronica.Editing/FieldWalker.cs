@@ -81,6 +81,10 @@ public static class FieldWalker
         if (loose.Count == 1)
             return loose[0];
 
+        // A transform wrapper lists Position as its own field, so it is reached through the wrapper too.
+        if (transform && string.Equals(position.Name, name, StringComparison.OrdinalIgnoreCase))
+            return position;
+
         string fields = transform ? Transforms.FieldNames(position)
             : visible.Count == 0 ? "(none)" : string.Join(", ", visible.Select(m => m.Name));
         throw new EditError($"'{name}' is not a field of {Where(parentPath)}. Fields: {fields}.");
