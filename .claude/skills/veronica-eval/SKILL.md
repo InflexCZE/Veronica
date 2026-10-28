@@ -16,15 +16,15 @@ You are the master. Each run is a fork of you, so everything here reaches the fo
 
 ## Master
 
-- Start each run with the Agent tool, `subagent_type: "fork"`. The prompt names the task and what this run should look at (a hypothesis, a failure mode to provoke, or none).
-- For a hypothesis run, edit the context (skills in `Source/Veronica/Skills`, the system prompt) in the working tree before the fork starts. `Start-Run.ps1` saves the diff in the run folder.
-- After each run, save the fork's report as `report.md` in its run folder, and add to `.tmp/eval/findings.md`: patterns with run folder references, hypotheses and their outcome.
+- Start each batch (the runs of one context variant, usually 3) with the Agent tool, `subagent_type: "fork"`. The fork runs them one after another. The prompt names the task, the model, the number of runs and what to look at (a hypothesis, a failure mode to provoke, or none).
+- For a hypothesis batch, edit the context (skills in `Source/Veronica/Skills`, the system prompt) in the working tree before the fork starts. `Start-Run.ps1` saves the diff in each run folder.
+- After the batch, save each run's note as `report.md` in its run folder (subagents cannot write report files), and add to `.tmp/eval/findings.md`: patterns with run folder references, hypotheses and their outcome.
 - Do not grade runs again; the fork's report is the verdict. Re-read a transcript, or have a fork or Haiku do it, only to verify a pattern.
 - After a batch, revert experimental context edits, then propose context changes to the owner with the runs that support them. Commit only what the owner approves.
 
-## Fork: one run
+## Fork: a batch of runs
 
-Wait in the foreground only: blocking tool calls with a timeout of up to 600000 ms, repeated as needed. Never run a command in the background or use Monitor. A fork that stops with background work running notifies the master each time, which floods the master's context. Return to the master once, with the final report.
+Wait in the foreground only: blocking tool calls with a timeout of up to 600000 ms, repeated as needed. Never run a command in the background or use Monitor. A fork that stops with background work running notifies the master each time, which floods the master's context. Do the runs one after another, each as below, and return to the master once, after the last.
 
 1. `powershell -File Eval/Start-Run.ps1 -Task <name>` (add `-LlamaUrl` if not the default). It prints the run folder, port and Editor process id as soon as the Editor starts. Then `powershell -File Eval/Wait-Ready.ps1 -RunDir <dir>` until it prints `Ready` (`NotReady`: call again; `Exited`: the Editor died during load, see its logs after Stop-Run).
 2. Read the task file. Write the message to `<run folder>/msg.txt`, then `curl -s --data-binary @<run folder>/msg.txt http://127.0.0.1:<port>/send` (the body is the message, plain text). A 409 says why it was refused.
@@ -37,4 +37,6 @@ Wait in the foreground only: blocking tool calls with a timeout of up to 600000 
    - **Hopeless** (loops, repeats failing calls, lost the goal): end it, even before the context runs out. Running into the context limit is also an accepted end.
 5. `powershell -File Eval/Stop-Run.ps1 -RunDir <dir>`.
 6. Judge the run against the task's Pass criteria. If the transcript is too long to keep reading, use a Haiku subagent to extract notable sections or what the model is asking about, instead of reading it all.
-7. Return the report (the master saves it as `report.md` in the run folder; forks cannot write files there): free-form, whatever fits the task or the failure mode under investigation. Include the pass verdict, how the run ended, notable moments with transcript line numbers, and every answer you gave as the user.
+7. Note the run: free-form, whatever fits the task or the failure mode under investigation. Include the run folder, the pass verdict, how the run ended, notable moments with transcript line numbers, and every answer you gave as the user. Vary your answers between runs.
+
+After the last run, return the take-aways across the batch first (verdicts, what the context change did, failure modes with run and line references, proposals), then each run's note for the master to save as its `report.md`.
