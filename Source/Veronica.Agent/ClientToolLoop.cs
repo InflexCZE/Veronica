@@ -12,7 +12,7 @@ public static class ClientToolLoop
         $"Stopped after {maxRounds} tool rounds in one turn. Send a new message (e.g. \"continue\") if the work is unfinished.";
 
     public static string SilentWaitOutput(string tool) =>
-        $"The user has not seen anything from you this turn, so there is nothing for them to answer. Write your question to the user as text first, then call {tool}.";
+        $"You wrote nothing for the user with this call, so there is nothing for them to answer. Write your question to the user as text, in the same reply as {tool}.";
 
     public static IProviderSession CreateSession(StreamRound stream) => new Session(stream);
 
@@ -96,7 +96,6 @@ public static class ClientToolLoop
         int nudgesSent = 0;
         bool endNudgeArmed = true;
         int spentRounds = 0;
-        bool turnHasText = false;
         for (int round = 1; round <= hardRoundCap; round++)
         {
             var result = await StreamRoundAsync().ConfigureAwait(false);
@@ -108,8 +107,6 @@ public static class ClientToolLoop
                 Reasoning = result.Reasoning.Length > 0 ? result.Reasoning : null,
                 ToolCalls = result.ToolCalls.Count > 0 ? result.ToolCalls : null,
             });
-            if (result.Text.Trim().Length > 0)
-                turnHasText = true;
 
             // A stopped round keeps what it generated, but its tool calls never run.
             if (cancellationToken.IsCancellationRequested)
@@ -159,6 +156,8 @@ public static class ClientToolLoop
             if (!result.ToolCalls.All(c => limits.FreeRoundTools.Contains(c.Name)))
                 spentRounds++;
             bool lastRound = spentRounds == maxRounds || round == hardRoundCap;
+            // Models narrate as they work, so only the waiting round's own text can be the question.
+            bool roundHasText = result.Text.Trim().Length > 0;
             for (int i = 0; i < result.ToolCalls.Count; i++)
             {
                 var call = result.ToolCalls[i];
@@ -170,13 +169,12 @@ public static class ClientToolLoop
                         AppendToolResult(result.ToolCalls[j], CancelledToolOutput);
                     return;
                 }
-                // Waiting on a turn the user saw nothing of would leave them with nothing to answer.
-                bool silentWait = !turnHasText && limits.TurnEndingTools.Contains(call.Name);
+                bool silentWait = !roundHasText && limits.TurnEndingTools.Contains(call.Name);
                 AppendToolResult(call, silentWait ? SilentWaitOutput(call.Name) : toolResult.Output);
                 if (toolResult.EarnedReward)
                     spentRounds = Math.Max(0, spentRounds - maxRounds / 2);
             }
-            if (turnHasText && result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
+            if (roundHasText && result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
                 return;
             if (lastRound)
             {

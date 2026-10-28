@@ -86,7 +86,7 @@ public sealed class ClientToolLoopTests
     }
 
     [Fact]
-    public async Task Turn_ending_tool_without_any_text_this_turn_continues_and_asks_for_the_question()
+    public async Task Turn_ending_tool_without_text_in_its_round_continues_and_asks_for_the_question()
     {
         var run = new Run([
             new Round("tool_calls", Call: "wait"),
@@ -102,17 +102,19 @@ public sealed class ClientToolLoopTests
     }
 
     [Fact]
-    public async Task Turn_ending_tool_after_text_in_an_earlier_round_ends_the_turn()
+    public async Task Turn_ending_tool_needs_text_in_its_own_round_not_an_earlier_one()
     {
         var run = new Run([
-            new Round("tool_calls", Text: "Which folder?", Call: "lookup"),
+            new Round("tool_calls", Text: "Let me look first.", Call: "lookup"),
             new Round("tool_calls", Call: "wait"),
+            new Round("tool_calls", Text: "Which folder?", Call: "wait"),
             new Round("stop", Text: "never")]);
 
         await run.Go(new TurnLimits { TurnEndingTools = new HashSet<string> { "wait" } });
 
-        Assert.Equal([A, T, A, T], run.Roles);
-        Assert.Equal("RESULT", run.Transcript[3].Content);
+        Assert.Equal([A, T, A, T, A, T], run.Roles);
+        Assert.Equal(ClientToolLoop.SilentWaitOutput("wait"), run.Transcript[3].Content);
+        Assert.Equal("RESULT", run.Transcript[5].Content);
         Assert.Equal(1, run.Remaining);
     }
 
