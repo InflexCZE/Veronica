@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Keen.VRage.Core;
 using Keen.VRage.Core.Model;
 using Keen.VRage.Library.Extensions;
 using Keen.VRage.Library.Mathematics;
@@ -191,6 +192,61 @@ public sealed class FieldEditTests
     {
         Fails(() => Write("Scale", "\"{X: 5, Y: wide}\""));
         Assert.Equal(Vector3.One, _sample.Scale);
+    }
+
+    [Fact]
+    public void Transform_prints_position_and_euler_degrees_without_the_quaternion()
+    {
+        _sample.Dummies[0].Transform = new RelativeTransformWithEulerHint(new Vector3(0.125f, 0.125f, 0.5f), Quaternion.Identity);
+
+        string dump = Read();
+
+        Assert.Contains("Dummies[0].Transform.Transform = {Position: {X: 0.125, Y: 0.125, Z: 0.5}, Euler: {X: 0, Y: 0, Z: 0}} (RelativeTransform)", dump);
+        Assert.DoesNotContain("Orientation", dump);
+        Assert.DoesNotContain("EulerHint", dump);
+    }
+
+    [Fact]
+    public void Transform_writes_in_the_printed_form_and_keeps_the_euler_hint()
+    {
+        Write("Dummies[0].Transform.Transform", "\"{Position: {X: 0.125, Y: 0.125, Z: 0.6458988}, Euler: {X: 90}}\"");
+
+        var transform = _sample.Dummies[0].Transform;
+        Assert.Equal(new Vector3(0.125f, 0.125f, 0.6458988f), transform.Transform.Position);
+        Assert.Equal(new Vector3(90, 0, 0), transform.EulerHint);
+        Assert.Equal(Quaternion.CreateFromEuler(new Vector3(MathHelper.ToRadians(90), 0, 0)), transform.Transform.Orientation);
+        Assert.Contains("Euler: {X: 90, Y: 0, Z: 0}", Read("Dummies[0].Transform.Transform"));
+    }
+
+    [Fact]
+    public void Transform_takes_json_and_keeps_parts_left_out()
+    {
+        Write("Dummies[0].Transform.Transform", "{\"Euler\": {\"Y\": 45}}");
+        Write("Dummies[0].Transform.Transform", "{\"Position\": {\"Z\": 2}}");
+
+        var transform = _sample.Dummies[0].Transform;
+        Assert.Equal(new Vector3(0, 0, 2), transform.Transform.Position);
+        Assert.Equal(new Vector3(0, 45, 0), transform.EulerHint);
+    }
+
+    [Fact]
+    public void Transform_with_a_bad_part_changes_nothing()
+    {
+        Assert.Contains("Position, Euler", Fails(() => Write("Dummies[0].Transform.Transform", "\"{Position: {Z: 1}, Rotation: {X: 1}}\"")));
+        Assert.Equal(Vector3.Zero, _sample.Dummies[0].Transform.Transform.Position);
+    }
+
+    [Fact]
+    public void Transform_cannot_be_written_null()
+    {
+        Assert.Contains("cannot be null", Fails(() => Write("Dummies[0].Transform.Transform", "null")));
+    }
+
+    [Fact]
+    public void Transform_parts_stay_writable_by_path()
+    {
+        Write("Dummies[0].Transform.Transform.Position", "\"{X: 1}\"");
+        Assert.Equal(new Vector3(1, 0, 0), _sample.Dummies[0].Transform.Transform.Position);
     }
 
     [Fact]

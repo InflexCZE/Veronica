@@ -49,6 +49,8 @@ public static class FieldWriter
             throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; write its elements like '{canonical}[0]', or add one with element_add.");
         else if (Fields.IsScalar(Fields.ValueType(member)))
             member.SetValue<object?>(Values.FromJson(value, Fields.ValueType(member)));
+        else if (Fields.TryGetTransform(member, out var position, out var orientation))
+            Transforms.Write(canonical, position, orientation, value);
         else if (Fields.TryGetInlineFields(member, out var fields))
             WriteInline(canonical, fields, value);
         else if (IsNullStruct(member) && value.ValueKind is JsonValueKind.Object or JsonValueKind.String)
@@ -62,6 +64,9 @@ public static class FieldWriter
     // Null empties references and nullables and resets plain values; it never removes an object or a list.
     private static void Clear(MemberReference member, string path)
     {
+        // A transform's default has a zero quaternion, an invalid rotation that read would show as no rotation.
+        if (Nullable.GetUnderlyingType(member.DeclaredMemberType) == null && Fields.TryGetTransform(member, out _, out _))
+            throw new EditError($"'{path}' cannot be null; to reset it write {{Position: {{X: 0, Y: 0, Z: 0}}, Euler: {{X: 0, Y: 0, Z: 0}}}}.");
         Type declared = member.DeclaredMemberType;
         bool nullable = Fields.GetReference(member) != null
             || Nullable.GetUnderlyingType(declared) != null

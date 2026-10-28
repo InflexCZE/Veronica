@@ -43,6 +43,8 @@ public sealed class FieldReader
         }
         if (Fields.IsScalar(Fields.ValueType(member)))
             return RenderScalar(member, links);
+        if (Fields.TryGetTransform(member, out var position, out var orientation))
+            return Transforms.Render(position, orientation, links);
         if (Fields.TryGetInlineFields(member, out var fields))
             return RenderInline(fields, links);
         return member.GetValue<object?>() is null ? "null" : $"{{{string.Join(", ", Fields.VisibleMembers(member).Select(m => m.Name))}}}";
@@ -70,7 +72,7 @@ public sealed class FieldReader
             return;
         }
 
-        if (member.GetValue<object?>() is null || Fields.TryGetInlineFields(member, out _))
+        if (member.GetValue<object?>() is null || Fields.TryGetTransform(member, out _, out _) || Fields.TryGetInlineFields(member, out _))
         {
             DumpField(member, path, 0);
             return;
@@ -112,6 +114,12 @@ public sealed class FieldReader
             if (member.GetValue<object?>() is null)
             {
                 Add($"{path} = null ({label})");
+                return;
+            }
+
+            if (Fields.TryGetTransform(member, out var position, out var orientation))
+            {
+                Add($"{path} = {Transforms.Render(position, orientation, _links)} ({label})");
                 return;
             }
 

@@ -121,7 +121,7 @@ public static class Values
         return sb.Append('"').ToString();
     }
 
-    // The one-line struct form read prints: {X: 0.1, Y: 0.1}. Values may be quoted.
+    // The one-line struct form read prints: {X: 0.1, Y: 0.1}. Values may be quoted or nested {...}.
     public static Dictionary<string, string> ParseInline(string text)
     {
         string body = text.Trim();
@@ -149,12 +149,19 @@ public static class Values
     private static IEnumerable<string> SplitTopLevel(string text)
     {
         bool quoted = false;
+        int depth = 0;
         int start = 0;
         for (int i = 0; i < text.Length; i++)
         {
             if (text[i] == '"')
                 quoted = !quoted;
-            else if (text[i] == ',' && !quoted)
+            else if (quoted)
+                continue;
+            else if (text[i] == '{')
+                depth++;
+            else if (text[i] == '}')
+                depth--;
+            else if (text[i] == ',' && depth == 0)
             {
                 yield return text[start..i];
                 start = i + 1;

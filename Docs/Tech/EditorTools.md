@@ -54,6 +54,8 @@ The first set of agent tools that act on the loaded project. The target is build
 - The output is indented text with one line per field: `Dummies[0].Name = "Nozzle" (String)`. References print the target's path, never a GUID.
 - Dumps leave out read-only fields as computed noise. Reading a read-only field's exact path still shows it.
 - A value type with at most 4 visible fields, all plain scalars, prints on one line: `Scale = {X: 0.1, Y: 0.1, Z: 0.1} (Vector3)`.
+- A transform (a struct of a position and a quaternion, such as a dummy's `Transform.Transform`) prints on one line too, as the inspector shows it: the position and Euler angles in degrees, never the quaternion: `{Position: {X: 0.125, Y: 0.125, Z: 0.646}, Euler: {X: 0, Y: 0, Z: 0}}`. A pointer to read further reads to a small model as a transform with no position; the quaternion beside Euler angles would say the same rotation twice. Euler angles near X = +-90 degrees are in gimbal lock, where Y and Z can show as 180 instead of 0, as in the inspector; writing only some axes keeps the others as shown. A transform cannot be written `null`, since its default holds a zero quaternion.
+- The Euler angles are the stored Euler hint while it still matches the quaternion, else angles derived from the quaternion, the same rule as the inspector's. Euler hint fields themselves are hidden, as the inspector hides them.
 - An empty reference prints `none`. A null object prints `= null`.
 - Reading an enum field by its exact path also lists the enum's values.
 - Limits:
@@ -66,6 +68,8 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - `value` is a JSON value. A string is coerced to the field's declared type: numbers, bool, enum by name, StringId, localization key, fixed point.
 - **Small structs:** a value type that read prints inline accepts the same form: `{X: 0.1, Y: 0.1, Z: 0.1}`. Fields left out keep their value.
+- **Transforms** take the printed form, `{Position: {...}, Euler: {...}}`; either part, and any axis, may be left out and keeps its value. The Euler angles set the quaternion, and the Euler hint beside it is updated as the inspector does, so the inspector shows the angles that were written. The position's own path (`...Transform.Position.Z`) still writes one value; Euler has no path of its own.
+- **Reference values** point at an existing item, in the mod or in a read-only project; nothing is copied or created. The tool description says so, because a small model otherwise made its own copies of an item it could point at.
 - **References** (definitions, models, images): the value is a content item name or path. It is resolved like a target, among items compatible with the field's type only.
 - **Clear:** `null` resets the field to its type's default: null for references and nullables, a fresh default for plain value types. It never removes an object or a list that is not nullable.
 - **Null parents:** objects that are null along the path are created with their defaults first, like `create_folder` creates missing parents. If the write then fails, they are removed again. An abstract type cannot be created this way; the error names its concrete types. A null nullable struct also takes the one-line form directly.

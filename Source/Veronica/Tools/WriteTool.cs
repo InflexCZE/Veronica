@@ -9,10 +9,13 @@ public sealed class WriteTool : ITool
 {
     public string Name => "write";
 
-    public string Description => "Sets one field of a definition and saves it. Vanilla content is read-only.";
+    public string Description =>
+        "Sets one field of a definition and saves it. Vanilla content is read-only. " +
+        "A reference field (definition, model, image) points at an existing item by its name or path, in the mod or in a read-only project; " +
+        "the item is used as it is, nothing is copied or created.";
 
     public string Parameters => """
-        {"type":"object","properties":{"target":{"type":"string","description":"Project path of the definition, or its file name if unique"},"path":{"type":"string","description":"Field path as read prints it, e.g. Dummies[0].Name"},"value":{"description":"Number, true/false, text or enum name. A reference field takes the name or path of the item to point at. A struct read prints on one line takes the same form, e.g. {X: 0.1, Y: 0.1, Z: 0.1}. null resets the field."}},"required":["target","path","value"]}
+        {"type":"object","properties":{"target":{"type":"string","description":"Project path of the definition, or its file name if unique"},"path":{"type":"string","description":"Field path as read prints it, e.g. Dummies[0].Name"},"value":{"description":"Number, true/false, text or enum name. A reference field takes the name or path of the item to point at. A struct read prints on one line takes the same form, e.g. {X: 0.1, Y: 0.1, Z: 0.1}; a transform takes {Position: {...}, Euler: {...}} with Euler in degrees. null resets the field."}},"required":["target","path","value"]}
         """;
 
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
