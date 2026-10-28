@@ -9,7 +9,7 @@ Needs:
 
 Plan:
 - Read the comparable vanilla thruster
-- Fill thrust power and power use
+- Fill thrust power and power use: both, from the comparable thruster unless the user wants more or less force
 - Place the nozzle dummies: position and scale; leave the other dummies as they are
 - Set flame and sound, only when the user asks
 - Show the block
