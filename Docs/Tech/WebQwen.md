@@ -63,3 +63,4 @@ One folder, side by side:
 - Gate: top-1 agreement >= 97.2%, median KL <= 0.002, p95 KL <= 0.025 (KL over the reference top-20, both sides renormalised), first token right on at least 11 of 12 prompts. Speed is not gated.
 - The references are the browser build's dumps for the exact model library, committed with the tests. They are refreshed with the engine: pulling a new WebQwen build checks which slices shipped and takes the dumps of any changed library.
 - Model files for development and tests come from the manifest's pinned Hugging Face revision and are verified against its hashes, whether downloaded or copied from a local build.
+- The protocol tests run `WebQwen.exe`'s server against the plugin's connection, with a scripted engine. They live in `WebQwen.Tests`, which needs the native toolchain anyway, so `Veronica.Tests` builds with the managed SDK alone.

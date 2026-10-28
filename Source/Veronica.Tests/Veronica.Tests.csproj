@@ -23,7 +23,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Veronica.Agent\Veronica.Agent.csproj" />
     <ProjectReference Include="..\Veronica.Editing\Veronica.Editing.csproj" />
-    <ProjectReference Include="..\WebQwen\WebQwen.csproj" />
   </ItemGroup>
 
   <!-- Copied, with what they depend on: xunit skips a test assembly whose references it cannot find. -->

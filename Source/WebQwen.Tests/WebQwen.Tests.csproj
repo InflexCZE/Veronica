@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebQwen\WebQwen.csproj" />
+    <ProjectReference Include="..\Veronica.Agent\Veronica.Agent.csproj" />
   </ItemGroup>
 
   <ItemGroup>

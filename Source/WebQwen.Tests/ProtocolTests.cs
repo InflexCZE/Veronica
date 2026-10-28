@@ -7,7 +7,7 @@ using WebQwen;
 using Xunit;
 using AgentMessage = Veronica.Agent.ChatMessage;
 
-namespace Veronica.Tests;
+namespace WebQwen.Tests;
 
 // WebQwen.exe's server and the plugin's connection, talking over in-memory pipes with a
 // scripted engine in place of the model.

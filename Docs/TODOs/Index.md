@@ -31,7 +31,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
 | [PlanChainFollowUps.md](PlanChainFollowUps.md) | Skills: optional follow-up skills (add-to-gscreen) are lost in a skill chain |
-| [WebQwenTests.md](WebQwenTests.md) | Tests: Veronica.Tests needs the WebQwen native toolchain through the protocol tests |
 | [PartialPrefabs.md](PartialPrefabs.md) | Editor tools: no partial copies or overrides of prefabs |
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
