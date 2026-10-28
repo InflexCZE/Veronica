@@ -11,6 +11,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [InstallStrategy.md](InstallStrategy.md) | Where Veronica finds WebQwen.exe and the model (owner decision) |
 | [ContextFull.md](ContextFull.md) | Chat: full context window (owner decision) |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
+| [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
