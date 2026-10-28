@@ -1,0 +1,61 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "95cd6324-ec44-4b7a-b1b3-61b78bb7a90c",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "4390ec40-660d-42b1-afe8-011c0a86cdf8",
+      "Model": "{G}80daf2f1-7198-4b43-a372-9b70944f18b8",
+      "Dummies": {
+        "$DeltaEncoded": true,
+        "Keys": [
+          "8a02bab9-8efc-413c-a33e-26fd38da3e5e",
+          "e6116da8-a999-46d3-83d1-c0b8c589644c"
+        ],
+        "Changed": [
+          {
+            "Kind": "Update",
+            "Index": 0,
+            "Value": {
+              "Transform": {
+                "Transform": {
+                  "Position": {
+                    "X": 0,
+                    "Y": 0,
+                    "Z": 0.6458988
+                  },
+                  "Orientation": {
+                    "X": 0,
+                    "Y": 0,
+                    "Z": 0,
+                    "W": 1
+                  }
+                },
+                "EulerHint": {
+                  "X": 0,
+                  "Y": 0,
+                  "Z": 0
+                }
+              },
+              "Scale": {
+                "X": 0.1,
+                "Y": 0.1,
+                "Z": 0.1
+              }
+            }
+          }
+        ],
+        "Removed": []
+      },
+      "FractureModel": "{G}d3357744-5d16-4bfb-8db8-264ea7957924",
+      "DamagedModel": "{G}6f6efd87-56ed-4703-af01-1f3b2784ad61"
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.Models.BlockModelComponentDefinition",
+    "PriorityOverride": false
+  }
+}

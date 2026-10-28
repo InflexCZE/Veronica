@@ -1,0 +1,20 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "b0f5744e-d40e-41d3-8417-24094a872f0e",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "5345ee18-fac9-4876-bace-a27b6bab5e48",
+      "UIData": {
+        "Name": "My Thruster"
+      }
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.PowerableBlockDefinition",
+    "PriorityOverride": false
+  }
+}
