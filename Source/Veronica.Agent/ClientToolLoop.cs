@@ -11,6 +11,9 @@ public static class ClientToolLoop
     public static string RoundCapNotice(int maxRounds) =>
         $"Stopped after {maxRounds} tool rounds in one turn. Send a new message (e.g. \"continue\") if the work is unfinished.";
 
+    public static string SilentWaitOutput(string tool) =>
+        $"The user has not seen anything from you this turn, so there is nothing for them to answer. Write your question to the user as text first, then call {tool}.";
+
     public static IProviderSession CreateSession(StreamRound stream) => new Session(stream);
 
     private sealed class Session(StreamRound stream) : IProviderSession
@@ -93,6 +96,7 @@ public static class ClientToolLoop
         int nudgesSent = 0;
         bool endNudgeArmed = true;
         int spentRounds = 0;
+        bool turnHasText = false;
         for (int round = 1; round <= hardRoundCap; round++)
         {
             var result = await StreamRoundAsync().ConfigureAwait(false);
@@ -104,6 +108,8 @@ public static class ClientToolLoop
                 Reasoning = result.Reasoning.Length > 0 ? result.Reasoning : null,
                 ToolCalls = result.ToolCalls.Count > 0 ? result.ToolCalls : null,
             });
+            if (result.Text.Trim().Length > 0)
+                turnHasText = true;
 
             // A stopped round keeps what it generated, but its tool calls never run.
             if (cancellationToken.IsCancellationRequested)
@@ -164,11 +170,13 @@ public static class ClientToolLoop
                         AppendToolResult(result.ToolCalls[j], CancelledToolOutput);
                     return;
                 }
-                AppendToolResult(call, toolResult.Output);
+                // Waiting on a turn the user saw nothing of would leave them with nothing to answer.
+                bool silentWait = !turnHasText && limits.TurnEndingTools.Contains(call.Name);
+                AppendToolResult(call, silentWait ? SilentWaitOutput(call.Name) : toolResult.Output);
                 if (toolResult.EarnedReward)
                     spentRounds = Math.Max(0, spentRounds - maxRounds / 2);
             }
-            if (result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
+            if (turnHasText && result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
                 return;
             if (lastRound)
             {

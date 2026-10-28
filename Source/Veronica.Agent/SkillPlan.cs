@@ -22,6 +22,10 @@ public sealed class SkillPlan
     private readonly HashSet<string> _read = new(StringComparer.OrdinalIgnoreCase);
     private string? _skill;
     private List<PlanItem> _items = [];
+    private int _unplannedEdits;
+
+    public const string ActivationHint =
+        "No skill is active. If a skill fits this work, activate it with " + ActivateSkillTool.ToolName + " so its plan keeps track of what is left.";
 
     public static IReadOnlySet<string> ToolNames { get; } = new HashSet<string>
     {
@@ -51,6 +55,18 @@ public sealed class SkillPlan
             _read.Clear();
             _skill = null;
             _items = [];
+            _unplannedEdits = 0;
+        }
+    }
+
+    // Edits made while no plan is open: the first carries the hint, then every tenth, so it reminds without nagging.
+    public string? EditHint()
+    {
+        lock (_lock)
+        {
+            if (Current() >= 0)
+                return null;
+            return _unplannedEdits++ % 10 == 0 ? ActivationHint : null;
         }
     }
 
@@ -72,6 +88,7 @@ public sealed class SkillPlan
                     $". Before activating another skill, call {MarkCompletedTool.ToolName} with proof for each one you did, " +
                     $"or {MarkSkippedTool.ToolName} with the reason it does not apply.";
             _skill = skill.Name;
+            _unplannedEdits = 0;
             _items = skill.Plan.Select(i => new PlanItem(i, PlanItemState.Open)).ToList();
             var result = new StringBuilder($"Skill {skill.Name} is active. ").Append(WorkOn(0));
             if (_read.Add(skill.Name))
@@ -211,4 +228,20 @@ public sealed class WaitForUserTool : ITool
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
         Task.FromResult(new ToolResult("Waiting for the user."));
+}
+
+// An editing tool whose results carry the plan's activation hint while no skill plan is open.
+public sealed class PlanHintedTool(ITool inner, SkillPlan plan) : ITool
+{
+    public string Name => inner.Name;
+
+    public string Description => inner.Description;
+
+    public string Parameters => inner.Parameters;
+
+    public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
+    {
+        var result = await inner.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
+        return plan.EditHint() is { } hint ? result with { Output = result.Output + "\n\n" + hint } : result;
+    }
 }

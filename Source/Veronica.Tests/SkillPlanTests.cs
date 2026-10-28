@@ -21,10 +21,44 @@ public sealed class SkillPlanTests
             new MarkCompletedTool(Plan),
             new MarkSkippedTool(Plan),
             new WaitForUserTool(),
+            new PlanHintedTool(new Fake("write"), Plan),
+            new Fake("read"),
         ]);
 
         public string Call(string name, string arguments = "{}") =>
             Tools.ExecuteAsync(new ToolCall("c", name, arguments), CancellationToken.None).Result.Output;
+    }
+
+    private sealed class Fake(string name) : ITool
+    {
+        public string Name => name;
+        public string Description => "d";
+        public string Parameters => """{"type":"object","properties":{}}""";
+        public Task<ToolResult> ExecuteAsync(System.Text.Json.JsonElement arguments, CancellationToken cancellationToken) => Task.FromResult(new ToolResult("OK"));
+    }
+
+    [Fact]
+    public void Edits_without_a_plan_carry_the_activation_hint_first_and_then_every_tenth()
+    {
+        var chat = new Chat();
+
+        var hinted = Enumerable.Range(1, 21).Where(_ => chat.Call("write").EndsWith(SkillPlan.ActivationHint)).ToList();
+
+        Assert.Equal([1, 11, 21], hinted);
+        chat.Plan.Reset();
+        Assert.Equal("OK\n\n" + SkillPlan.ActivationHint, chat.Call("write"));
+        Assert.Equal("OK", chat.Call("write"));
+    }
+
+    [Fact]
+    public void Edits_during_a_plan_and_reads_never_carry_the_hint()
+    {
+        var chat = new Chat();
+        Assert.Equal("OK", chat.Call("read"));
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+
+        Assert.Equal("OK", chat.Call("write"));
+        Assert.Equal("OK", chat.Call("read"));
     }
 
     [Fact]

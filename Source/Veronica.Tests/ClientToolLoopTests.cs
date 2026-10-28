@@ -86,6 +86,37 @@ public sealed class ClientToolLoopTests
     }
 
     [Fact]
+    public async Task Turn_ending_tool_without_any_text_this_turn_continues_and_asks_for_the_question()
+    {
+        var run = new Run([
+            new Round("tool_calls", Call: "wait"),
+            new Round("tool_calls", Text: "What name?", Call: "wait"),
+            new Round("stop", Text: "never")]);
+
+        await run.Go(new TurnLimits { TurnEndingTools = new HashSet<string> { "wait" } });
+
+        Assert.Equal([A, T, A, T], run.Roles);
+        Assert.Equal(ClientToolLoop.SilentWaitOutput("wait"), run.Transcript[1].Content);
+        Assert.Equal("RESULT", run.Transcript[3].Content);
+        Assert.Equal(1, run.Remaining);
+    }
+
+    [Fact]
+    public async Task Turn_ending_tool_after_text_in_an_earlier_round_ends_the_turn()
+    {
+        var run = new Run([
+            new Round("tool_calls", Text: "Which folder?", Call: "lookup"),
+            new Round("tool_calls", Call: "wait"),
+            new Round("stop", Text: "never")]);
+
+        await run.Go(new TurnLimits { TurnEndingTools = new HashSet<string> { "wait" } });
+
+        Assert.Equal([A, T, A, T], run.Roles);
+        Assert.Equal("RESULT", run.Transcript[3].Content);
+        Assert.Equal(1, run.Remaining);
+    }
+
+    [Fact]
     public async Task Plain_reply_ends_the_turn_with_reasoning_kept()
     {
         var run = new Run([new("stop", Reasoning: "hmm", Text: "Hello.")]);
