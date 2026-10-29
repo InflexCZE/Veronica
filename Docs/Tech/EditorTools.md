@@ -17,6 +17,8 @@ The first set of agent tools that act on the loaded project. The target is build
 | `create_prefab(template, name, folder)` | generates a prefab's definition set from a template |
 | `create_partial(source, kind, folder, name?)` | creates a partial override or copy of a definition |
 | `create_definition(type, name, folder)` | creates a new definition of a type, with its defaults |
+| `component_add(prefab, type, definition?)` | adds a component to a block, on the sides its type belongs to, with its dependencies |
+| `component_remove(prefab, component)` | removes a component from a block |
 | `show(target)` | selects an item in the Editor and opens it in the Render View |
 
 `add(a, b)` is removed when these land.
@@ -50,6 +52,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - A field is visible when the Property Inspector would show it, as decided by the inspector's own `DefaultObjectInspectorVisibilityStrategy.ShouldGenerate` (HideInInspector, NoSerialize, dev-mode gating, public accessor).
 - Fields marked `[SelectedItemOf]` are always hidden: they are UI selection mirrors and read as empty structs outside the live inspector.
 - A short hardcoded list of fields is always visible: data the inspector hides because the Editor edits it in a dedicated window, which the model otherwise cannot see at all (a particle effect's emitters and lights).
+- Inside a component's object builder the inspector's stricter prefab rule applies on top: a field is visible only when `[ForceShowInInspector]` sits on it, its type or an object above it, with no member lacking a public setter in between. Everything else there is internal engine data.
 - Read and write reach visible fields only.
 
 ## read
@@ -64,7 +67,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - A colour prints as its channels, `{R: 255, G: 0, B: 0, A: 255} (ColorSRGB)`, and its packed value is hidden: shown beside the channels, a model wrote both and got the packing wrong.
 - An empty reference prints `none`. A null object prints `= null`.
 - A path never walks into a reference: `Effect.ParticleLight` on a field that points at another definition is refused with a pointer to read that item. Through the reference sits the engine's runtime object, not the file, and walking it gave placeholders and raw exceptions.
-- A prefab binding (the item a prefab is named by) shows no fields of its own, so reading it lists the block's definitions instead, in `create_prefab`'s form: its prefabs, their compositions and the component definitions those point at, from the binding's own project only, since components shared with other blocks are not part of this one. Reading a field path on it, or writing or editing elements on it, fails with the same list. An empty definition reads to a small model as the place to look for the block's fields.
+- A prefab, its binding and its compositions read as the block's component list (see Prefab components).
 - Reading an enum field by its exact path also lists the enum's values.
 - Limits:
   - A list shows its first 5 elements, then `... (+N more, read "Dummies[5]" and on)`.
@@ -99,6 +102,31 @@ The first set of agent tools that act on the loaded project. The target is build
 - `element_remove(target, path)` removes the element at a path as read prints it: `Dummies[1]`, `ThrustClasses[Ion]` or `ThrustClasses.Ion`. The reply says that list elements after it moved up one index.
 - Both go through the engine's own collection operations, so on a `.partialdef` they are recorded as overrides like any write.
 - A collection without a setter is still edited in place; one marked `[ReadOnlyInInspector]` is not.
+
+## Prefab components
+
+A block is a prefab binding that pairs a client prefab with a server composition. Each side is a composition (the component list: type, component definition, tags) and a prefab (each component's object builder), joined by one Guid per component. A component with the same Guid on both sides is one component on both sides.
+
+- **The block is the unit.** The tools act on the block through the Editor's own prefab layer (`PrefabManipulator.LoadBinding`, `BoundEntitiesNode`), the layer behind the inspector's prefab view, so client/server pairing, dependency filling and saving follow the inspector's rules.
+- **Tolerant target:** any of the block's files names the block: the binding, either prefab, either composition. A prefab or composition with a binding is replaced by its binding; replies print the binding's path. A prefab with no binding is edited the same way, as a one-sided block. The model is not expected to work on single prefabs, and a target it gets wrong this way would otherwise cost rounds.
+- **Naming a component:** by its type's short name, `Components[ThrusterComponent]`. A type present more than once is named by its tag; a component with no tag of its own is named by the first 8 hex digits of its Guid, `Components[#1a2b3c4d]`, longer only when two share a prefix. Read prints the name every tool takes.
+- **Component paths:** `Components[X].Definition` is the component's definition reference; the component's visible object builder fields sit beside it, `Components[X].Field`. If an object builder has its own field named `Definition`, the path still means the definition reference. `read`, `write`, `element_add` and `element_remove` take these paths on the block. Which side's value a component on both sides shows, and how an edit reaches both sides, is the prefab layer's, as in the inspector.
+- **read(block)** lists the components and nothing else, one line each: type, sides, tags, definition.
+  ```
+  ThrusterComponent (Client and Server) tags: Thruster  definition: Assets/X/X_IonThrusterDefinition.partialdef
+  ThrusterFlameComponent (Client) tags: Flame  needs ThrusterFlameDefinition
+  ```
+  The sides print as `Client`, `Server` or `Client and Server`. A path on the block that is not under `Components` fails with the same list.
+- **component_add(prefab, type, definition?)** is the inspector's Add Component:
+  - The offered types are the inspector's: concrete component types whose side fits the block and whose object builders serialize, minus types already present unless they allow several. An unknown type lists the offered types containing its words.
+  - The type's side decides where it goes: `[ServerOnly]` to the server, a client assembly's type to the client, anything else to both.
+  - Missing required dependencies are added with it, on their own sides, as the inspector does.
+  - `definition` points the component at an existing item, resolved like a reference write among items of the component's definition type. Nothing is created.
+  - The reply names the added component, its sides, the dependencies added with it, and every component of them still without a definition its type needs, with the fix: create one with `create_definition` and write it to `Components[X].Definition`. A component without its definition fails the block's validation.
+- **component_remove(prefab, component)** removes the component from every side it is on.
+  - It is refused when another component on the same side has a required dependency on a tag the component fills; the error names those components. Removing it would break the block at load.
+  - The component's definition file is left in place. When nothing else in the project references it any more, the reply says it is unused.
+- **Scope:** the root entity only (`Docs/TODOs/PrefabChildEntities.md`). A block's side toggles and tag slots are not tool operations. Overrides of a dependency's prefab are not made by the tools (`Docs/TODOs/PartialPrefabs.md`).
 
 ## find_content and list_folder
 
@@ -161,10 +189,10 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
 
 | assembly | holds | tested by |
 |---|---|---|
-| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
-| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation) and the `ITool` wrappers | by hand in the Editor: a full thruster build on the dev mod, reverted with git |
+| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
+| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer) and the `ITool` wrappers | by hand in the Editor: a full thruster build on the dev mod, and adding, editing and removing a component on its block, reverted afterwards |
 
-- `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.
+- `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The prefab visibility rule therefore recognises the prefab root by its type name. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.
 - `Veronica.Agent.dll` stays free of SE2 references.
 - `Veronica.Tests` needs the Editor folder to build:
   - It copies the engine assemblies it references and the native `Optick.dll` the engine's type indexers start.

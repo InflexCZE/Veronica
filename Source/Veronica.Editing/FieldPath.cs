@@ -55,6 +55,14 @@ public static class FieldPath
         return segments;
     }
 
+    public static string Join(IEnumerable<PathSegment> segments)
+    {
+        string path = "";
+        foreach (var segment in segments)
+            path = segment.Bracketed ? Element(path, segment.Text) : Member(path, segment.Text);
+        return path;
+    }
+
     public static string Member(string parent, string name) => parent.Length == 0 ? name : $"{parent}.{name}";
 
     public static string Element(string parent, string token) => $"{parent}[{token}]";

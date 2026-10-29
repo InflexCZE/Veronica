@@ -51,9 +51,11 @@ internal static class Content
     public static List<T> Pick<T>(IReadOnlyCollection<T> items, string query) where T : ExplorerItem =>
         ContentNames.Pick(items, i => i.ProjectRelativePath, i => i.Project.Name, query);
 
-    public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(LoadedProject project, string target)
+    public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(LoadedProject project, string target) =>
+        Definition(Resolve(project, target));
+
+    public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(ExplorerAssetFile asset)
     {
-        var asset = Resolve(project, target);
         if (asset.AssetInterface is not IDefinitionAssetInterface definition)
             throw new EditError($"'{asset.ProjectRelativePath}' is not a definition; only definitions have fields to read and write.");
         return (asset, definition.GetDefinitionManipulator());

@@ -40,4 +40,5 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ProviderSelection.md](ProviderSelection.md) | Chat: OpenAI-compatible and Claude providers chosen by environment variables, no UI (owner decision) |
 | [ClaudeProviderGaps.md](ClaudeProviderGaps.md) | Chat: Claude provider review findings not yet fixed (one owner decision) |
 | [OpenAiServerQuirks.md](OpenAiServerQuirks.md) | Chat: OpenAI-compatible server behaviours not handled (one owner decision) |
-| [PrefabComponentVisibility.md](PrefabComponentVisibility.md) | Editor tools: prefab definitions show internal component fields the inspector hides |
+| [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |
+| [PrefabComponentEdits.md](PrefabComponentEdits.md) | Editor tools: prefab component edits refused per block, not per side; no rollback of a failed add |

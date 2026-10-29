@@ -20,11 +20,11 @@ public sealed class FieldReader
         _maxLines = maxLines;
     }
 
-    public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines)
+    public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines, string basePath = "")
     {
-        if (Transforms.WalkEuler(root, path) is { } euler)
+        if (Transforms.WalkEuler(root, path, basePath) is { } euler)
             return Transforms.ReadEuler(euler);
-        var (member, canonical) = path.Trim().Length == 0 ? (root, "") : FieldWalker.Walk(root, path);
+        var (member, canonical) = path.Trim().Length == 0 ? (root, basePath) : FieldWalker.Walk(root, path, basePath);
         return Dump(member, canonical, links, maxLines);
     }
 

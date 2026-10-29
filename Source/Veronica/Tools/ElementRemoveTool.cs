@@ -21,8 +21,10 @@ public sealed class ElementRemoveTool : ITool
         string path = Args.Text(arguments, "path");
         return new ToolResult(await EditorProject.RunAsync(project =>
         {
-            var (asset, fields) = Content.Definition(project, target);
-            Prefabs.RequireNotBinding(asset);
+            var resolved = Content.Resolve(project, target);
+            if (Block.TryOpen(project, resolved) is { } block)
+                return block.ElementRemove(path);
+            var (asset, fields) = Content.Definition(resolved);
             Content.RequireWritable(asset);
             string reply = Elements.Remove(fields.Root, path);
             Content.Save(asset);

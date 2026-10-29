@@ -6,23 +6,25 @@ namespace Veronica.Editing;
 public static class FieldWriter
 {
     // Returns "Path: old -> new".
-    public static string Write(MemberReference root, string path, JsonElement value, IContentLinks links)
+    public static string Write(MemberReference root, string path, JsonElement value, IContentLinks links, string basePath = "")
     {
         if (path.Trim().Length == 0)
-            throw new EditError("Give the path of the field to write, e.g. 'UIData.Name'.");
-        if (Transforms.WalkEuler(root, path) is { } euler)
+            throw new EditError(basePath.Length == 0
+                ? "Give the path of the field to write, e.g. 'UIData.Name'."
+                : $"Give the path of a field of '{basePath}', e.g. '{basePath}.Name'.");
+        if (Transforms.WalkEuler(root, path, basePath) is { } euler)
             return Transforms.WriteEuler(euler, value);
 
-        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links));
+        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links), basePath);
     }
 
     // Null objects on the path are created for the edit and removed again if it fails.
-    internal static string CreatingParents(MemberReference root, string path, Func<MemberReference, string, string> edit)
+    internal static string CreatingParents(MemberReference root, string path, Func<MemberReference, string, string> edit, string basePath = "")
     {
         var created = new List<(MemberReference Member, string Path)>();
         try
         {
-            var (member, canonical) = FieldWalker.Walk(root, path, created);
+            var (member, canonical) = FieldWalker.Walk(root, path, created, basePath);
             string reply = edit(member, canonical);
             return created.Count == 0 ? reply : $"{reply} (created {string.Join(", ", created.Select(c => c.Path))})";
         }

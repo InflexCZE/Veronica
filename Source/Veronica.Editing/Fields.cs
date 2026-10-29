@@ -8,6 +8,7 @@ using Keen.VRage.Library.UI.PropertyInspector;
 using Keen.VRage.Library.UI.PropertyInspector.Visibility;
 using Keen.VRage.Library.Utils;
 using Keen.VRage.Library.Utils.Assets;
+using Keen.VRage.UI.Shared.ObjectInspector.Extensions;
 using Keen.VRage.UI.Shared.ObjectInspector.Strategies;
 
 namespace Veronica.Editing;
@@ -45,11 +46,35 @@ public static class Fields
             // A colour's packed value is its R, G, B and A again; a model wrote both and got the packing wrong.
             if (IsPackedColour(member))
                 return false;
-            return Visibility.ShouldGenerate(member);
+            if (!Visibility.ShouldGenerate(member))
+                return false;
+            return !InPrefab(member) || ForceShownChain(member);
         }
         catch (Exception)
         {
             return false;
+        }
+    }
+
+    // The inspector's ObjectBuilderVisibilityStrategy, which needs a live property element to run. By name, since
+    // this assembly does not reference the game assemblies the type lives in.
+    private const string PrefabRootType = "Keen.VRage.Core.Game.Definitions.PrefabDefinitionObjectBuilder";
+
+    private static bool InPrefab(MemberReference member) =>
+        member.Manipulator.Root.Manipulator.Instance?.GetType().FullName == PrefabRootType;
+
+    // Inside a prefab a field shows only through [ForceShowInInspector] on it, its type or a parent, met before
+    // any member without a public setter on the way up.
+    private static bool ForceShownChain(MemberReference member)
+    {
+        for (var at = member; ; at = at.GetParent())
+        {
+            if (at.GetMemberOrTypeAttribute<ForceShowInInspectorAttribute>() != null)
+                return true;
+            if (at.IsMember && !at.HasPublicSetter())
+                return false;
+            if (at.IsRoot)
+                return false;
         }
     }
 

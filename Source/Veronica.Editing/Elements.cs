@@ -14,11 +14,11 @@ public static class Elements
 
     // Adds a default element: appended to a list, or under key in a dictionary or keyed list.
     // Returns its path and its fields, ready for write.
-    public static string Add(MemberReference root, string path, string? key, string? typeName, IContentLinks links)
+    public static string Add(MemberReference root, string path, string? key, string? typeName, IContentLinks links, string basePath = "")
     {
         if (path.Trim().Length == 0)
             throw new EditError("Give the path of the list or dictionary, e.g. 'Dummies'.");
-        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, links));
+        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, links), basePath);
     }
 
     private static string AddTo(MemberReference collection, string canonical, string? key, string? typeName, IContentLinks links)
@@ -81,12 +81,12 @@ public static class Elements
     }
 
     // Removes the element at a path read prints, e.g. Dummies[1] or Classes[Ion].
-    public static string Remove(MemberReference root, string path)
+    public static string Remove(MemberReference root, string path, string basePath = "")
     {
         if (path.Trim().Length == 0)
             throw new EditError("Give the path of the element to remove, e.g. 'Dummies[1]'.");
 
-        var (element, canonical) = FieldWalker.Walk(root, path);
+        var (element, canonical) = FieldWalker.Walk(root, path, basePath);
         if (!element.IsCollectionItem)
             throw new EditError($"'{canonical}' is not a list or dictionary element; remove takes a path like 'Dummies[1]'.");
 

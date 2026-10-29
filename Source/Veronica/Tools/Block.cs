@@ -1,0 +1,433 @@
+using System.Text.Json;
+using Keen.VRage.ContentPipeline.Definitions;
+using Keen.VRage.ContentPipeline.Definitions.AssetInterfaces;
+using Keen.VRage.ContentPipeline.Game.Prefabs;
+using Keen.VRage.ContentPipeline.Project.Structure;
+using Keen.VRage.ContentPipeline.Project.Utils;
+using Keen.VRage.Core.Game.Components;
+using Keen.VRage.Core.Game.Definitions;
+using Keen.VRage.Core.Game.Editor.PrefabManipulators;
+using Keen.VRage.Core.Game.Editor.PrefabManipulators.BoundEntities;
+using Keen.VRage.Core.Game.Editor.PrefabManipulators.BoundEntities.Components;
+using Keen.VRage.Core.Game.Editor.PrefabManipulators.EntityPrefab;
+using Keen.VRage.DCS.Components;
+using Keen.VRage.DCS.Definitions;
+using Keen.VRage.DCS.Internal;
+using Keen.VRage.Editor.Windows.PropertyInspector.PropertyElements.Custom.Definitions.Prefabs.Core;
+using Keen.VRage.Library.Definitions;
+using Keen.VRage.Library.Serialization;
+using Keen.VRage.UI.Shared.ObjectInspector;
+using Keen.VRage.UI.Shared.ObjectInspector.Extensions;
+using Veronica.Editing;
+
+namespace Veronica.Tools;
+
+// A block, or a prefab with no binding, edited as a whole through the Editor's own prefab layer, the one behind the
+// inspector's prefab view: client and server pairing, dependency filling and the shared components' mirroring are its.
+// Any file of the block opens it, so a model naming one of its prefabs edits the block the same way.
+internal sealed class Block
+{
+    private const string DefinitionField = "Definition";
+
+    private readonly LoadedProject _project;
+    private readonly string? _soleSide;
+
+    // The binding, or the prefab when there is none; replies name it.
+    public ExplorerAssetFile Item { get; }
+    private IEntityNode Root { get; }
+
+    private Block(LoadedProject project, ExplorerAssetFile item, IEntityNode root, string? soleSide)
+    {
+        _project = project;
+        Item = item;
+        Root = root;
+        _soleSide = soleSide;
+    }
+
+    public static Block Open(LoadedProject project, string target)
+    {
+        var asset = Content.Resolve(project, target);
+        return TryOpen(project, asset)
+            ?? throw new EditError($"{Content.Describe(asset)} is not a block; give its prefab binding or one of its prefabs.");
+    }
+
+    // Null when the asset is not part of a prefab.
+    public static Block? TryOpen(LoadedProject project, ExplorerAssetFile asset)
+    {
+        Type? type = DefinitionType(asset);
+        bool binding = asset.IsPrefabBindingDefinition();
+        if (!binding && type != typeof(PrefabDefinition) && type != typeof(EntityCompositeDefinition))
+            return null;
+
+        var bindingAsset = binding ? asset : project.TryGetPrefabBindingInProject(asset.AssetID);
+        if (bindingAsset == null)
+        {
+            var prefab = type == typeof(PrefabDefinition) ? asset
+                : project.TryGetPrefabGuidOfCompositeDefinition(asset.AssetID) is { } prefabId ? project.GetAssetFileByGuid(prefabId) : null;
+            return prefab == null ? null : new Block(project, prefab, Manipulator(project).LoadPrefab(prefab.AssetID), null);
+        }
+
+        var pairing = bindingAsset.TryGetPairingAllowIncomplete();
+        var client = pairing.clientPrefab is { } c ? project.GetAssetFileByGuid(c.Guid) : null;
+        var server = pairing.serverPrefab is { } s ? project.GetAssetFileByGuid(s.Guid) : null;
+        if (client != null && server != null)
+            return new Block(project, bindingAsset, Manipulator(project).LoadBinding(client.AssetID, server.AssetID), null);
+        if (client != null || server != null)
+            return new Block(project, bindingAsset, Manipulator(project).LoadPrefab((client ?? server)!.AssetID), client != null ? "Client" : "Server");
+        throw new EditError($"{Content.Shown(bindingAsset)} is a prefab binding with no client or server prefab set.");
+    }
+
+    private static Type? DefinitionType(ExplorerAssetFile asset)
+    {
+        try
+        {
+            return (asset.AssetInterface as IDefinitionAssetInterface)?.DefinitionType;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    // As the inspector builds it; the serializer copies a shared component's data to its other side.
+    private static PrefabManipulator Manipulator(LoadedProject project)
+    {
+        CustomSerializationContext[] contexts = [new ProjectDefinitionSerializationContext(project)];
+        return new PrefabManipulator(new PrefabDefinitionsProvider(project),
+            (custom, member) => member.SerializeToJson(custom ?? contexts),
+            (member, json) => member.DeserializeFromJson<object>(json, contexts));
+    }
+
+    private ProjectLinks Links => new(_project, Item);
+
+    private IEnumerable<EntityPrefabNode> Sides() => Root switch
+    {
+        BoundEntitiesNode bound => new[] { bound.ClientEntity, bound.ServerEntity }.OfType<EntityPrefabNode>(),
+        EntityPrefabNode prefab => [prefab],
+        _ => [],
+    };
+
+    // The files edits land in: each side's prefab and composition, overrides included.
+    private List<ExplorerAssetFile> Files() =>
+        Sides().SelectMany(s => new[] { s.DefinitionsIds.PrefabId, s.DefinitionsIds.CompositeId })
+            .Select(_project.GetAssetFileByGuid).OfType<ExplorerAssetFile>().Distinct().ToList();
+
+    private void RequireWritable()
+    {
+        foreach (var file in Files())
+            Content.RequireWritable(file);
+    }
+
+    private void Save()
+    {
+        foreach (var file in Files())
+            Content.Save(file);
+    }
+
+    private List<ComponentEntry> Entries() =>
+        Root.Components.Select(c => new ComponentEntry(c.Id, c.ComponentType.Name, c.Tags.Select(t => t.ToString()).ToList())).ToList();
+
+    private (IComponentNode Component, string Name) Find(string token)
+    {
+        var entries = Entries();
+        var entry = ComponentNames.Find(entries, token);
+        return (Root.Components.First(c => c.Id == entry.Id), ComponentNames.Assign(entries)[entry.Id]);
+    }
+
+    private string SideLabel(IComponentNode component) => component switch
+    {
+        SharedComponent => " (Client and Server)",
+        SingleSideComponent single => single.IsServer ? " (Server)" : " (Client)",
+        _ => _soleSide != null ? $" ({_soleSide})" : "",
+    };
+
+    private static Type? DefinitionTypeOf(IComponentNode component) => RuntimeComponentInfo.For(component.ComponentType).Definition;
+
+    private static Guid? DefinitionId(IComponentNode component) =>
+        component.Definition.GetValue<Definition?>() is { } definition && definition.Guid != Guid.Empty ? definition.Guid : null;
+
+    private string ComponentList()
+    {
+        var names = ComponentNames.Assign(Entries());
+        var lines = Root.Components.OrderBy(c => names[c.Id], StringComparer.OrdinalIgnoreCase).Select(c =>
+        {
+            string name = names[c.Id];
+            string line = name == c.ComponentType.Name ? name : $"{name} = {c.ComponentType.Name}";
+            line += SideLabel(c);
+            if (c.Tags.Count > 0)
+                line += $" tags: {string.Join(", ", c.Tags.Select(t => t.ToString()).Order(StringComparer.Ordinal))}";
+            if (DefinitionId(c) is { } id)
+                line += $"  definition: {Links.PathOf(id) ?? "(missing item)"}";
+            else if (DefinitionTypeOf(c) is { } needed)
+                line += $"  needs {needed.Name}";
+            return line;
+        }).ToList();
+        return lines.Count == 0 ? "(no components)" : string.Join("\n", lines);
+    }
+
+    private EditError NotAComponentPath() => new(
+        $"{Content.Shown(Item)} is a block; its fields are its components'. Use a path like {ComponentNames.PathOf("<name>")}.<field>. Components:\n{ComponentList()}");
+
+    private (IComponentNode Component, string Name, string Inner) Locate(string path)
+    {
+        if (ComponentNames.Split(path) is not var (token, inner))
+            throw NotAComponentPath();
+        var (component, name) = Find(token);
+        return (component, name, inner);
+    }
+
+    private static bool IsDefinition(string inner, out bool deeper)
+    {
+        var segments = FieldPath.Parse(inner);
+        deeper = segments.Count > 1;
+        return segments.Count > 0 && !segments[0].Bracketed && string.Equals(segments[0].Text, DefinitionField, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string DefinitionLine(IComponentNode component, string name)
+    {
+        string path = FieldPath.Member(ComponentNames.PathOf(name), DefinitionField);
+        string value = DefinitionId(component) is { } id ? Links.PathOf(id) ?? "(missing item)" : "none";
+        string type = DefinitionTypeOf(component)?.Name ?? "takes no definition";
+        return $"{path} = {value} ({type})";
+    }
+
+    // A component type without an object builder has no fields; its member would read as an empty object.
+    private static MemberReference ObjectBuilder(IComponentNode component, string name) =>
+        RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder != null
+            ? component.ObjectBuilder
+            : throw new EditError($"{ComponentNames.PathOf(name)} has no fields; only its {DefinitionField} can be set.");
+
+    public string Read(string path)
+    {
+        string header = $"{Content.Describe(Item)}:";
+        if (path.Trim().Length == 0 || ComponentNames.IsCollection(path))
+            return $"{header}\n{ComponentList()}\nRead a component's fields with path {ComponentNames.PathOf("<name>")}.";
+
+        var (component, name, inner) = Locate(path);
+        string basePath = ComponentNames.PathOf(name);
+        if (inner.Length > 0 && IsDefinition(inner, out bool deeper))
+        {
+            if (deeper)
+                throw new EditError($"'{FieldPath.Member(basePath, DefinitionField)}' is a reference to another item; read that item for its fields.");
+            return $"{header}\n{DefinitionLine(component, name)}";
+        }
+
+        if (inner.Length > 0)
+            return $"{header}\n{FieldReader.Read(ObjectBuilder(component, name), inner, Links, basePath: basePath)}";
+
+        string fields = RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder == null
+            ? $"{basePath}: (no fields)"
+            : FieldReader.Read(component.ObjectBuilder, "", Links, maxLines: FieldReader.MaxLines - 1, basePath: basePath);
+        return $"{header}\n{DefinitionLine(component, name)}\n{fields}";
+    }
+
+    public string Write(string path, JsonElement value)
+    {
+        var (component, name, inner) = Locate(path);
+        string basePath = ComponentNames.PathOf(name);
+        RequireWritable();
+
+        string reply;
+        if (inner.Length > 0 && IsDefinition(inner, out bool deeper))
+        {
+            if (deeper)
+                throw new EditError($"'{FieldPath.Member(basePath, DefinitionField)}' is a reference; write the item's own fields on that item.");
+            reply = WriteDefinition(component, name, value);
+        }
+        else
+        {
+            reply = FieldWriter.Write(ObjectBuilder(component, name), inner, value, Links, basePath);
+        }
+        return Applied(component, reply);
+    }
+
+    public string ElementAdd(string path, string? key, string? type)
+    {
+        var (component, name, inner) = Locate(path);
+        if (inner.Length > 0 && IsDefinition(inner, out _))
+            throw new EditError($"'{FieldPath.Member(ComponentNames.PathOf(name), DefinitionField)}' is a reference, not a list.");
+        if (inner.Length == 0)
+            throw new EditError($"To add a component use component_add; element_add takes a list inside one, e.g. {ComponentNames.PathOf(name)}.<list>.");
+        RequireWritable();
+        return Applied(component, Elements.Add(ObjectBuilder(component, name), inner, key, type, Links, ComponentNames.PathOf(name)));
+    }
+
+    public string ElementRemove(string path)
+    {
+        var (component, name, inner) = Locate(path);
+        if (inner.Length == 0)
+            throw new EditError($"To remove {ComponentNames.PathOf(name)} use component_remove.");
+        RequireWritable();
+        return Applied(component, Elements.Remove(ObjectBuilder(component, name), inner, ComponentNames.PathOf(name)));
+    }
+
+    // A shared component's edit lands on its client side; the prefab layer copies it to the server side.
+    private string Applied(IComponentNode component, string reply)
+    {
+        component.ApplyChanges();
+        Save();
+        return $"{Content.Shown(Item)}: {reply}";
+    }
+
+    private string WriteDefinition(IComponentNode component, string name, JsonElement value)
+    {
+        string path = FieldPath.Member(ComponentNames.PathOf(name), DefinitionField);
+        string before = DefinitionId(component) is { } old ? Links.PathOf(old) ?? "(missing item)" : "none";
+        if (value.ValueKind == JsonValueKind.Null)
+            component.Definition.SetDefault();
+        else if (value.ValueKind != JsonValueKind.String || value.GetString()!.Trim().Length == 0)
+            throw new EditError($"'{path}' is a reference; give the name or path of the definition to point at, or null to clear it.");
+        else
+            component.Definition.SetValue<object?>(DefinitionReference(component, value.GetString()!.Trim()));
+        string after = DefinitionId(component) is { } id ? Links.PathOf(id) ?? "(missing item)" : "none";
+        return $"{path}: {before} -> {after}";
+    }
+
+    // Resolved among items of the definition type the component's type takes, not any definition the field could hold.
+    private Definition DefinitionReference(IComponentNode component, string itemName)
+    {
+        var type = DefinitionTypeOf(component)
+            ?? throw new EditError($"A {component.ComponentType.Name} takes no definition.");
+        var link = Links.Find(itemName, new ReferenceSpec(component.Definition, ReferenceKind.Definition, [type], []));
+        return Links.CreateDefinitionReference(link.Id);
+    }
+
+    public string Add(string typeQuery, string? definition)
+    {
+        var choices = AddableTypes();
+        var type = DefinitionTypes.Pick(choices, typeQuery, "Component", "component type", "ThrusterComponent");
+        if (!RuntimeComponentInfo.For(type).AllowMultiple && Root.Components.FirstOrDefault(c => c.ComponentType == type) is { } present)
+            throw new EditError($"{Content.Shown(Item)} already has {ComponentNames.PathOf(ComponentNames.Assign(Entries())[present.Id])}; a {type.Name} is there once per entity.");
+
+        Definition? reference = null;
+        if (definition != null)
+        {
+            var needed = RuntimeComponentInfo.For(type).Definition ?? throw new EditError($"A {type.Name} takes no definition; leave definition out.");
+            var link = Links.Find(definition, new ReferenceSpec(default, ReferenceKind.Definition, [needed], []));
+            reference = Links.CreateDefinitionReference(link.Id);
+        }
+        RequireWritable();
+
+        var before = Root.Components.Select(c => c.Id).ToHashSet();
+        var id = Root.AddComponent(type);
+        foreach (var component in Root.Components.ToList())
+            component.PopulateMissingDependencies();
+
+        var added = Root.Components.First(c => c.Id == id);
+        if (reference != null)
+        {
+            added.Definition.SetValue<object?>(reference);
+            added.ApplyChanges();
+        }
+        Save();
+
+        var names = ComponentNames.Assign(Entries());
+        string Label(IComponentNode c) => ComponentNames.PathOf(names[c.Id]) + SideLabel(c);
+        var lines = new List<string> { $"{Content.Shown(Item)}: added {Label(added)}." };
+
+        var dependencies = Root.Components.Where(c => c.Id != id && !before.Contains(c.Id)).ToList();
+        if (dependencies.Count > 0)
+            lines.Add($"Added with it for its dependencies: {string.Join(", ", dependencies.Select(Label))}.");
+
+        foreach (var c in dependencies.Prepend(added).Where(c => DefinitionId(c) == null && DefinitionTypeOf(c) != null))
+        {
+            string path = ComponentNames.PathOf(names[c.Id]);
+            lines.Add($"{path} needs a {DefinitionTypeOf(c)!.Name}; the block fails validation without it. Point it at one with write to {path}.Definition, or create one with create_definition first.");
+        }
+        return string.Join("\n", lines);
+    }
+
+    public string Remove(string token)
+    {
+        var (component, name) = Find(token);
+        string path = ComponentNames.PathOf(name);
+        RequireWritable();
+
+        var dependents = Dependents(component);
+        if (dependents.Count > 0)
+            throw new EditError($"{path} cannot be removed: {string.Join(", ", dependents.Select(ComponentNames.PathOf))} depend{(dependents.Count == 1 ? "s" : "")} on it. Remove them first.");
+
+        string sides = SideLabel(component);
+        Guid? definition = DefinitionId(component);
+        var files = Files().Select(f => f.AssetID).ToHashSet();
+        Root.RemoveComponent(component.Id);
+        Save();
+
+        string reply = $"{Content.Shown(Item)}: removed {path}{sides}.";
+        if (definition is { } id && _project.GetAssetFileByGuid(id) is { Project.IsReadOnly: false } asset && Unused(id, files) == true)
+            reply += $" Its definition {Content.Shown(asset)} is no longer used by anything.";
+        return reply;
+    }
+
+    // The engine's dependency rule, run backwards: a required dependency is a tag the component fills on its side.
+    private List<string> Dependents(IComponentNode component)
+    {
+        var names = ComponentNames.Assign(Entries());
+        var found = new HashSet<Guid>();
+        foreach (var side in Sides())
+        {
+            if (!side.ComponentsMap.TryGetValue(component.Id, out var own))
+                continue;
+            foreach (var (otherId, other) in side.ComponentsMap)
+            {
+                if (otherId != component.Id && RuntimeComponentInfo.For(other.ComponentType).BuildDependencies.Any(d => !d.Optional && own.Tags.Contains(d.Tag)))
+                    found.Add(otherId);
+            }
+        }
+        return found.Select(id => names[id]).Order(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    // Null when the project keeps no reference graph. The block's own files are left out, since the graph may not
+    // have caught up with the removal yet; what the block still uses is read from the block itself.
+    private bool? Unused(Guid definition, HashSet<Guid> blockFiles)
+    {
+        if (Root.Components.Any(c => DefinitionId(c) == definition))
+            return false;
+        if (!_project.ReferencesManager.Enabled)
+            return null;
+        return _project.ReferencesManager.GetDirectDependenciesTo(definition).All(d => blockFiles.Contains(d.guid));
+    }
+
+    // The inspector's Add Component list, for this block's sides.
+    private IReadOnlyCollection<Type> AddableTypes()
+    {
+        var scope = Root is BoundEntitiesNode bound ? bound.Scope : ComponentScope.Shared;
+        return TypeOptionManager.FindOptions(typeof(Component),
+                (_, candidate) => Addable(candidate, scope),
+                null,
+                $"Veronica_Component_{scope}")
+            .ToList();
+    }
+
+    private static bool Addable(Type candidate, ComponentScope scope)
+    {
+        if (candidate.IsAbstract || candidate.ContainsGenericParameters || !RuntimeComponentInfo.IsComponent(candidate))
+            return false;
+        // Hierarchy holds child entities, which the inspector offers in developer mode only.
+        if (candidate == typeof(HierarchyComponent) || !CreateDefinitionTool.GameVisible(candidate))
+            return false;
+        var own = ComponentScopeUtility.GetComponentScope(candidate);
+        if (scope == ComponentScope.Client && (own & ComponentScope.Client) == 0)
+            return false;
+        if (scope == ComponentScope.Server && (own & ComponentScope.Server) == 0)
+            return false;
+        return Serializable(candidate, []);
+    }
+
+    // Its object builder and those of its required dependencies serialize, or the prefab could not be saved.
+    private static bool Serializable(Type component, HashSet<Type> seen)
+    {
+        if (!seen.Add(component))
+            return true;
+        var info = RuntimeComponentInfo.For(component);
+        if (info.ObjectBuilder != null && !SerializationHelper.TryGetSerializer(info.ObjectBuilder, out _))
+            return false;
+        foreach (var dependency in info.BuildDependencies)
+        {
+            var type = dependency.Field.FieldType;
+            if (!dependency.Optional && RuntimeComponentInfo.IsComponent(type) && !Serializable(type, seen))
+                return false;
+        }
+        return true;
+    }
+}

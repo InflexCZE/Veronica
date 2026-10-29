@@ -8,13 +8,14 @@ public static class FieldWalker
     private const int MaxKeysListed = 30;
 
     // Resolves a field path from the definition root. Path is the canonical form of what was walked.
-    public static (MemberReference Member, string Path) Walk(MemberReference root, string path) => Walk(root, path, null);
+    // basePath is how paths print above root, when root is not the definition's own root.
+    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, string basePath = "") => Walk(root, path, null, basePath);
 
     // For writes: null objects on the way are created like mkdir -p, and listed so a failed write can undo them.
-    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, List<(MemberReference Member, string Path)>? created)
+    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, List<(MemberReference Member, string Path)>? created, string basePath = "")
     {
         var member = root;
-        string canonical = "";
+        string canonical = basePath;
         foreach (var segment in FieldPath.Parse(path))
         {
             switch (member.MemberKind)

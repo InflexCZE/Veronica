@@ -23,8 +23,10 @@ public sealed class ElementAddTool : ITool
         string? type = Args.OptionalText(arguments, "type");
         return new ToolResult(await EditorProject.RunAsync(project =>
         {
-            var (asset, fields) = Content.Definition(project, target);
-            Prefabs.RequireNotBinding(asset);
+            var resolved = Content.Resolve(project, target);
+            if (Block.TryOpen(project, resolved) is { } block)
+                return block.ElementAdd(path, key, type);
+            var (asset, fields) = Content.Definition(resolved);
             Content.RequireWritable(asset);
             string reply = Elements.Add(fields.Root, path, key, type, new ProjectLinks(project, asset));
             Content.Save(asset);

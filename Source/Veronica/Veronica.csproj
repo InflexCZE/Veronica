@@ -44,6 +44,7 @@
     <Reference Include="$(EditorDir)VRage.ContentPipeline.Game.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Core.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Core.Game.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Core.Game.Editor.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.DCS.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Editor.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />

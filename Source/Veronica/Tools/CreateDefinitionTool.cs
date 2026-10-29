@@ -81,7 +81,7 @@ public sealed class CreateDefinitionTool : ITool
             static (_, candidate) => GameVisible(candidate),
             "Veronica_DefinitionCreation");
 
-    private static bool GameVisible(Type type)
+    internal static bool GameVisible(Type type)
     {
         if (type.Assembly.GetCustomAttribute<ScriptingAssemblyAttribute>() != null)
             return true;

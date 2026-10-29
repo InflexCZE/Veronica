@@ -38,7 +38,7 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
         if (candidate.AssetID == owner.AssetID)
             return false;
 
-        bool wantsSource = spec.Field.GetMemberAttribute<AssetReferenceTypeAttribute>() is { ReferenceType: ReferenceType.AssetSource };
+        bool wantsSource = !spec.Field.IsDefault && spec.Field.GetMemberAttribute<AssetReferenceTypeAttribute>() is { ReferenceType: ReferenceType.AssetSource };
         if (wantsSource ? candidate is not ExplorerAssetSourceFile : candidate is not ExplorerAssetFile)
             return false;
 

@@ -1,18 +1,20 @@
 namespace Veronica.Editing;
 
-// How create_definition names a definition type: its short name, with or without the "Definition" suffix.
+// How tools name an engine type: its short name, with or without its kind's suffix ("Definition", "Component").
 public static class DefinitionTypes
 {
     public const int MaxListed = 20;
-    private const string Suffix = "Definition";
 
-    public static Type Pick(IReadOnlyCollection<Type> choices, string query)
+    public static Type Pick(IReadOnlyCollection<Type> choices, string query) =>
+        Pick(choices, query, "Definition", "definition type", "BlockKindDefinition");
+
+    public static Type Pick(IReadOnlyCollection<Type> choices, string query, string suffix, string noun, string example)
     {
         string wanted = query.Trim();
         if (wanted.Length == 0)
-            throw new EditError("Give a definition type, e.g. BlockKindDefinition.");
+            throw new EditError($"Give a {noun}, e.g. {example}.");
 
-        var exact = choices.Where(t => Same(t.Name, wanted) || Same(t.Name, wanted + Suffix) || Same(t.FullName, wanted)).ToList();
+        var exact = choices.Where(t => Same(t.Name, wanted) || Same(t.Name, wanted + suffix) || Same(t.FullName, wanted)).ToList();
         if (exact.Count == 1)
             return exact[0];
         if (exact.Count > 1)
@@ -22,10 +24,10 @@ public static class DefinitionTypes
         var near = choices.Where(t => words.All(w => t.Name.Contains(w, StringComparison.OrdinalIgnoreCase)))
             .Select(t => t.Name).Distinct().Order(StringComparer.OrdinalIgnoreCase).ToList();
         if (near.Count == 0)
-            throw new EditError($"No definition type is named '{wanted}', and none contains its words; try one word of the type name.");
+            throw new EditError($"No {noun} is named '{wanted}', and none contains its words; try one word of the type name.");
         string listed = string.Join(", ", near.Take(MaxListed));
         string more = near.Count > MaxListed ? $", ... ({near.Count - MaxListed} more; add a word)" : "";
-        throw new EditError($"No definition type is named '{wanted}'; types containing its words: {listed}{more}.");
+        throw new EditError($"No {noun} is named '{wanted}'; types containing its words: {listed}{more}.");
     }
 
     private static bool Same(string? a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
