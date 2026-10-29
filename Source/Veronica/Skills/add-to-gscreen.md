@@ -25,6 +25,7 @@ Steps:
 2. Tile: an existing BlockGroupDefinition, or a new one:
    create_definition("BlockGroupDefinition", <name>, folder); write(group, "Name", <tile name>)
    Then element_add(kind, "BlockGroups") and write(kind, "BlockGroups[i]", group).
+   A kind joins a tile through its own BlockGroups; that also works for vanilla tiles without an override. A tile's BlockKinds only sets a manual order; leave it empty.
 3. For a new tile, its subcategory: an existing SubcategoryDefinition, or a new one:
    create_definition("SubcategoryDefinition", <name>, folder); write Name and Tooltip
    element_add(group, "Subcategories"); write(group, "Subcategories[i]", subcategory)

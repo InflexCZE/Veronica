@@ -67,6 +67,20 @@ public sealed class FieldEditTests
     }
 
     [Fact]
+    public void An_unset_immutable_array_reads_as_empty()
+    {
+        Assert.Contains("Unset: empty list of Entry", Read("Unset"));
+        Assert.Equal("'Unset' is empty.", Fails(() => Read("Unset[0].Speed")));
+    }
+
+    [Fact]
+    public void A_path_does_not_walk_into_a_reference()
+    {
+        _sample.DummyType = _links.CreateDefinitionReference(FakeLinks.Thruster) as DummyTypeDefinition;
+        Assert.Contains("'DummyType' is a reference to another item", Fails(() => Read("DummyType.Name")));
+    }
+
+    [Fact]
     public void Dictionary_entries_print_with_bracket_keys()
     {
         string dump = Read("Classes");

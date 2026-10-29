@@ -28,6 +28,10 @@ public static class FieldWalker
                 case MemberValueKind.Value:
                     if (segment.Bracketed)
                         throw new EditError($"{Where(canonical)} is not a list or dictionary; remove the [{segment.Text}].");
+                    // A reference holds the engine's runtime object, not the referenced file's data; walking it read
+                    // placeholders and uninitialized arrays.
+                    if (!member.IsRoot && Fields.GetReference(member) != null)
+                        throw new EditError($"'{canonical}' is a reference to another item; read \"{canonical}\" to see which, then read that item for its fields.");
                     if (created != null && !member.IsRoot && member.GetValue<object?>() is null)
                         Create(member, canonical, created);
                     RequireValue(member, canonical);
@@ -96,7 +100,7 @@ public static class FieldWalker
             throw new EditError($"'{path}' is a list; address an element like '{path}[0]'.");
         RequireValue(list, path);
 
-        int count = list.GetCollectionCount();
+        int count = Fields.CollectionCount(list);
         if (int.TryParse(segment.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
         {
             if (index < 0 || index >= count)

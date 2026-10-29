@@ -64,7 +64,7 @@ public static class Elements
             return $"Added {path}:\n{FieldReader.Dump(collection.GetDictionaryItem(parsedKey!), path, links)}";
         }
 
-        int index = collection.GetCollectionCount();
+        int index = Fields.CollectionCount(collection);
         if (parsedKey != null)
         {
             if (collection.KeyedListContainsKey(parsedKey))
@@ -96,7 +96,7 @@ public static class Elements
         bool list = collection.MemberKind == MemberValueKind.List;
         element.RemoveCollectionItem();
 
-        int left = collection.GetCollectionCount();
+        int left = Fields.CollectionCount(collection);
         return list
             ? $"Removed {canonical}; the elements after it moved up one index, {left} left."
             : $"Removed {canonical}; {left} left.";

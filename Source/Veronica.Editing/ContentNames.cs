@@ -5,8 +5,9 @@ public static class ContentNames
 {
     public static string Normalize(string path) => path.Trim().Replace('/', '\\').Trim('\\');
 
+    // A colon separates too: models write "Project:Assets/..." for a project's item, and no file name holds one.
     public static string[] Segments(string folderPath) =>
-        Normalize(folderPath).Split('\\', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Normalize(folderPath).Split(['\\', ':'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     // A project-relative path, or a bare file name; the extension is optional either way.
     public static bool Matches(string projectRelativePath, string query)

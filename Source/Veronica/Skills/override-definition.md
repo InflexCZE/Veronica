@@ -15,6 +15,7 @@ Plan:
 
 Steps:
 1. Find the definition that holds the value: find_content with words of the thing and of the definition type, e.g. "IonThruster100 ThrusterEffects". Vanilla blocks are in Assets/Blocks/<family>/<name>/<size in cm>, one definition per component: ThrusterDefinition (force), ThrusterEffectsComponentDefinition (flame), BlockEffectsComponentDefinition (sound), PowerableBlockDefinition (name, power, build cost).
+   A flame's or effect's colour is in its particle effect's emitters (the effect's ParticleEmitters; in each emitter, the keys under TimeLines.Color, X, Y, Z = red, green, blue and W = alpha: keep W). The effect's ParticleLight is only the glow. Override the emitters themselves; a copy changes nothing until something points at it.
 2. read(def) to find the field.
 3. create_partial(def, "override", folder). An override changes the original everywhere it is used; values left alone keep following the original. When the mod already has an override of it, the error names that file: write to it instead.
 4. write(override, field, value) for each change.

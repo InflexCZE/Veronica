@@ -44,6 +44,7 @@ public partial class Sample
     public MergeableList<ModelDummy> Merged = new();
     public ImmutableMergeableList<Entry> Frozen = ImmutableMergeableList<Entry>.Empty;
     public KeyedList<string, Entry> Named = new();
+    public System.Collections.Immutable.ImmutableArray<Entry> Unset;
 
     public Entry Settings { get; } = new();
 

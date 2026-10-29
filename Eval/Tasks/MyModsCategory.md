@@ -15,7 +15,7 @@ I want my thruster in its own G-Screen category called My Mods.
 ## Pass
 
 1. A new `BlockKindDefinition` in the dev mod, and the block's `PowerableBlockDefinition.BlockKind` points at it (no longer at vanilla's `IonThrusterBlockKindDefinition`).
-2. The kind's `BlockGroups` holds a new `BlockGroupDefinition` (the tile) named "My Thrusters".
+2. A new `BlockGroupDefinition` (the tile) named "My Thrusters" holds the kind, listed once, through the kind's `BlockGroups` or the tile's `BlockKinds` (both are authored and merged at load).
 3. The tile's `Subcategories` holds a new `SubcategoryDefinition` with the agreed name and tooltip.
 4. The subcategory's `Categories` holds a new `CategoryDefinition` named "My Mods", with the agreed tooltip.
 5. No vanilla G-Screen definition is overridden.

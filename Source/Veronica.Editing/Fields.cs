@@ -289,6 +289,16 @@ public static class Fields
     }
 
     // Immutable mergeable lists are edited through the list they wrap, as the inspector does.
+    // A default ImmutableArray throws on Count; it holds nothing, so it counts as empty.
+    public static int CollectionCount(MemberReference collection)
+    {
+        object? value = collection.GetValue<object?>();
+        if (value != null && value.GetType() is { IsGenericType: true } type && type.GetGenericTypeDefinition() == typeof(System.Collections.Immutable.ImmutableArray<>)
+            && (bool)type.GetProperty(nameof(System.Collections.Immutable.ImmutableArray<int>.IsDefault))!.GetValue(value)!)
+            return 0;
+        return collection.GetCollectionCount();
+    }
+
     public static MemberReference Unwrap(MemberReference member) => member.TryGetImmutableMergeableListData() ?? member;
 
     // A mergeable list keys its elements with new ids itself; other keyed lists need a key with every element.

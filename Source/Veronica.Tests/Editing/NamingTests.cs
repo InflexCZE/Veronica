@@ -60,6 +60,8 @@ public sealed class NamingTests
     [InlineData(@"Vanilla/Assets/Blocks/Ion/200/Models/Deformed.model", @"Assets\Blocks\Ion\200\Models\Deformed.model")]
     [InlineData(@"MyMod\Deformed", @"Assets\Mk2\Deformed.model")]
     [InlineData(@"Vanilla\Note", @"Assets\Vanilla\Note.def")]
+    [InlineData(@"MyMod:Assets/Mk2/Deformed.model", @"Assets\Mk2\Deformed.model")]
+    [InlineData(@"Vanilla:Assets\Blocks\Ion\200\Models\Deformed", @"Assets\Blocks\Ion\200\Models\Deformed.model")]
     public void Pick_takes_shortened_paths_and_project_names(string query, string expected) => Assert.Equal([expected], Pick(query));
 
     [Fact]
@@ -140,6 +142,7 @@ public sealed class NamingTests
     [Theory]
     [InlineData("Vanilla", "Vanilla")]
     [InlineData("vanilla/", "Vanilla")]
+    [InlineData("Vanilla:", "Vanilla")]
     [InlineData("Vanilla/Assets", null)]
     [InlineData("Assets", null)]
     public void A_bare_project_name_is_its_root(string folder, string? expected) =>

@@ -41,7 +41,7 @@ public sealed class FieldReader
         if (member.MemberKind != MemberValueKind.Value)
         {
             object? collection = member.GetValue<object?>();
-            return collection is null ? "null" : $"{member.MemberKind.ToString().ToLowerInvariant()} of {member.GetCollectionCount()}";
+            return collection is null ? "null" : $"{member.MemberKind.ToString().ToLowerInvariant()} of {Fields.CollectionCount(member)}";
         }
         if (Fields.IsScalar(Fields.ValueType(member)))
             return RenderScalar(member, links);
@@ -153,7 +153,7 @@ public sealed class FieldReader
             return;
         }
 
-        int count = member.GetCollectionCount();
+        int count = Fields.CollectionCount(member);
         switch (member.MemberKind)
         {
             case MemberValueKind.List:
