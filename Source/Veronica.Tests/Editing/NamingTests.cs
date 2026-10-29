@@ -150,10 +150,12 @@ public sealed class NamingTests
     [InlineData("particle configuration", "Override of X.partialdef", "ParticleEffectsConfiguration", true)]
     [InlineData("ion_thruster", "IonThrusterDefinition.def", null, true)]
     [InlineData("ThrusterDefinition", "Engine.partialdef", "ThrusterDefinition", true)]
+    [InlineData("CubeBlockDefinition", "MyThruster.def", "PowerableBlockDefinition,CubeBlockDefinition,Definition", true)]
+    [InlineData("CubeBlockDefinition", "MyThruster.def", "ThrusterDefinition,Definition", false)]
     [InlineData("particle water", "ParticleEffectsConfiguration.def", null, false)]
     [InlineData(" ", "Anything.def", null, false)]
-    public void Find_content_needs_every_word(string query, string fileName, string? typeName, bool matches) =>
-        Assert.Equal(matches, ContentNames.QueryMatches(query, fileName, typeName));
+    public void Find_content_needs_every_word(string query, string fileName, string? typeNames, bool matches) =>
+        Assert.Equal(matches, ContentNames.QueryMatches(query, fileName, typeNames?.Split(',') ?? []));
 
     private static readonly string[] All =
     [

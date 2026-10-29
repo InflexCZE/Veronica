@@ -241,6 +241,68 @@ public sealed class ClientToolLoopTests
     }
 
     [Fact]
+    public async Task Call_cut_by_the_length_limit_keeps_empty_arguments_is_not_run_and_the_turn_continues()
+    {
+        var run = new Run([]);
+        StreamRound stream = (r, d, ct) =>
+        {
+            run.Sent.Add(r.Messages);
+            if (run.Sent.Count == 1)
+            {
+                d(new ToolCallDelta(0, "a", "write", "{\"x\":1}"));
+                d(new ToolCallDelta(1, "b", "write", "{\"x\":"));
+                d(new DoneDelta("length"));
+            }
+            else
+                d(new DoneDelta("stop"));
+            return Task.CompletedTask;
+        };
+        await ClientToolLoop.RunAsync(stream, new TurnRequest("SYS", [], [], new TurnLimits()), run, CancellationToken.None);
+
+        Assert.Equal([A, T, T, A], run.Roles);
+        Assert.Equal([new ToolCall("a", "write", "{\"x\":1}"), new ToolCall("b", "write", "{}")], run.Transcript[0].ToolCalls);
+        Assert.Equal(["write"], run.ToolsRun);
+        Assert.Equal("RESULT", run.Transcript[1].Content);
+        Assert.Equal(ClientToolLoop.CutCallOutput, run.Transcript[2].Content);
+        Assert.Equal("b", run.Transcript[2].ToolCallId);
+        Assert.Equal(2, run.Sent.Count);
+    }
+
+    [Fact]
+    public async Task Cut_turn_ending_call_does_not_end_the_turn()
+    {
+        var run = new Run([]);
+        StreamRound stream = (r, d, ct) =>
+        {
+            run.Sent.Add(r.Messages);
+            if (run.Sent.Count == 1)
+            {
+                d(new TextDelta("Which name?"));
+                d(new ToolCallDelta(0, "a", "wait", "{\"q"));
+                d(new DoneDelta("length"));
+            }
+            else
+                d(new DoneDelta("stop"));
+            return Task.CompletedTask;
+        };
+        await ClientToolLoop.RunAsync(stream, new TurnRequest("SYS", [], [], new TurnLimits { TurnEndingTools = new HashSet<string> { "wait" } }), run, CancellationToken.None);
+
+        Assert.Empty(run.ToolsRun);
+        Assert.Equal(ClientToolLoop.CutCallOutput, run.Transcript[1].Content);
+        Assert.Equal(2, run.Sent.Count);
+    }
+
+    [Fact]
+    public async Task Complete_calls_of_a_length_cut_round_run_unchanged()
+    {
+        var run = new Run([new("length", Call: "read"), new("stop", Text: "ok")]);
+        await run.Go();
+
+        Assert.Equal(["read"], run.ToolsRun);
+        Assert.Equal("RESULT", run.Transcript[1].Content);
+    }
+
+    [Fact]
     public async Task End_nudge_sends_the_model_back()
     {
         var run = new Run([new("stop", Text: "All done."), new("tool_calls", Call: "read"), new("stop", Text: "Now done."), new("stop", Text: "Really.")]);

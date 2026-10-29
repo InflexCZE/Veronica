@@ -132,13 +132,13 @@ public static class ContentNames
         return previous[b.Length];
     }
 
-    // find_content: every word of the query is part of the file name or the definition type.
-    public static bool QueryMatches(string query, string fileName, string? typeName)
+    // find_content: every word of the query is part of the file name or the definition type or one of its base types.
+    public static bool QueryMatches(string query, string fileName, IReadOnlyList<string> typeNames)
     {
         string[] words = query.Split([' ', '\t', '/', '\\', '_', '-'], StringSplitOptions.RemoveEmptyEntries);
         return words.Length > 0 && words.All(w =>
             fileName.Contains(w, StringComparison.OrdinalIgnoreCase)
-            || (typeName?.Contains(w, StringComparison.OrdinalIgnoreCase) ?? false));
+            || typeNames.Any(t => t.Contains(w, StringComparison.OrdinalIgnoreCase)));
     }
 
     private static string WithoutExtension(string path)

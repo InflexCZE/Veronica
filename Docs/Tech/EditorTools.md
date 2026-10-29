@@ -61,6 +61,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - A transform (a struct of a position and a quaternion, such as a dummy's `Transform.Transform`) prints on one line too, as the inspector shows it: the position and Euler angles in degrees, never the quaternion: `{Position: {X: 0.125, Y: 0.125, Z: 0.646}, Euler: {X: 0, Y: 0, Z: 0}}`. A pointer to read further reads to a small model as a transform with no position; the quaternion beside Euler angles would say the same rotation twice. Euler angles near X = +-90 degrees are in gimbal lock, where Y and Z can show as 180 instead of 0, as in the inspector; writing only some axes keeps the others as shown. A transform cannot be written `null`, since its default holds a zero quaternion.
 - A wrapper of one transform and its Euler hint, such as a dummy's `Transform`, is the same transform: it prints, writes and takes `.Euler` and `.Position` as the transform inside it does, and a dump shows only the wrapper's line, one line per dummy. Mirroring a dummy is one write to `Dummies[i].Transform`; refused as a whole, the wrapper cost a model rounds of field-by-field writes. The inner `...Transform.Transform` path still works.
 - The Euler angles are the stored Euler hint while it still matches the quaternion, else angles derived from the quaternion, the same rule as the inspector's. Euler hint fields themselves are hidden, as the inspector hides them.
+- A colour prints as its channels, `{R: 255, G: 0, B: 0, A: 255} (ColorSRGB)`, and its packed value is hidden: shown beside the channels, a model wrote both and got the packing wrong.
 - An empty reference prints `none`. A null object prints `= null`.
 - A prefab binding (the item a prefab is named by) shows no fields of its own, so reading it lists the block's definitions instead, in `create_prefab`'s form: its prefabs, their compositions and the component definitions those point at, from the binding's own project only, since components shared with other blocks are not part of this one. Reading a field path on it, or writing or editing elements on it, fails with the same list. An empty definition reads to a small model as the place to look for the block's fields.
 - Reading an enum field by its exact path also lists the enum's values.
@@ -73,7 +74,7 @@ The first set of agent tools that act on the loaded project. The target is build
 ## write
 
 - `value` is a JSON value. A string is coerced to the field's declared type: numbers, bool, enum by name, StringId, localization key, fixed point.
-- **Small structs:** a value type that read prints inline accepts the same form: `{X: 0.1, Y: 0.1, Z: 0.1}`. Fields left out keep their value.
+- **Small structs:** a value type that read prints inline accepts the same form: `{X: 0.1, Y: 0.1, Z: 0.1}`. Fields left out keep their value. A colour takes `{R, G, B, A}` the same way, so a left-out alpha is kept.
 - **Transforms** take the printed form, `{Position: {...}, Euler: {...}}`; either part, and any axis, may be left out and keeps its value. The Euler angles set the quaternion, and the Euler hint beside it is updated as the inspector does, so the inspector shows the angles that were written. The position's own path (`...Transform.Position.Z`) still writes one value.
 - **Euler path:** `...Transform.Euler` and `...Transform.Euler.X` read and write the angles in degrees like the `Euler` part of the one-line form. They are not fields; the path ends at the transform and names its angles.
 - **The quaternion is not addressable:** read and write refuse its path, and a transform's field list is `Position, Euler`. A raw quaternion written as if it were angles is unnormalized and turns the rotation into something else; only the angles reach it.
@@ -101,6 +102,7 @@ The first set of agent tools that act on the loaded project. The target is build
 ## find_content and list_folder
 
 - `find_content` matches when every word of `query` is part of the file name or the definition type name (case-insensitive; spaces, `/`, `\`, `_` and `-` separate words), across the mod and its dependencies. "particle configuration" finds `ParticleEffectsBudgetConfiguration.def`.
+  - The definition type's base types match too, so `CubeBlockDefinition` with a block's folder finds its block definition, whatever derived type it is. A skill that said "the type ending in BlockDefinition" matched two of a block's definitions and cost a model a dozen rounds of searching.
   - `folder` limits the search to that folder's subtree.
   - Output is grouped by project, the mod first and then its dependencies in load order. Each group has one header naming the project and whether it is read-only, then `path (DefinitionType)` lines. Capped at 50 items with a truncation marker.
 - `list_folder` lists direct children only.

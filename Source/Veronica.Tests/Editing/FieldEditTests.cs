@@ -203,6 +203,27 @@ public sealed class FieldEditTests
     }
 
     [Fact]
+    public void Colour_prints_rgba_bytes_without_the_packed_value()
+    {
+        string dump = Read();
+
+        Assert.Contains("Tint = {R: 0, G: 255, B: 255, A: 255} (ColorSRGB)", dump);
+        Assert.DoesNotContain("PackedValue", dump);
+        Assert.Contains("Fields: R, G, B, A", Fails(() => Read("Tint.PackedValue")));
+    }
+
+    [Fact]
+    public void Colour_writes_in_the_printed_form_and_keeps_channels_left_out()
+    {
+        Write("Tint", "\"{R: 255, G: 0, B: 0}\"");
+        Assert.Equal(new ColorSRGB(255, 0, 0, 255), _sample.Tint);
+
+        Write("Tint", "{\"A\": 128}");
+        Assert.Equal(new ColorSRGB(255, 0, 0, 128), _sample.Tint);
+        Assert.Contains("Fields: R, G, B, A", Fails(() => Write("Tint.PackedValue", "1")));
+    }
+
+    [Fact]
     public void Transform_prints_position_and_euler_degrees_without_the_quaternion()
     {
         _sample.Dummies[0].Transform = new RelativeTransformWithEulerHint(new Vector3(0.125f, 0.125f, 0.5f), Quaternion.Identity);

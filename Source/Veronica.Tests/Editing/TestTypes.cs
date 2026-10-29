@@ -26,6 +26,7 @@ public partial class Sample
     public bool Enabled;
     public Mode Mode;
     public Vector3 Scale = Vector3.One;
+    public ColorSRGB Tint = new(0, 255, 255, 255);
     public LocKey Label;
     public StringId ThrustClass;
     public List<ModelDummy> Dummies = [new ModelDummy { Name = "Nozzle" }];

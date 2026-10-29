@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace Veronica.Agent;
 
@@ -14,6 +15,9 @@ public static class ClientToolLoop
     public static string SilentWaitOutput(string tool) =>
         $"You wrote nothing for the user with this call, so there is nothing for them to answer. In one reply, write your question to the user and call {tool}.";
 
+    public const string CutCallOutput =
+        "Your reply hit the length limit while writing this call, so it was cut off and not run. Send it again, and continue with fewer calls per reply.";
+
     public static IProviderSession CreateSession(StreamRound stream) => new Session(stream);
 
     private sealed class Session(StreamRound stream) : IProviderSession
@@ -28,7 +32,20 @@ public static class ClientToolLoop
         }
     }
 
-    private sealed record RoundResult(string Text, string Reasoning, IReadOnlyList<ToolCall> ToolCalls, string? FinishReason);
+    private sealed record RoundResult(string Text, string Reasoning, IReadOnlyList<ToolCall> ToolCalls, string? FinishReason, ToolCall? CutCall);
+
+    private static bool IsJson(string text)
+    {
+        try
+        {
+            using var _ = JsonDocument.Parse(text);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 
     public static async Task RunAsync(StreamRound stream, TurnRequest request, ITurnHost host, CancellationToken cancellationToken)
     {
@@ -90,7 +107,12 @@ public static class ClientToolLoop
                 return null;
             }
             var toolCalls = calls.Values.Select(c => new ToolCall(c.Id, c.Name.ToString(), c.Arguments.ToString())).ToList();
-            return new RoundResult(text.ToString(), reasoning.ToString(), toolCalls, finishReason);
+            ToolCall? cutCall = null;
+            // A call cut mid-arguments must not reach the history as it is: servers refuse
+            // every later request whose history holds arguments that are not JSON.
+            if (finishReason == "length" && toolCalls.Count > 0 && !IsJson(toolCalls[^1].Arguments))
+                toolCalls[^1] = cutCall = toolCalls[^1] with { Arguments = "{}" };
+            return new RoundResult(text.ToString(), reasoning.ToString(), toolCalls, finishReason, cutCall);
         }
 
         int nudgesSent = 0;
@@ -161,6 +183,11 @@ public static class ClientToolLoop
             for (int i = 0; i < result.ToolCalls.Count; i++)
             {
                 var call = result.ToolCalls[i];
+                if (ReferenceEquals(call, result.CutCall))
+                {
+                    AppendToolResult(call, CutCallOutput);
+                    continue;
+                }
                 var toolResult = await host.OnToolCallAsync(call, new ToolCallContext(lastRound), cancellationToken).ConfigureAwait(false);
                 if (toolResult == null)
                 {
@@ -174,7 +201,7 @@ public static class ClientToolLoop
                 if (toolResult.EarnedReward)
                     spentRounds = Math.Max(0, spentRounds - maxRounds / 2);
             }
-            if (roundHasText && result.ToolCalls.Any(c => limits.TurnEndingTools.Contains(c.Name)))
+            if (roundHasText && result.ToolCalls.Any(c => !ReferenceEquals(c, result.CutCall) && limits.TurnEndingTools.Contains(c.Name)))
                 return;
             if (lastRound)
             {

@@ -42,12 +42,24 @@ public static class Fields
             // Euler hints are the inspector's degrees cache of a quaternion; transforms show them as Euler.
             if (member.GetMemberAttribute<EulerHintAttribute>() != null)
                 return false;
+            // A colour's packed value is its R, G, B and A again; a model wrote both and got the packing wrong.
+            if (IsPackedColour(member))
+                return false;
             return Visibility.ShouldGenerate(member);
         }
         catch (Exception)
         {
             return false;
         }
+    }
+
+    private static bool IsPackedColour(MemberReference member)
+    {
+        if (member.Name != "PackedValue")
+            return false;
+        Type owner = member.GetParent().CurrentMemberType;
+        // Only where the inspector shows the channels; ColorSRGBPremultiplied's are hidden, so its packed value is all there is.
+        return owner.IsValueType && new[] { "R", "G", "B", "A" }.All(c => owner.GetProperty(c)?.GetCustomAttribute<ForceShowInInspectorAttribute>() != null);
     }
 
     // Definitions are edited as their object builders, which share the definition's field names.

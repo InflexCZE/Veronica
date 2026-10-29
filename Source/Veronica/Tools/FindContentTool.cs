@@ -12,7 +12,7 @@ public sealed class FindContentTool : ITool
 
     public string Name => "find_content";
 
-    public string Description => "Finds content items whose file name or definition type contains every word of query. Searches the mod and the projects it depends on, such as Vanilla.";
+    public string Description => "Finds content items whose file name or definition type contains every word of query. A base type finds every definition derived from it, e.g. CubeBlockDefinition finds every block's definition. Searches the mod and the projects it depends on, such as Vanilla.";
 
     public string Parameters => """
         {"type":"object","properties":{"query":{"type":"string","description":"Words of a file name or definition type, e.g. ion thruster or ThrusterDefinition"},"folder":{"type":"string","description":"Only search inside this folder"}},"required":["query"]}
@@ -42,7 +42,7 @@ public sealed class FindContentTool : ITool
         var matches = project.GetAvailableFiles().OfType<ExplorerAssetFile>()
             .Where(f => inProjects == null || inProjects.Contains(f.Project))
             .Where(f => scope.Length == 0 || ContentNames.Normalize(f.ProjectRelativePath).StartsWith(scope, StringComparison.OrdinalIgnoreCase))
-            .Where(f => ContentNames.QueryMatches(query, f.Name, Content.DefinitionTypeName(f)))
+            .Where(f => ContentNames.QueryMatches(query, f.Name, Content.DefinitionTypeNames(f)))
             .OrderBy(f => order.GetValueOrDefault(f.Project, int.MaxValue))
             .ThenBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
             .ToList();

@@ -73,11 +73,22 @@ internal static class Content
     // The same path an inspector edit ends in: mark modified, auto-save, and rebuild an open inspector.
     public static void Save(ExplorerAssetFile asset) => asset.AssetInterface.OnInterfaceDataModified(forceValuesReload: true);
 
-    public static string? DefinitionTypeName(ExplorerItem item)
+    public static string? DefinitionTypeName(ExplorerItem item) => DefinitionType(item)?.Name;
+
+    // The definition type first, then its base types: a query for a base type finds every derived definition.
+    public static List<string> DefinitionTypeNames(ExplorerItem item)
+    {
+        var names = new List<string>();
+        for (var type = DefinitionType(item); type != null && type != typeof(object); type = type.BaseType)
+            names.Add(type.Name);
+        return names;
+    }
+
+    private static Type? DefinitionType(ExplorerItem item)
     {
         try
         {
-            return ((item as ExplorerAssetFile)?.AssetInterface as IDefinitionAssetInterface)?.DefinitionType.Name;
+            return ((item as ExplorerAssetFile)?.AssetInterface as IDefinitionAssetInterface)?.DefinitionType;
         }
         catch (InvalidOperationException)
         {
