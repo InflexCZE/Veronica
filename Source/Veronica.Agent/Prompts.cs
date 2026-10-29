@@ -15,7 +15,7 @@ public static class Prompts
         "2. Read the skills that may cover it with skill(name).\n" +
         "3. Activate the one that fits the task best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
-        "or a step they do in the Editor, ask for exactly that with wait_for_user, then continue. Ask only for what this item needs. " +
+        "or a step they do in the Editor, ask for it with wait_for_user, then continue. Ask for everything this item needs in one message. " +
         "A new thing gets its own name and text from the user, even when something similar already has one; a skill's example folder is a suggestion to offer, not a choice made. " +
         "When unsure whether a choice is the user's, ask: it costs one short message. " +
         "When its work is done, call mark_completed with a short proof of what you did; " +
