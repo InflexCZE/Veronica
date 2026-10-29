@@ -69,6 +69,23 @@ public sealed class OpenAiProviderTests
         Assert.Equal("object", json.GetProperty("tools")[0].GetProperty("function").GetProperty("parameters").GetProperty("type").GetString());
     }
 
+    [Theory]
+    [InlineData(true, 1000, 5000, 1000)]
+    [InlineData(null, 1000, 5000, 1000)]
+    [InlineData(false, 1000, 4000, null)]
+    [InlineData(true, null, 4000, null)]
+    public async Task ThinkingBudgetComesOnTopOfMaxTokens(bool? thinking, int? budget, int maxTokens, int? sentBudget)
+    {
+        var server = new Server((_, _) => Sse("{\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}"));
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null), server);
+
+        await provider.StreamRoundAsync(Request with { Thinking = thinking, ThinkingBudget = budget }, _ => { }, CancellationToken.None);
+
+        var json = JsonDocument.Parse(Assert.Single(server.Requests).Body).RootElement;
+        Assert.Equal(maxTokens, json.GetProperty("max_tokens").GetInt32());
+        Assert.Equal(sentBudget, json.TryGetProperty("thinking_budget_tokens", out var b) ? b.GetInt32() : null);
+    }
+
     [Fact]
     public async Task TakesTheFirstListedModelOnce()
     {

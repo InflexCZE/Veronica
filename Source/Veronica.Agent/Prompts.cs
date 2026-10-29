@@ -14,7 +14,9 @@ public static class Prompts
         "1. Understand the task. Ask the user for what you cannot find in the project.\n" +
         "2. Read the skills that may cover it with skill(name).\n" +
         "3. Activate the one that fits the task best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
-        "4. Work on the current item only, using the skill's steps. When its work is done, call mark_completed with a short proof of what you did; " +
+        "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
+        "or a step they do in the Editor, ask for exactly that with wait_for_user, then continue. Ask only for what this item needs. " +
+        "When its work is done, call mark_completed with a short proof of what you did; " +
         "when it does not apply, call mark_skipped with the reason. The Editor then names the next item.\n\n" +
         "Skills:";
 
@@ -31,6 +33,7 @@ public static class Prompts
         MaxRounds = 50,
         FreeRoundTools = SkillPlan.ToolNames,
         MaxTokens = 4000,
+        ThinkingBudget = 4000,
         Thinking = true,
         LengthNudge = new LengthNudge(() => LengthNudge + plan.CurrentItemNote(), MaxNudges: 2),
         EndNudge = new EndNudge(_ => plan.EndNudge(), SkillPlan.ToolNames),

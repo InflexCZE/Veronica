@@ -151,7 +151,7 @@ public sealed class SkillPlan
     private int Current() => _items.FindIndex(i => i.State == PlanItemState.Open);
 
     private string WorkOn(int index) =>
-        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Do only this, yourself; once its work is done, call {MarkCompletedTool.ToolName} with proof of what you did. Marking does none of the work.";
+        $"Work on item {index + 1} of {_items.Count} now: {_items[index].Text}. Ask the user for what it needs from them; once its work is done, call {MarkCompletedTool.ToolName} with proof of what you did.";
 }
 
 public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan) : ITool

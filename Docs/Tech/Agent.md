@@ -50,10 +50,10 @@
 
 | setting | value |
 |---|---|
-| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks, read the skills that may cover it, activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item only and mark it with proof or a reason. Small models skipped activation or worked from memory when the procedure was spread over separate hints. Without skills, only the ask-the-user rule is left. |
+| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks, read the skills that may cover it, activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, and steps they do in the Editor), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. Small models skipped activation or worked from memory when the procedure was spread over separate hints. Without skills, only the ask-the-user rule is left. |
 | thinking | on |
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
-| max tokens per round | 4000 |
+| max tokens per round | 4000 for the answer and tool calls. With the OpenAI provider, thinking has its own budget of 4000 on top (`thinking_budget_tokens`, llama.cpp; `max_tokens` is the sum): a reply of 30 writes after long thinking hit a shared 4000 cap mid-call. The server closes the thinking at the budget and the model still answers. OpenAI's own API refuses unknown request fields, so it would refuse this one. |
 | length nudge | up to 2 per turn |
 | tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`) |
 | free rounds | rounds that call only `skill` and the plan tools |

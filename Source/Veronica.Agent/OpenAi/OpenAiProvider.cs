@@ -108,8 +108,11 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             ["messages"] = new JsonArray(request.Messages.Select(m => (JsonNode?)ToWire(m)).ToArray()),
             ["stream"] = true,
         };
+        int budget = request.Thinking != false && request.ThinkingBudget is > 0 and var b ? b : 0;
+        if (budget > 0)
+            body["thinking_budget_tokens"] = budget;
         if (request.MaxTokens is > 0 and var maxTokens)
-            body["max_tokens"] = maxTokens;
+            body["max_tokens"] = maxTokens + budget;
         if (request.Tools.Count > 0)
             body["tools"] = new JsonArray(request.Tools.Select(t => (JsonNode?)new JsonObject
             {

@@ -64,6 +64,9 @@ public sealed record TurnLimits
     public bool? Thinking { get; init; }
 
     public int? MaxTokens { get; init; }
+
+    // Thinking tokens on top of MaxTokens, for providers that budget thinking apart from the answer.
+    public int? ThinkingBudget { get; init; }
 }
 
 public sealed record TurnRequest(
@@ -107,7 +110,8 @@ public sealed record RoundRequest(
     IReadOnlyList<ChatMessage> Messages,
     IReadOnlyList<ToolDefinition> Tools,
     bool? Thinking,
-    int? MaxTokens);
+    int? MaxTokens,
+    int? ThinkingBudget = null);
 
 public abstract record StreamDelta;
 

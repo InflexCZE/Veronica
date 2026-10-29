@@ -74,7 +74,7 @@ public static class ClientToolLoop
             messages.AddRange(transcript);
             try
             {
-                await stream(new RoundRequest(messages, request.Tools, limits.Thinking, limits.MaxTokens), delta =>
+                await stream(new RoundRequest(messages, request.Tools, limits.Thinking, limits.MaxTokens, limits.ThinkingBudget), delta =>
                 {
                     switch (delta)
                     {
