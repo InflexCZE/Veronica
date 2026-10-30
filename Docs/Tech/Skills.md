@@ -38,6 +38,21 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 - Importing files is the user's job, done in the Editor. A skill lists the imported items it needs; it does not describe the import.
 - Source material: the official SE2 modding guides on Steam, rewritten from clicks into tool calls. Art, FMOD and other work outside the Editor is left to the user.
 
+## Context engineering
+
+Rules for everything the model reads: skills, the system prompt, tool descriptions and tool errors.
+
+- Add only what a modder doing a variation of the task would also need. Facts about the game qualify (where a value lives, which side of a link is authored, how entries sort). Steering towards one task's answer does not: no task values, no "look it up in vanilla" where real mods bring their own assets.
+- A fact is checked against the game source before it is added. A wrong fact misleads more than a missing one.
+- State a convention with its reason, not as a bare order.
+- Behaviour common to all skills lives in the system prompt, not in each skill.
+- Where the right action depends on the situation, the context names what to observe and both branches.
+- Strong imperatives suppress other behaviour (asking, steps done together with the user). Describe the work; keep hard rules for what must never happen.
+- The user's choices are asked for: text players see, folders, values the user did not give, steps done in the Editor. Anything readable in the project is looked up. An example value in a skill is a suggestion to offer.
+- When the model fights a tool, the tool changes, not the wording: one form per value, errors that do not lead into a wrong field, results that survive a cut-off reply. A hint in an error must be unambiguous.
+- Skipped work is countered with required proof, not with emphasis.
+- When wording stops moving a failure across batches, the levers left are mechanics and knowledge delivery (the wiki).
+
 ## Delivery
 
 - The system prompt ends with the skill index, one line per skill, so the model knows which skills exist without paying for their bodies.

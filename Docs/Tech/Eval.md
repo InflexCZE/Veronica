@@ -76,6 +76,22 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 - **Pass**: the criteria the run is judged against.
 - **Fixture** (optional): `Eval/Tasks/<name>/`, copied over the dev mod before the run.
 
+## Method
+
+| batch | context | runs |
+|---|---|---|
+| baseline | unchanged, for a new task or model | 3 per task |
+| hypothesis | one change in the working tree | 3 per task it targets, plus a regression task the change can touch |
+| confirmation | the committed context | the tasks the hypothesis batch did not run |
+| model comparison | the same commit for every model | the same tasks in the same order |
+
+- Nothing under `Source` or `Eval/Tasks` changes while a batch runs: every run builds the working tree, and the fork reads the task file for every run.
+- A new model's first run checks that its tool calls work before the rest of the batch.
+- A criterion that disagrees with the game is checked in the game source; when the task is wrong, the task is fixed.
+- A run counts besides pass or fail: user turns, context used, what was asked and whether it was the user's to answer, proof accuracy, invented claims. A restated wish from the user is a nudge and is noted in the verdict.
+- A change is kept when it moves its failure without a regression in the other tasks; otherwise it is reverted. Context changes follow the rules in `Skills.md` (Context engineering).
+- Facts about the game come from the SE2 source, read by a subagent that does not touch the Editor while a batch runs.
+
 ## Outputs
 
 Not committed, under `.tmp/eval/`:
