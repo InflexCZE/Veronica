@@ -16,6 +16,9 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
   - Procedures: a task's steps, e.g. `create-block`, `override-definition`, `add-to-gscreen`.
   - Appendices: what one function adds to a procedure, e.g. `block-thruster` for a block that thrusts. A procedure names, at the step where they apply, the appendices to activate.
   - A function without an appendix is built by reading a comparable vanilla block's definitions and mirroring them. This step is in `create-block`.
+  - References: knowledge several skills need at a step, such as a block's components and their definitions, or placing dummies. A step names the reference; the model reads it with `skill`. A reference has no Plan section, and activating it is refused. References stand in for the wiki until it exists.
+- Behaviour every task needs, such as never writing vanilla files and treating values from a template as a starting point, is in the system prompt, not repeated in skills.
+- A skill guides the model to read a value and write what does not fit what the user wants; it does not name the values a task checks.
 - Each skill is its own file and its own index line. The model loads only what the task needs.
 
 ## Files
@@ -23,7 +26,7 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 - One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence. It carries no instructions.
 - Body sections, in order:
   - **Needs**: the inputs. Each is a file or value the user provides. The system prompt already says to ask for what cannot be found.
-  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. Every skill has one, procedures and appendices alike. See Plan below.
+  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. Procedures and appendices have one; a reference has none. See Plan below.
   - **Steps**: numbered, written as the real tool calls. A step that only some tasks need says when.
   - **Show**: the last step shows the result in the Editor (`show`), with one line on what the user should look at. Testing in game is the user's call.
 - No read-back check of the edits: the model sees each change's reply, and the user works alongside it.
@@ -87,11 +90,11 @@ Small models drop steps: after a failed write, or after handing off to an append
 - Rounds that call only the skill and plan tools are free, so bookkeeping does not eat the task's budget.
 - End gate: ending a turn with an item open sends the model back once (the loop's end nudge), naming the open item and the choices. The message is marked as coming from the Editor, and the system prompt says so: unmarked, a model takes it for the user turning down its question. A deliberate stop to ask the user is a call to `wait_for_user`, which ends the turn without the reminder. Small models act through tool calls: offered skipping and a reply marker side by side, the 9B skipped item after item to wait for an answer. The reminder says skipping is only for items that do not apply, never for waiting. Ending again is let through, so no model loops. The reminder re-arms only after a tool call outside the skill and plan tools.
 - `wait_for_user` in a reply with no text does not end the turn: its result says the question belongs in the same reply. Only that reply's text counts, because models narrate their work in earlier rounds; a model once waited with nothing written, leaving the user nothing to answer.
-- While no plan is open, the results of editing tools (`write`, `element_add`, `element_remove`, `create_folder`, `create_prefab`, `create_partial`, `create_definition`) carry a gentle hint to activate a skill that fits the work: on the first edit, then on every tenth after it, and again from the first edit after a plan ends or the chat is cleared. Small models sometimes read a skill and worked from its steps without activating it, and nothing then kept the remaining items in front of them. A hint on every edit would be noise the model learns to ignore; reads never carry it.
+- While no plan is open, the results of editing tools (`write`, `element_add`, `element_remove`, `create_folder`, `create_prefab`, `create_partial`, `create_definition`) carry a gentle hint to activate a skill that fits the work: on the first edit, then on every tenth after it, and again from the first edit after the chat is cleared. After a plan ends, the first hint comes on the tenth edit: a follow-up to finished work is often a few edits, and on the first edit the hint led the model to activate a whole plan again for a one-step change. Small models sometimes read a skill and worked from its steps without activating it, and nothing then kept the remaining items in front of them. A hint on every edit would be noise the model learns to ignore; reads never carry it.
 - The end gate and the free rounds belong to the client tool loop. The Claude provider runs its own loop, so it gets the plan tools without them (`ClaudeProvider.md`).
 - Completion is the model's word and its proof; no item is checked yet.
 
 ## Testing
 
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads with a plan. The plan tools, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds, the end gate and the activation hint are covered too.
+- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a reference, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds, the end gate and the activation hint are covered too.
 - A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.

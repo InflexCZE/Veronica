@@ -109,12 +109,13 @@ public static class SkillFiles
 
     // The plan is the "- item" lines right below the heading, up to the next blank line. Any other
     // line in that block fails the file, so a wrapped item cannot silently cut the plan short.
+    // A skill without the heading is a reference: read on demand, never activated.
     private static IReadOnlyList<string> ParsePlan(string body)
     {
         var lines = body.Split('\n');
         int heading = Array.FindIndex(lines, l => l.Trim() == PlanHeading);
         if (heading < 0)
-            throw new FormatException($"has no '{PlanHeading}' section.");
+            return [];
         var block = lines.Skip(heading + 1).TakeWhile(l => l.Trim().Length > 0).ToList();
         if (block.Count == 0 || block.Any(l => !l.StartsWith("- ", StringComparison.Ordinal) || l[2..].Trim().Length == 0))
             throw new FormatException($"'{PlanHeading}' needs one '- item' line per item right below it, ended by a blank line.");

@@ -36,7 +36,6 @@ public sealed class SkillTests
     [InlineData("---\nname: x\n---\nbody", "no description")]
     [InlineData("---\nname: x\ndescription: d\n---\n  \n", "no body")]
     [InlineData("---\nname x\n---\nbody", "line 2")]
-    [InlineData("---\nname: x\ndescription: d\n---\nSteps:\n1. a", "no 'Plan:' section")]
     [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n\n- a", "needs one '- item' line")]
     [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n- a\n  wrapped\n- b", "needs one '- item' line")]
     [InlineData("---\nname: x\ndescription: d\n---\nPlan:\n- a\n-b", "needs one '- item' line")]
@@ -44,6 +43,15 @@ public sealed class SkillTests
     {
         var e = Assert.Throws<FormatException>(() => SkillFiles.Parse(text));
         Assert.Contains(message, e.Message);
+    }
+
+    [Fact]
+    public void Parse_WithoutPlanSection_IsAReference()
+    {
+        var skill = SkillFiles.Parse("---\nname: x\ndescription: d\n---\nFacts:\n- a");
+
+        Assert.Empty(skill.Plan);
+        Assert.Equal("Facts:\n- a", skill.Overview);
     }
 
     [Fact]
@@ -117,7 +125,7 @@ public sealed class SkillTests
 
         Assert.Empty(load.Problems);
         Assert.NotEmpty(load.Skills);
-        Assert.All(load.Skills, s => Assert.NotEmpty(s.Plan));
+        Assert.Contains(load.Skills, s => s.Plan.Count > 0);
         foreach (var file in Directory.EnumerateFiles(Dir(), "*" + SkillFiles.Extension))
         {
             var text = File.ReadAllText(file);

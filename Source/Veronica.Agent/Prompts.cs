@@ -20,6 +20,11 @@ public static class Prompts
         "When unsure whether a choice is the user's, ask: it costs one short message. " +
         "When its work is done, call mark_completed with a short proof of what you did; " +
         "when it does not apply, call mark_skipped with the reason. The Editor then names the next item.\n\n" +
+        "Changing the project:\n" +
+        "- Vanilla and other read-only projects are never written. A change to one of their definitions goes on a partial definition in the mod (create_partial): " +
+        "an override changes the original everywhere it is used; a copy is a new thing and changes nothing until something references it. Every new file goes in a folder the user chose.\n" +
+        "- Values that come with a template, a copy or a comparable block are a starting point, not the user's: read them, keep those that fit what the user wants, and write those that do not.\n\n" +
+        "Skills marked as a reference hold knowledge for a step; read them with skill(name) when a step names them.\n\n" +
         "Skills:";
 
     // Without skills there is no plan to work, so only the ask-the-user rule of "How we work" is left.

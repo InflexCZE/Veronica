@@ -8,6 +8,7 @@ public sealed class SkillPlanTests
 {
     private static readonly Skill Block = new("create-block", "d", "Plan:\n- Create the prefab\n\nBLOCK BODY", ["Create the prefab", "Fill block name", "Next skill"]);
     private static readonly Skill Thruster = new("block-thruster", "d", "THRUSTER BODY", ["Fill thrust", "Show the block"]);
+    private static readonly Skill Reference = new("partial-definitions", "d", "REFERENCE BODY", []);
 
     private sealed class Chat
     {
@@ -16,8 +17,8 @@ public sealed class SkillPlanTests
 
         public Chat() => Tools = new ToolSet(
         [
-            new SkillTool(() => [Block, Thruster], Plan),
-            new ActivateSkillTool(() => [Block, Thruster], Plan),
+            new SkillTool(() => [Block, Thruster, Reference], Plan),
+            new ActivateSkillTool(() => [Block, Thruster, Reference], Plan),
             new MarkCompletedTool(Plan),
             new MarkSkippedTool(Plan),
             new WaitForUserTool(),
@@ -48,6 +49,32 @@ public sealed class SkillPlanTests
         chat.Plan.Reset();
         Assert.Equal("OK\n\n" + SkillPlan.ActivationHint, chat.Call("write"));
         Assert.Equal("OK", chat.Call("write"));
+    }
+
+    [Fact]
+    public void After_a_finished_plan_the_hint_waits_for_the_tenth_edit()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        chat.Call("mark_completed", """{"proof":"p"}""");
+        chat.Call("mark_completed", """{"proof":"p"}""");
+
+        var hinted = Enumerable.Range(1, 20).Where(_ => chat.Call("write").EndsWith(SkillPlan.ActivationHint)).ToList();
+
+        Assert.Equal([10, 20], hinted);
+    }
+
+    [Fact]
+    public void A_reference_without_a_plan_is_refused_and_starts_no_plan()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+
+        var output = chat.Call("activate_skill", """{"name":"partial-definitions"}""");
+
+        Assert.Equal("partial-definitions is a reference with no plan, so it cannot be activated; read it with skill and use it in the work of the active skill.", output);
+        Assert.Equal("create-block", chat.Plan.ActiveSkill);
+        Assert.Equal("REFERENCE BODY", chat.Call("skill", """{"name":"partial-definitions"}"""));
     }
 
     [Fact]
@@ -136,7 +163,7 @@ public sealed class SkillPlanTests
 
         var output = chat.Call("activate_skill", """{"name":"thruster"}""");
 
-        Assert.Equal("There is no skill named 'thruster'; the skills are: create-block, block-thruster.", output);
+        Assert.Equal("There is no skill named 'thruster'; the skills are: create-block, block-thruster, partial-definitions.", output);
         Assert.Equal("create-block", chat.Plan.ActiveSkill);
     }
 

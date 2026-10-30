@@ -60,6 +60,7 @@ public sealed class SkillPlan
     }
 
     // Edits made while no plan is open: the first carries the hint, then every tenth, so it reminds without nagging.
+    // After a finished plan the count starts one in, so the first hint comes on the tenth edit.
     public string? EditHint()
     {
         lock (_lock)
@@ -74,6 +75,8 @@ public sealed class SkillPlan
     {
         lock (_lock)
         {
+            if (skill.Plan.Count == 0)
+                return $"{skill.Name} is a reference with no plan, so it cannot be activated; read it with {SkillTool.ToolName} and use it in the work of the active skill.";
             int current = Current();
             if (current >= 0 && string.Equals(_skill, skill.Name, StringComparison.OrdinalIgnoreCase))
                 return $"{_skill} is already active. {WorkOn(current)}";
@@ -144,6 +147,8 @@ public sealed class SkillPlan
             var finished = _skill;
             _skill = null;
             _items = [];
+            // A follow-up to finished work is often a few edits; the hint then waits for the tenth instead of the first.
+            _unplannedEdits = 1;
             return $"{closed} The plan of {finished} is through. Do what its last item says, or end your turn with a short summary for the user.";
         }
     }
