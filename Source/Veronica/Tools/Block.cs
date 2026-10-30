@@ -16,6 +16,7 @@ using Keen.VRage.DCS.Internal;
 using Keen.VRage.Editor.Windows.PropertyInspector.PropertyElements.Custom.Definitions.Prefabs.Core;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Serialization;
+using Keen.VRage.Library.Utils;
 using Keen.VRage.UI.Shared.ObjectInspector;
 using Keen.VRage.UI.Shared.ObjectInspector.Extensions;
 using Veronica.Editing;
@@ -28,6 +29,13 @@ namespace Veronica.Tools;
 internal sealed class Block
 {
     private const string DefinitionField = "Definition";
+    private const string TagsField = "Tags";
+
+    // The Editor sides a few types wrongly (an Editor bug); vanilla blocks show where they belong.
+    private static readonly Dictionary<string, ComponentScope> SideOverrides = new()
+    {
+        ["Keen.Game2.Simulation.WorldObjects.Items.InventoryComponent"] = ComponentScope.Server,
+    };
 
     private readonly LoadedProject _project;
     private readonly string? _soleSide;
@@ -155,7 +163,7 @@ internal sealed class Block
             string line = name == c.ComponentType.Name ? name : $"{name} = {c.ComponentType.Name}";
             line += SideLabel(c);
             if (c.Tags.Count > 0)
-                line += $" tags: {string.Join(", ", c.Tags.Select(t => t.ToString()).Order(StringComparer.Ordinal))}";
+                line += $" tags: {string.Join(", ", TagTexts(c))}";
             if (DefinitionId(c) is { } id)
                 line += $"  definition: {Links.PathOf(id) ?? "(missing item)"}";
             else if (DefinitionTypeOf(c) is { } needed)
@@ -182,6 +190,24 @@ internal sealed class Block
         deeper = segments.Count > 1;
         return segments.Count > 0 && !segments[0].Bracketed && string.Equals(segments[0].Text, DefinitionField, StringComparison.OrdinalIgnoreCase);
     }
+
+    // Whether the inner path is under Tags; tag is the one it names, or null for the list itself.
+    private static bool IsTags(string inner, out string? tag)
+    {
+        var segments = FieldPath.Parse(inner);
+        tag = null;
+        if (segments.Count == 0 || segments[0].Bracketed || !string.Equals(segments[0].Text, TagsField, StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (segments.Count > 2 || (segments.Count == 2 && !segments[1].Bracketed))
+            throw new EditError($"A tag has no fields; name one like {TagsField}[<tag>].");
+        tag = segments.Count == 2 ? segments[1].Text : null;
+        return true;
+    }
+
+    private static IEnumerable<string> TagTexts(IComponentNode component) =>
+        component.Tags.Select(t => t.ToString()).Order(StringComparer.Ordinal);
+
+    private static string TagList(IComponentNode component) => $"[{string.Join(", ", TagTexts(component))}]";
 
     private string DefinitionLine(IComponentNode component, string name)
     {
@@ -212,13 +238,20 @@ internal sealed class Block
             return $"{header}\n{DefinitionLine(component, name)}";
         }
 
+        if (inner.Length > 0 && IsTags(inner, out string? tag))
+        {
+            if (tag != null)
+                throw new EditError($"Read the tags as {FieldPath.Member(basePath, TagsField)}; a tag has no fields.");
+            return $"{header}\n{FieldPath.Member(basePath, TagsField)} = {TagList(component)}";
+        }
+
         if (inner.Length > 0)
             return $"{header}\n{FieldReader.Read(ObjectBuilder(component, name), inner, Links, basePath: basePath)}";
 
         string fields = RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder == null
             ? $"{basePath}: (no fields)"
-            : FieldReader.Read(component.ObjectBuilder, "", Links, maxLines: FieldReader.MaxLines - 1, basePath: basePath);
-        return $"{header}\n{DefinitionLine(component, name)}\n{fields}";
+            : FieldReader.Read(component.ObjectBuilder, "", Links, maxLines: FieldReader.MaxLines - 2, basePath: basePath);
+        return $"{header}\n{DefinitionLine(component, name)}\n{FieldPath.Member(basePath, TagsField)} = {TagList(component)}\n{fields}";
     }
 
     public string Write(string path, JsonElement value)
@@ -233,6 +266,10 @@ internal sealed class Block
             if (deeper)
                 throw new EditError($"'{FieldPath.Member(basePath, DefinitionField)}' is a reference; write the item's own fields on that item.");
             reply = WriteDefinition(component, name, value);
+        }
+        else if (inner.Length > 0 && IsTags(inner, out _))
+        {
+            throw new EditError($"Tags are added with element_add on {FieldPath.Member(basePath, TagsField)} (key: the tag) and removed with element_remove on {FieldPath.Member(basePath, TagsField)}[<tag>].");
         }
         else
         {
@@ -249,6 +286,12 @@ internal sealed class Block
         if (inner.Length == 0)
             throw new EditError($"To add a component use component_add; element_add takes a list inside one, e.g. {ComponentNames.PathOf(name)}.<list>.");
         RequireWritable();
+        if (IsTags(inner, out string? tagged))
+        {
+            if (tagged != null || string.IsNullOrWhiteSpace(key))
+                throw new EditError($"Add a tag with element_add on {FieldPath.Member(ComponentNames.PathOf(name), TagsField)} and the tag as key.");
+            return Applied(component, AddTag(component, name, key.Trim()));
+        }
         return Applied(component, Elements.Add(ObjectBuilder(component, name), inner, key, type, Links, ComponentNames.PathOf(name)));
     }
 
@@ -258,6 +301,14 @@ internal sealed class Block
         if (inner.Length == 0)
             throw new EditError($"To remove {ComponentNames.PathOf(name)} use component_remove.");
         RequireWritable();
+        if (IsTags(inner, out string? tagged))
+        {
+            if (tagged == null)
+                throw new EditError(component.Tags.Count == 0
+                    ? $"{ComponentNames.PathOf(name)} has no tags."
+                    : $"Name the tag to remove, e.g. {FieldPath.Member(ComponentNames.PathOf(name), TagsField)}[{TagTexts(component).First()}].");
+            return Applied(component, RemoveTag(component, name, tagged));
+        }
         return Applied(component, Elements.Remove(ObjectBuilder(component, name), inner, ComponentNames.PathOf(name)));
     }
 
@@ -292,6 +343,61 @@ internal sealed class Block
         return Links.CreateDefinitionReference(link.Id);
     }
 
+    // A side keeps one component per tag, so a tag held elsewhere would be taken away from its holder.
+    private string AddTag(IComponentNode component, string name, string text)
+    {
+        string path = FieldPath.Member(ComponentNames.PathOf(name), TagsField);
+        // Removal names a tag inside a path's brackets, so a tag must survive being written there.
+        if (text.Any(c => char.IsWhiteSpace(c) || c is '[' or ']' or '.'))
+            throw new EditError($"'{text}' cannot be a tag; use letters, digits and underscores.");
+        var tag = StringId.Get(text);
+        if (component.Tags.Any(t => string.Equals(t.ToString(), text, StringComparison.OrdinalIgnoreCase)))
+            throw new EditError($"{path} already has {text}.");
+        var names = ComponentNames.Assign(Entries());
+        var holders = SidesOf(component).SelectMany(side => side.ComponentsMap.Values)
+            .Where(other => other.Id != component.Id && other.Tags.Any(t => string.Equals(t.ToString(), text, StringComparison.OrdinalIgnoreCase)))
+            .Select(other => names[other.Id]).Distinct().ToList();
+        if (holders.Count > 0)
+            throw new EditError($"{text} is the tag of {string.Join(", ", holders.Select(ComponentNames.PathOf))}; a tag belongs to one component on a side.");
+        string before = TagList(component);
+        component.AddTag(tag);
+        return $"{path}: {before} -> {TagList(component)}";
+    }
+
+    private string RemoveTag(IComponentNode component, string name, string text)
+    {
+        string path = FieldPath.Member(ComponentNames.PathOf(name), TagsField);
+        var match = component.Tags.Where(t => string.Equals(t.ToString(), text, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (match.Count == 0)
+            throw new EditError($"{path} has no tag {text}; its tags are {TagList(component)}.");
+        var tag = match[0];
+        var dependents = Dependents(component, tag);
+        if (dependents.Count > 0)
+            throw new EditError($"{tag} cannot be removed: {string.Join(", ", dependents.Select(ComponentNames.PathOf))} need{(dependents.Count == 1 ? "s" : "")} it.");
+        string before = TagList(component);
+        component.RemoveTag(tag);
+        return $"{path}: {before} -> {TagList(component)}";
+    }
+
+    private IEnumerable<EntityPrefabNode> SidesOf(IComponentNode component) => Sides().Where(side => side.ComponentsMap.ContainsKey(component.Id));
+
+    // A type allowing several per entity has no default tag, and systems such as the conveyor graph find some
+    // components only by tag.
+    private string AutoTag(IComponentNode component)
+    {
+        const string suffix = "Component";
+        string type = component.ComponentType.Name;
+        string stem = type.EndsWith(suffix, StringComparison.Ordinal) && type.Length > suffix.Length ? type[..^suffix.Length] : type;
+        var taken = SidesOf(component).SelectMany(side => side.ComponentsMap.Values).SelectMany(c => c.Tags).Select(t => t.ToString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        int n = 1;
+        while (taken.Contains($"{stem}{n}"))
+            n++;
+        return $"{stem}{n}";
+    }
+
+    private static ComponentScope SideOf(Type type) =>
+        SideOverrides.TryGetValue(type.FullName ?? "", out var side) ? side : ComponentScopeUtility.GetComponentScope(type);
+
     public string Add(string typeQuery, string? definition)
     {
         var choices = AddableTypes();
@@ -309,11 +415,19 @@ internal sealed class Block
         RequireWritable();
 
         var before = Root.Components.Select(c => c.Id).ToHashSet();
-        var id = Root.AddComponent(type);
+        var id = Root is BoundEntitiesNode bound && SideOverrides.ContainsKey(type.FullName ?? "")
+            ? bound.AddComponent(type, SideOf(type))
+            : Root.AddComponent(type);
         foreach (var component in Root.Components.ToList())
             component.PopulateMissingDependencies();
 
         var added = Root.Components.First(c => c.Id == id);
+        string? autoTag = null;
+        if (added.Tags.Count == 0)
+        {
+            autoTag = AutoTag(added);
+            added.AddTag(StringId.Get(autoTag));
+        }
         if (reference != null)
         {
             added.Definition.SetValue<object?>(reference);
@@ -323,7 +437,7 @@ internal sealed class Block
 
         var names = ComponentNames.Assign(Entries());
         string Label(IComponentNode c) => ComponentNames.PathOf(names[c.Id]) + SideLabel(c);
-        var lines = new List<string> { $"{Content.Shown(Item)}: added {Label(added)}." };
+        var lines = new List<string> { $"{Content.Shown(Item)}: added {Label(added)}{(autoTag != null ? $" with tag {autoTag}" : "")}." };
 
         var dependencies = Root.Components.Where(c => c.Id != id && !before.Contains(c.Id)).ToList();
         if (dependencies.Count > 0)
@@ -360,7 +474,7 @@ internal sealed class Block
     }
 
     // The engine's dependency rule, run backwards: a required dependency is a tag the component fills on its side.
-    private List<string> Dependents(IComponentNode component)
+    private List<string> Dependents(IComponentNode component, StringId? only = null)
     {
         var names = ComponentNames.Assign(Entries());
         var found = new HashSet<Guid>();
@@ -370,7 +484,7 @@ internal sealed class Block
                 continue;
             foreach (var (otherId, other) in side.ComponentsMap)
             {
-                if (otherId != component.Id && RuntimeComponentInfo.For(other.ComponentType).BuildDependencies.Any(d => !d.Optional && own.Tags.Contains(d.Tag)))
+                if (otherId != component.Id && RuntimeComponentInfo.For(other.ComponentType).BuildDependencies.Any(d => !d.Optional && (only is { } tag ? d.Tag == tag : own.Tags.Contains(d.Tag))))
                     found.Add(otherId);
             }
         }
@@ -406,7 +520,7 @@ internal sealed class Block
         // Hierarchy holds child entities, which the inspector offers in developer mode only.
         if (candidate == typeof(HierarchyComponent) || !CreateDefinitionTool.GameVisible(candidate))
             return false;
-        var own = ComponentScopeUtility.GetComponentScope(candidate);
+        var own = SideOf(candidate);
         if (scope == ComponentScope.Client && (own & ComponentScope.Client) == 0)
             return false;
         if (scope == ComponentScope.Server && (own & ComponentScope.Server) == 0)

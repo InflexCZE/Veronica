@@ -1,0 +1,19 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "fb85a823-f1d5-402e-a1e6-fec53125585c",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "f9504474-5bca-4ac7-8362-f8f8159efe2e",
+      "ThrustPower": 8950.306,
+      "ResourcesRequiredToThrust": 40
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.Movement.ThrusterDefinition",
+    "PriorityOverride": false
+  }
+}
