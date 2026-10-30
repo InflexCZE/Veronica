@@ -1,7 +1,7 @@
 ---
 name: thrusters
 title: Thrusters: classes, power, flame and sound
-source: moved from the block-thruster skill
+source: SE2 source ThrusterComponent, PowerableBlockComponent; vanilla thrusters (Assets/Blocks/Thrusters)
 description: How a thruster works: its classes and what they draw, why a thruster block draws power or not, and where its force, flame and sound are set.
 ---
 Classes: Ion and Atmospheric draw Electricity, Hydrogen draws Hydrogen. Vanilla ones are in Assets/Blocks/Thrusters/<class>/<size in cm>.
