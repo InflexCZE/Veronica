@@ -1,6 +1,6 @@
 ---
 name: block-inventory
-description: Use when a block should store items, a new block or one that already exists.
+description: Use when a block should store items, one create-block just made or one that already exists; it does not create the block.
 ---
 Needs:
 - the block: its prefab binding or any of its files
