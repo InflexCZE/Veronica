@@ -415,11 +415,14 @@ internal sealed class Block
         RequireWritable();
 
         var before = Root.Components.Select(c => c.Id).ToHashSet();
+        var tagsBefore = Root.Components.ToDictionary(c => c.Id, c => TagTexts(c).ToHashSet(StringComparer.Ordinal));
+        var sharedBefore = Root.Components.Where(c => c is SharedComponent).Select(c => c.Id).ToHashSet();
         var id = Root is BoundEntitiesNode bound && SideOverrides.ContainsKey(type.FullName ?? "")
             ? bound.AddComponent(type, SideOf(type))
             : Root.AddComponent(type);
         foreach (var component in Root.Components.ToList())
             component.PopulateMissingDependencies();
+        KeepOverriddenSides(sharedBefore);
 
         var added = Root.Components.First(c => c.Id == id);
         string? autoTag = null;
@@ -443,12 +446,31 @@ internal sealed class Block
         if (dependencies.Count > 0)
             lines.Add($"Added with it for its dependencies: {string.Join(", ", dependencies.Select(Label))}.");
 
+        foreach (var c in Root.Components.Where(c => c.Id != id && tagsBefore.ContainsKey(c.Id)))
+        {
+            var newTags = TagTexts(c).Where(t => !tagsBefore[c.Id].Contains(t)).ToList();
+            if (newTags.Count > 0)
+                lines.Add($"{Label(c)} got tag {string.Join(", ", newTags)}, which the new component's dependencies look up.");
+        }
+
         foreach (var c in dependencies.Prepend(added).Where(c => DefinitionId(c) == null && DefinitionTypeOf(c) != null))
         {
             string path = ComponentNames.PathOf(names[c.Id]);
             lines.Add($"{path} needs a {DefinitionTypeOf(c)!.Name}; the block fails validation without it. Point it at one with write to {path}.Definition, or create one with create_definition first.");
         }
         return string.Join("\n", lines);
+    }
+
+    // Dependency filling sides a dependency by the Editor's own scope, so it puts an overridden type on both sides,
+    // making an existing one shared or adding a new one shared; the other side's half is dropped again.
+    private void KeepOverriddenSides(HashSet<Guid> sharedBefore)
+    {
+        foreach (var component in Root.Components.OfType<SharedComponent>().ToList())
+        {
+            if (sharedBefore.Contains(component.Id) || !SideOverrides.TryGetValue(component.ComponentType.FullName ?? "", out var side))
+                continue;
+            component.Remove(side == ComponentScope.Server ? ComponentScope.Client : ComponentScope.Server);
+        }
     }
 
     public string Remove(string token)
