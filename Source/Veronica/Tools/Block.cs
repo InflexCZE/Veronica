@@ -405,6 +405,8 @@ internal sealed class Block
         if (!RuntimeComponentInfo.For(type).AllowMultiple && Root.Components.FirstOrDefault(c => c.ComponentType == type) is { } present)
             throw new EditError($"{Content.Shown(Item)} already has {ComponentNames.PathOf(ComponentNames.Assign(Entries())[present.Id])}; a {type.Name} is there once per entity.");
 
+        RefuseTakenDefaultTags(type);
+
         Definition? reference = null;
         if (definition != null)
         {
@@ -459,6 +461,40 @@ internal sealed class Block
             lines.Add($"{path} needs a {DefinitionTypeOf(c)!.Name}; the block fails validation without it. Point it at one with write to {path}.Definition, or create one with create_definition first.");
         }
         return string.Join("\n", lines);
+    }
+
+    // The Editor would move a default tag held by another component to the new one, leaving two components in one
+    // role: a PowerableBlockComponent next to a FunctionalBlockComponent took GridBlockComponent, and two block
+    // definitions then crashed the Editor's breakable post-processing.
+    private void RefuseTakenDefaultTags(Type type)
+    {
+        var defaults = RuntimeComponentInfo.For(type).DefaultTags;
+        if (defaults == null || defaults.Length == 0)
+            return;
+        var names = ComponentNames.Assign(Entries());
+        var holders = SidesFor(type)
+            .SelectMany(s => s.ComponentsMap.Values)
+            .Where(c => c.Tags.Any(defaults.Contains))
+            .Select(c => (Name: names[c.Id], Tags: c.Tags.Where(defaults.Contains).Select(t => t.ToString())))
+            .DistinctBy(h => h.Name)
+            .ToList();
+        if (holders.Count == 0)
+            return;
+        string held = string.Join("; ", holders.Select(h => $"{ComponentNames.PathOf(h.Name)} holds {string.Join(", ", h.Tags)}"));
+        throw new EditError($"A {type.Name} would take over a role this block's component already fills ({held}); a block keeps one component per role. Replacing a component is not a tool operation.");
+    }
+
+    private IEnumerable<EntityPrefabNode> SidesFor(Type type)
+    {
+        if (Root is not BoundEntitiesNode bound)
+            return Sides();
+        var side = SideOf(type);
+        var sides = new List<object?>();
+        if ((side & ComponentScope.Client) != 0)
+            sides.Add(bound.ClientEntity);
+        if ((side & ComponentScope.Server) != 0)
+            sides.Add(bound.ServerEntity);
+        return sides.OfType<EntityPrefabNode>();
     }
 
     // Dependency filling sides a dependency by the Editor's own scope, so it puts an overridden type on both sides,
