@@ -27,7 +27,7 @@ Steps:
 5. On the BlockModelComponentDefinition:
    write(def, "Model", <Model>)
    write(def, "FractureModel", <FractureModel>) and write(def, "DamagedModel", <DamagedModel>) when the block breaks
-6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
+6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust, block-inventory for storage). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
 
 Show:
 show(the block's prefab). Ask the user to check the model and its dummies in the Render View (Preview Settings, Dummies).
