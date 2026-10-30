@@ -126,7 +126,7 @@ public sealed class SkillTests
         Assert.Empty(load.Problems);
         Assert.NotEmpty(load.Skills);
         Assert.Contains(load.Skills, s => s.Plan.Count > 0);
-        foreach (var file in Directory.EnumerateFiles(Dir(), "*" + SkillFiles.Extension))
+        foreach (var file in Directory.EnumerateFiles(Dir(), "*" + Frontmatter.Extension))
         {
             var text = File.ReadAllText(file);
             int bad = text.ToList().FindIndex(c => c > 127 || (c < 32 && c != '\n' && c != '\r' && c != '\t'));

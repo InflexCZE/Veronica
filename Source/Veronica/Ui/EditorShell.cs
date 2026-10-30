@@ -94,8 +94,12 @@ public sealed class EditorShell
 
     private static readonly SkillPlan Plan = new();
 
+    private static readonly WikiTool Wiki = new(() => Skills.Pages, () => Skills.Current,
+        [new FindContentTool(), new ListFolderTool(), new FindTemplateTool(), new ReadTool()], Plan);
+
     private static readonly ITool[] Tools =
     [
+        Wiki,
         new SkillTool(() => Skills.Current, Plan),
         new ActivateSkillTool(() => Skills.Current, Plan),
         new MarkCompletedTool(Plan),
@@ -121,10 +125,11 @@ public sealed class EditorShell
     {
         ChatPanelViewModel? panel = null;
         var tools = new ToolSet(Tools);
-        var endpoint = ToolEndpoint.Create(tools);
-        var provider = ModelProvider.Create(status => panel?.ShowStatus(status), endpoint);
-        panel = new ChatPanelViewModel(provider.OpenSession(), tools, Plan, Skills.SystemPrompt);
-        EvalHook.Attach(panel, Skills.SystemPrompt(), tools.Definitions);
+        // The researcher reads the chat's transcript, so an MCP client has nothing to ask it about.
+        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName));
+        var provider = EvalHook.Record(ModelProvider.Create(status => panel?.ShowStatus(status), endpoint));
+        panel = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki);
+        EvalHook.Attach(panel);
         ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);
         return panel;
     }

@@ -31,6 +31,7 @@
   <ItemGroup>
     <AssemblyMetadata Include="WebQwenExe" Value="$(RepoRoot)Source\WebQwen\bin\x64\$(Configuration)\net9.0\WebQwen.exe" />
     <AssemblyMetadata Include="SkillsDir" Value="$(MSBuildProjectDirectory)\Skills" />
+    <AssemblyMetadata Include="WikiDir" Value="$(MSBuildProjectDirectory)\Wiki" />
   </ItemGroup>
 
   <ItemGroup>

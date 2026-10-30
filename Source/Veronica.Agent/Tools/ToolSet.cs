@@ -14,19 +14,35 @@ public interface ITool
     Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken);
 }
 
+public static class ToolArgs
+{
+    // Empty when missing or not text.
+    public static string Text(JsonElement arguments, string name) =>
+        arguments.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString()!.Trim() : "";
+}
+
 // The tools of a conversation. Every failure becomes a result the model can read and act on.
 public sealed class ToolSet
 {
     private readonly Dictionary<string, ITool> _tools;
 
     // One tool at a time, whoever calls: a chat turn, an MCP client, or both at once.
-    private readonly SemaphoreSlim _running = new(1, 1);
+    private readonly SemaphoreSlim _running;
 
     public ToolSet(IEnumerable<ITool> tools)
+        : this(tools, new SemaphoreSlim(1, 1))
     {
+    }
+
+    private ToolSet(IEnumerable<ITool> tools, SemaphoreSlim running)
+    {
+        _running = running;
         _tools = tools.ToDictionary(t => t.Name, StringComparer.Ordinal);
         Definitions = _tools.Values.Select(t => new ToolDefinition(t.Name, t.Description, t.Parameters)).ToList();
     }
+
+    // The same tools but one, still run one at a time with this set's.
+    public ToolSet Without(string name) => new(_tools.Values.Where(t => t.Name != name), _running);
 
     public IReadOnlyList<ToolDefinition> Definitions { get; }
 

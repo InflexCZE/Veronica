@@ -14,8 +14,7 @@ Plan:
 - Show the result
 
 Steps:
-1. Find the definition that holds the value: find_content with words of the thing and of the definition type, e.g. "IonThruster100 ThrusterEffects". Vanilla blocks are in Assets/Blocks/<family>/<name>/<size in cm>, one definition per component: ThrusterDefinition (force), ThrusterEffectsComponentDefinition (flame), BlockEffectsComponentDefinition (sound), PowerableBlockDefinition (name, power, build cost).
-   A colour of a flame or another effect: the particle-colors reference says where it lives.
+1. Find the definition that holds the value: find_content with words of the thing and of the definition type, e.g. "IonThruster100 ThrusterEffects". A block has one definition per component: ThrusterDefinition (force), ThrusterEffectsComponentDefinition (flame), BlockEffectsComponentDefinition (sound), PowerableBlockDefinition (name, power, build cost). When unsure which definition holds a value, such as a flame's colour, ask the wiki.
 2. read(def) to find the field.
 3. create_partial(def, "override", folder); values left alone keep following the original. When the mod already has an override of it, the error names that file: write to it instead. When the user wants a new thing next to the original, it is a copy instead: create_partial(def, "copy", folder).
 4. write(override, field, value) for each change.

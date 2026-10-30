@@ -38,7 +38,12 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
 
     public event Action<string>? StatusChanged;
 
-    public IProviderSession OpenSession() => new Session(this);
+    public IProviderSession OpenSession(string name) => new Session(this);
+
+    public int ContextWindow => IProvider.AssumedContextWindow;
+
+    // Its turn runs in claude -p, which only reaches Veronica through the MCP endpoint (Docs/TODOs/ClaudeWiki.md).
+    public bool RunsSubagents => false;
 
     private string StartEndpoint()
     {

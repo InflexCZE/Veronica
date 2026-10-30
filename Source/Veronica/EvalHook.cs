@@ -8,35 +8,34 @@ using Veronica.Ui;
 
 namespace Veronica;
 
-// Eval runs (Docs/Tech/Eval.md): VERONICA_RUN_DIR records the chat, VERONICA_CONTROL_PORT lets a harness drive it.
+// Eval runs (Docs/Tech/Eval.md): VERONICA_RUN_DIR records every session, VERONICA_CONTROL_PORT lets a harness drive the chat.
 internal static class EvalHook
 {
     private static ControlServer? _server;
+    private static RecordingProvider? _recording;
 
-    public static void Attach(ChatPanelViewModel panel, string systemPrompt, IReadOnlyList<ToolDefinition> tools)
+    private static string RunDir => Environment.GetEnvironmentVariable("VERONICA_RUN_DIR")?.Trim() ?? "";
+
+    private static string Port => Environment.GetEnvironmentVariable("VERONICA_CONTROL_PORT")?.Trim() ?? "";
+
+    public static IProvider Record(IProvider provider)
     {
-        string dir = Environment.GetEnvironmentVariable("VERONICA_RUN_DIR")?.Trim() ?? "";
-        string port = Environment.GetEnvironmentVariable("VERONICA_CONTROL_PORT")?.Trim() ?? "";
-        if (dir.Length == 0 && port.Length == 0)
+        if (RunDir.Length == 0)
+            return provider;
+        Log.Default.WriteLine($"[Veronica] Eval transcripts in '{LocalModel.AsciiOnly(RunDir)}'.");
+        return _recording = new RecordingProvider(provider, RunDir, ModelProvider.Describe());
+    }
+
+    public static void Attach(ChatPanelViewModel panel)
+    {
+        if (RunDir.Length == 0 && Port.Length == 0)
             return;
 
-        RunTranscript? transcript = null;
-        if (dir.Length > 0)
-        {
-            try
-            {
-                transcript = new RunTranscript(dir, ModelProvider.Describe(), systemPrompt, tools);
-                Log.Default.WriteLine($"[Veronica] Eval transcript in '{LocalModel.AsciiOnly(dir)}'.");
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
-            {
-                Log.Default.WriteLine($"[Veronica] Eval transcript not written: {LocalModel.AsciiOnly(e.Message)}");
-            }
-        }
-
-        var run = new RunControl(new PanelControl(panel), transcript);
+        var recording = _recording;
+        var run = new RunControl(new PanelControl(panel), recording == null ? null : () => recording.WriteError);
         panel.Run = run;
 
+        string port = Port;
         if (port.Length == 0)
             return;
         if (!int.TryParse(port, NumberStyles.None, CultureInfo.InvariantCulture, out int number) || number is < 1 or > 65535)

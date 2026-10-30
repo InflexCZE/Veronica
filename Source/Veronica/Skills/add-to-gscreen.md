@@ -32,7 +32,7 @@ Steps:
 4. For a new subcategory, its category: an existing CategoryDefinition, or a new one:
    create_definition("CategoryDefinition", <name>, folder); write Name and Tooltip
    element_add(subcategory, "Categories"); write(subcategory, "Categories[i]", category)
-5. Order, only when the user wants a position: write(x, "Order", n) on a group, subcategory or category, or "OrderingPriority" on a kind. Order sorts ascending, but 0 means last: entries with Order 0 come after all ordered ones, by name. In a subcategory, tiles holding one block kind come after the other tiles. To place an entry before a vanilla one at 0, give it any Order above 0; to place it after, it needs a higher Order than the vanilla one, which means overriding the vanilla entry, so ask the user first. A kind's OrderingPriority works the same within a tile; sizes within a kind sort themselves.
+5. Order, only when the user wants a position: write(x, "Order", n) on a group, subcategory or category, or "OrderingPriority" on a kind within its tile. The sort has exceptions (0 sorts last); ask the wiki how entries sort before picking n. Placing an entry after a vanilla one can need an override of the vanilla entry: ask the user first.
 
 Show:
 show(the block's prefab). The G-Screen itself is visible only in game (Project > Start Game).

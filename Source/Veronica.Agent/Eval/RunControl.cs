@@ -18,8 +18,8 @@ public interface IChatControl
     void Stop();
 }
 
-// An eval run's turn state, the optional transcript, and the chat it drives.
-public sealed class RunControl(IChatControl chat, RunTranscript? transcript) : IDisposable
+// An eval run's turn state and the chat it drives. The transcripts are the recording provider's.
+public sealed class RunControl(IChatControl chat, Func<string?>? writeError = null)
 {
     private readonly object _gate = new();
     private TaskCompletionSource _idle = Completed();
@@ -32,20 +32,18 @@ public sealed class RunControl(IChatControl chat, RunTranscript? transcript) : I
     public IChatControl Chat => chat;
 
     // Called by the chat, synchronously, when it takes a message.
-    public void TurnStarted(string text)
+    public void TurnStarted()
     {
         lock (_gate)
         {
             _busy = true;
             _idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
-        transcript?.WriteUser(text);
     }
 
     public void TurnEnded(TurnOutcome outcome, string? error)
     {
         TaskCompletionSource idle;
-        int? context;
         lock (_gate)
         {
             _busy = false;
@@ -53,19 +51,11 @@ public sealed class RunControl(IChatControl chat, RunTranscript? transcript) : I
             _lastOutcome = outcome;
             _lastError = error;
             idle = _idle;
-            context = _context;
         }
-        try
-        {
-            transcript?.WriteTurnEnd(outcome, error, context);
-        }
-        finally
-        {
-            idle.TrySetResult();
-        }
+        idle.TrySetResult();
     }
 
-    public ITurnHost Wrap(ITurnHost host) => new StatsHost(this, transcript?.Wrap(host) ?? host);
+    public ITurnHost Wrap(ITurnHost host) => new StatsHost(this, host);
 
     public async Task WaitIdleAsync(TimeSpan timeout, CancellationToken cancellationToken)
     {
@@ -90,22 +80,20 @@ public sealed class RunControl(IChatControl chat, RunTranscript? transcript) : I
                 if (_lastOutcome is { } outcome)
                 {
                     w.WriteStartObject("last");
-                    w.WriteString("outcome", RunTranscript.OutcomeName(outcome));
+                    w.WriteString("outcome", RecordingProvider.OutcomeName(outcome));
                     if (_lastError != null)
                         w.WriteString("error", _lastError);
                     w.WriteEndObject();
                 }
                 if (_context is { } context)
                     w.WriteNumber("context", context);
-                if (transcript?.WriteError is { } writeError)
-                    w.WriteString("transcript_error", writeError);
+                if (writeError?.Invoke() is { } error)
+                    w.WriteString("transcript_error", error);
                 w.WriteEndObject();
             }
             return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
         }
     }
-
-    public void Dispose() => transcript?.Dispose();
 
     private static TaskCompletionSource Completed()
     {

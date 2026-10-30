@@ -29,7 +29,9 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps (owner decision) |
 | [ValidationTool.md](ValidationTool.md) | Editor tools: agent cannot see validation issues |
 | [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
-| [Wiki.md](Wiki.md) | Skills: the wiki the model asks for background knowledge |
+| [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
+| [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |
+| [ContextWindow.md](ContextWindow.md) | Chat: providers assume a 45K context window |
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
 | [PlanChainFollowUps.md](PlanChainFollowUps.md) | Skills: optional follow-up skills (add-to-gscreen) are lost in a skill chain |

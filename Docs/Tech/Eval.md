@@ -39,12 +39,14 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 
 ## Transcript
 
-When `VERONICA_RUN_DIR` is set, the plugin appends the conversation to `transcript.jsonl` in that folder as it happens, so a hung, crashed or killed Editor loses nothing.
+When `VERONICA_RUN_DIR` is set, the plugin records every provider session to a file of its own in that folder as it happens, so a hung, crashed or killed Editor loses nothing. The recording wraps the provider, so whatever opens a session is recorded the same way.
 
+- The chat's session goes to `transcript.jsonl`, a subagent's to `<name>-<n>.jsonl` (`wiki-1.jsonl`, ...). The chat's file stays exactly what the chat model saw.
+- A session opened during a tool call is linked both ways: its `setup` line names the parent file and call id (`parent`), and the call's `tool` line names the files it opened (`sessions`).
 - One JSON object per line, strings with escaped line breaks.
-- Every line carries its index `i`, seconds since the run started `t`, and its `type`.
-- The first line (`setup`) holds the provider, the system prompt and the tool definitions.
-- Then one line per user message (`user`), assistant message (`assistant`: round, text, reasoning, tool calls with parsed arguments, round stats including context used), tool result (`tool`, with its duration), automatic user message from the tool loop (`nudge`), notice such as the round budget (`notice`) and turn end (`turn_end`: answered, stopped or error, the error text, context used).
+- Every line carries its index `i`, seconds since the session's file was opened `t`, and its `type`.
+- A `setup` line holds the provider, the system prompt and the tool definitions. It comes first, and again when a turn's system prompt or tools differ from the last. `/clear` writes a `clear` line, and the next turn writes its setup again.
+- Then one line per user message (`user`: the turn's new message, or a subagent's brief), assistant message (`assistant`: round, text, reasoning, tool calls with parsed arguments, round stats including context used), tool result (`tool`, with its duration), automatic user message from the tool loop (`nudge`), notice such as the round budget (`notice`) and turn end (`turn_end`: answered, stopped or error, the error text, context used).
 - A failed round appends nothing to the conversation, so its partial reply is not recorded; the turn end carries the error.
 - Lines are written whole when their message completes, not per streamed token.
 
@@ -95,7 +97,7 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 ## Outputs
 
 Not committed, under `.tmp/eval/`:
-- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, `context.patch`, `logs/` (the Editor's), and the fork's `report.md`.
+- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, a file per subagent run (`wiki-<n>.jsonl`), `context.patch`, `logs/` (the Editor's), and the fork's `report.md`.
 - `findings.md`: the master's running log of failure patterns with run references, hypotheses tested and their outcome.
 
 Context changes reach the repo only after the owner approves them.

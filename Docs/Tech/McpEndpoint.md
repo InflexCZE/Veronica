@@ -19,7 +19,7 @@ Environment variables, read once when the panel is created.
 
 - MCP Streamable HTTP with plain JSON responses, on 127.0.0.1. A raw loopback socket serves it rather than `HttpListener`, which needs a URL reservation for a non-admin user.
 - There is no authentication: any local MCP client can call Veronica's tools.
-- The server is named `veronica`, so Claude sees each tool as `mcp__veronica__<tool>`. The tools are the conversation's `ToolSet`.
+- The server is named `veronica`, so Claude sees each tool as `mcp__veronica__<tool>`. The tools are the conversation's `ToolSet` without `wiki` (`Wiki.md`), run one at a time with the chat's.
 
 ## Calls
 

@@ -6,9 +6,9 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 
 | | skill | wiki |
 |---|---|---|
-| holds | how: which tool calls, in which order, plus only the facts a step needs to be done right (which definition holds a field, a value to copy from vanilla) | what and why: concepts (prefab, definition, partial copy and override, template), the G-Screen hierarchy, art rules (LODs, mount points, texture naming), the vanilla folder layout |
-| reaches the model | the model loads it by name before working on a task | a researcher subagent reads it and answers the model's question (`Docs/TODOs/Wiki.md`) |
-| refers to the other | a step may say "ask the wiki about X" where X matters | never |
+| holds | how: which tool calls, in which order, plus the facts every run of the skill needs (which definition holds a field, a value to copy from vanilla) | what and why: concepts (prefab, definition, partial copy and override, template), the G-Screen hierarchy, art rules (LODs, mount points, texture naming), the vanilla folder layout; knowledge a skill needs only sometimes |
+| reaches the model | the model loads it by name before working on a task | a researcher subagent reads it and answers the model's question (`Wiki.md`) |
+| refers to the other | a step may say "ask the wiki about X" where X matters only sometimes | never |
 
 ## Composition
 
@@ -16,7 +16,7 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
   - Procedures: a task's steps, e.g. `create-block`, `override-definition`, `add-to-gscreen`.
   - Appendices: what one function adds to a procedure, e.g. `block-thruster` for a block that thrusts. A procedure names, at the step where they apply, the appendices to activate.
   - A function without an appendix is built by reading a comparable vanilla block's definitions and mirroring them. This step is in `create-block`.
-  - References: knowledge several skills need at a step, such as a block's components and their definitions, or placing dummies. A step names the reference; the model reads it with `skill`. A reference has no Plan section, and activating it is refused. References stand in for the wiki until it exists.
+  - Knowledge several skills need is in the wiki. A step keeps a short form of what every run needs; the rest is asked of the wiki. A skill without a Plan section cannot be activated.
 - Behaviour every task needs, such as never writing vanilla files and treating values from a template as a starting point, is in the system prompt, not repeated in skills.
 - A skill guides the model to read a value and write what does not fit what the user wants; it does not name the values a task checks.
 - Each skill is its own file and its own index line. The model loads only what the task needs.
@@ -26,12 +26,12 @@ The model has tools that act on the project (`EditorTools.md`). How to reach a g
 - One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence. It carries no instructions.
 - Body sections, in order:
   - **Needs**: the inputs. Each is a file or value the user provides. The system prompt already says to ask for what cannot be found.
-  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. Procedures and appendices have one; a reference has none. See Plan below.
+  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. See Plan below.
   - **Steps**: numbered, written as the real tool calls. A step that only some tasks need says when.
   - **Show**: the last step shows the result in the Editor (`show`), with one line on what the user should look at. Testing in game is the user's call.
 - No read-back check of the edits: the model sees each change's reply, and the user works alongside it.
 - ASCII only.
-- Size is a guideline: a skill should stay well under the 20K context it shares with the tool schemas and the transcript.
+- Lean, not bare: a skill holds what every run of it needs and leaves what only some runs need to the wiki. It shares the context with the tool schemas and the transcript.
 
 ## Writing a skill
 
@@ -96,5 +96,5 @@ Small models drop steps: after a failed write, or after handing off to an append
 
 ## Testing
 
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a reference, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds, the end gate and the activation hint are covered too.
+- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a skill without a plan, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds, the end gate and the activation hint are covered too.
 - A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.

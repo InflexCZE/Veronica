@@ -11,5 +11,6 @@
 | [ClaudeProvider.md](ClaudeProvider.md) | The `claude -p` provider and how it routes Veronica's tools into its turns |
 | [McpEndpoint.md](McpEndpoint.md) | Veronica's tools over MCP for any local client, with any provider |
 | [Skills.md](Skills.md) | Skills and wiki: how the model learns to reach modding goals |
+| [Wiki.md](Wiki.md) | The wiki's pages, the researcher that reads them, and subagents |
 | [WebQwenProtocol.md](WebQwenProtocol.md) | How `Veronica.dll` runs `WebQwen.exe` and talks to it |
 | [Eval.md](Eval.md) | Eval runs in the Editor: control channel, transcripts, run lifecycle, tasks |

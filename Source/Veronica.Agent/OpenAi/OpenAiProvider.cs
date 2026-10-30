@@ -29,7 +29,11 @@ public sealed class OpenAiProvider : IProvider, IDisposable
 
     public event Action<string>? StatusChanged;
 
-    public IProviderSession OpenSession() => ClientToolLoop.CreateSession(StreamRoundAsync);
+    public IProviderSession OpenSession(string name) => ClientToolLoop.CreateSession(StreamRoundAsync);
+
+    public int ContextWindow => IProvider.AssumedContextWindow;
+
+    public bool RunsSubagents => true;
 
     public void Dispose() => _http.Dispose();
 

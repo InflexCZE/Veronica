@@ -91,6 +91,40 @@ public sealed class ToolActivity(string call) : ChatItem
     public void Complete(string result) => Text = $"{_call} -> {result}";
 }
 
+public sealed class SubAgentItem(string title) : ChatItem
+{
+    private string _headline = title + " ...";
+    private string _answer = "";
+
+    public string Title { get; } = title;
+
+    public string Headline
+    {
+        get => _headline;
+        private set => Set(ref _headline, value);
+    }
+
+    public string Answer
+    {
+        get => _answer;
+        private set
+        {
+            Set(ref _answer, value);
+            Changed(nameof(HasAnswer));
+        }
+    }
+
+    public bool HasAnswer => _answer.Length > 0;
+
+    public ObservableCollection<string> Steps { get; } = new();
+
+    public void Finish(string answer, string outcome)
+    {
+        Headline = $"{Title}: {outcome}";
+        Answer = answer;
+    }
+}
+
 public sealed class NoticeItem(string text, bool isError) : ChatItem
 {
     public string Text { get; } = text;

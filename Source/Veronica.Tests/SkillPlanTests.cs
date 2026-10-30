@@ -72,7 +72,7 @@ public sealed class SkillPlanTests
 
         var output = chat.Call("activate_skill", """{"name":"partial-definitions"}""");
 
-        Assert.Equal("partial-definitions is a reference with no plan, so it cannot be activated; read it with skill and use it in the work of the active skill.", output);
+        Assert.Equal("partial-definitions has no plan, so it cannot be activated; read it with skill instead.", output);
         Assert.Equal("create-block", chat.Plan.ActiveSkill);
         Assert.Equal("REFERENCE BODY", chat.Call("skill", """{"name":"partial-definitions"}"""));
     }

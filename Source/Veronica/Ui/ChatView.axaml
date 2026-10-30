@@ -90,6 +90,22 @@
               </StackPanel>
             </Border>
           </DataTemplate>
+          <DataTemplate DataType="ui:SubAgentItem">
+            <Border Classes="message notice">
+              <Expander Header="{Binding Headline}" HorizontalAlignment="Stretch">
+                <StackPanel>
+                  <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <SelectableTextBlock Classes="message reasoning tool" Text="{Binding}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <SelectableTextBlock Classes="message reasoning" Text="{Binding Answer}" IsVisible="{Binding HasAnswer}" Margin="0,4,0,0" />
+                </StackPanel>
+              </Expander>
+            </Border>
+          </DataTemplate>
           <DataTemplate DataType="ui:NoticeItem">
             <Border Classes="message notice" Classes.error="{Binding IsError}">
               <SelectableTextBlock Classes="message reasoning" Text="{Binding Text}" />

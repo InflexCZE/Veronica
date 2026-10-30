@@ -76,7 +76,7 @@ public sealed class SkillPlan
         lock (_lock)
         {
             if (skill.Plan.Count == 0)
-                return $"{skill.Name} is a reference with no plan, so it cannot be activated; read it with {SkillTool.ToolName} and use it in the work of the active skill.";
+                return $"{skill.Name} has no plan, so it cannot be activated; read it with {SkillTool.ToolName} instead.";
             int current = Current();
             if (current >= 0 && string.Equals(_skill, skill.Name, StringComparison.OrdinalIgnoreCase))
                 return $"{_skill} is already active. {WorkOn(current)}";
@@ -119,12 +119,15 @@ public sealed class SkillPlan
     }
 
     // A model cut off while thinking has lost track of where it was.
-    public string CurrentItemNote()
+    public string CurrentItemNote() => CurrentItem() is { } item ? $" You are on {item}." : "";
+
+    // Null while no plan is open.
+    public string? CurrentItem()
     {
         lock (_lock)
         {
             int current = Current();
-            return current < 0 ? "" : $" You are on item {current + 1} of {_items.Count} of {_skill}: {_items[current].Text}.";
+            return current < 0 ? null : $"item {current + 1} of {_items.Count} of {_skill}: {_items[current].Text}";
         }
     }
 
@@ -195,11 +198,8 @@ public sealed class MarkCompletedTool(SkillPlan plan) : ITool
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new ToolResult(plan.Complete(Text(arguments, "proof"))));
+        return Task.FromResult(new ToolResult(plan.Complete(ToolArgs.Text(arguments, "proof"))));
     }
-
-    internal static string Text(JsonElement arguments, string name) =>
-        arguments.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString()!.Trim() : "";
 }
 
 public sealed class MarkSkippedTool(SkillPlan plan) : ITool
@@ -217,7 +217,7 @@ public sealed class MarkSkippedTool(SkillPlan plan) : ITool
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new ToolResult(plan.Skip(MarkCompletedTool.Text(arguments, "reason"))));
+        return Task.FromResult(new ToolResult(plan.Skip(ToolArgs.Text(arguments, "reason"))));
     }
 }
 

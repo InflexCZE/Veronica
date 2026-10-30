@@ -19,18 +19,22 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private string _status = "";
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
+    private readonly IProvider _provider;
     private bool _clearing;
 
-    public ChatPanelViewModel(IProviderSession session, ToolSet tools, SkillPlan plan, Func<string> systemPrompt)
+    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
         CanClose = true;
         CanFloat = true;
 
+        _provider = provider;
         _tools = tools;
         _plan = plan;
-        _conversation = new Conversation(session, systemPrompt, Prompts.ChatLimits(plan), tools.Definitions);
+        _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), systemPrompt, Prompts.ChatLimits(plan), tools.Definitions);
+        if (provider.RunsSubagents)
+            wiki.Attach(RunSubAgentAsync, () => _conversation.Transcript.ToList());
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
     }
@@ -139,7 +143,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         string? error = null;
         try
         {
-            run?.TurnStarted(text);
+            run?.TurnStarted();
             ITurnHost host = new UiHost(this);
             await _conversation.SendAsync(text, run?.Wrap(host) ?? host, turn.Token);
             if (turn.IsCancellationRequested)
@@ -233,5 +237,55 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         }
 
         private static void Post(Action action) => Dispatcher.UIThread.Post(action);
+    }
+
+    // A subagent gets a card of its own in the chat: its steps as it works, then its answer.
+    private async Task<SubAgentResult> RunSubAgentAsync(SubAgentRequest request, CancellationToken cancellationToken)
+    {
+        var card = new SubAgentItem(request.Title);
+        Dispatcher.UIThread.Post(() => Messages.Add(card));
+        try
+        {
+            var result = await SubAgent.RunAsync(_provider, request, host => new CardHost(this, card, host), cancellationToken).ConfigureAwait(false);
+            Dispatcher.UIThread.Post(() => card.Finish(result.Text ?? "(no answer)", result.RoundCap ? "ran out of rounds" : "finished"));
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            Dispatcher.UIThread.Post(() => card.Finish("", "stopped"));
+            throw;
+        }
+        catch (Exception e)
+        {
+            Dispatcher.UIThread.Post(() => card.Finish("", "failed: " + e.Message));
+            throw;
+        }
+    }
+
+    private sealed class CardHost(ChatPanelViewModel panel, SubAgentItem card, ITurnHost host) : ITurnHost
+    {
+        public void OnRoundStart() => host.OnRoundStart();
+
+        public void OnText(string delta) => host.OnText(delta);
+
+        public void OnReasoning(string delta) => host.OnReasoning(delta);
+
+        public void OnRoundStats(RoundStats stats)
+        {
+            Dispatcher.UIThread.Post(() => panel.Status = string.Format(CultureInfo.InvariantCulture,
+                "{0}: {1} prompt tokens at {2:F0} tok/s, {3} generated at {4:F1} tok/s",
+                card.Title, stats.PromptTokens, stats.PrefillTokensPerSecond, stats.CompletionTokens, stats.DecodeTokensPerSecond));
+            host.OnRoundStats(stats);
+        }
+
+        public Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
+        {
+            Dispatcher.UIThread.Post(() => card.Steps.Add($"{call.Name} {call.Arguments}"));
+            return host.OnToolCallAsync(call, context, cancellationToken);
+        }
+
+        public void OnNotice(string text) => host.OnNotice(text);
+
+        public void AppendTranscript(ChatMessage message) => host.AppendTranscript(message);
     }
 }

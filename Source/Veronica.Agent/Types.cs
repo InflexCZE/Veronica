@@ -101,9 +101,23 @@ public interface IProviderSession : IDisposable
     Task ResetAsync();
 }
 
+// One conversation's worth of provider state. The chat holds one for its lifetime; a subagent opens its
+// own, runs one turn and disposes it, so two conversations never see each other's state.
 public interface IProvider
 {
-    IProviderSession OpenSession();
+    // Assumed, not asked of the model server yet (Docs/TODOs/ContextWindow.md).
+    public const int AssumedContextWindow = 45_000;
+
+    public const string ChatSession = "chat";
+
+    // The name says whose conversation it is: the chat's or a kind of subagent's.
+    IProviderSession OpenSession(string name);
+
+    // Tokens of prompt and reply one request may hold.
+    int ContextWindow { get; }
+
+    // Whether a second session may run a turn while the chat's is inside a tool call.
+    bool RunsSubagents { get; }
 }
 
 public sealed record RoundRequest(

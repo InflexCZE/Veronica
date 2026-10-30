@@ -5,6 +5,8 @@
 ## Providers
 
 - A provider opens sessions. A session runs one whole assistant turn, tool rounds included: `IProviderSession.RunTurnAsync(TurnRequest, ITurnHost, CancellationToken)`.
+- A session is one conversation's state; `OpenSession(name)` names whose: the chat's, or a kind of subagent's (`Wiki.md`, Subagents). `RunsSubagents` says whether a second session may run while the chat's turn waits in a tool call.
+- A provider states its context window. Every provider assumes 45K tokens for now (`Docs/TODOs/ContextWindow.md`).
 - The chat sees only `ITurnHost` callbacks, in model order: round start, text and reasoning deltas, round stats, tool calls, notices, transcript appends. Every provider drives the same host.
 - Providers whose wire protocol is one model request per round (WebQwen) implement a `StreamRound` function. `ClientToolLoop` wraps it into a session.
 - Providers that run their own loop (`claude -p`, `ClaudeProvider.md`) implement `RunTurnAsync` directly.
@@ -42,7 +44,7 @@
 ## Conversation
 
 - `Conversation` holds the transcript and the session. It sends one turn at a time: the user message is appended, then the turn's messages as the loop reports them.
-- The transcript lives in memory only and is lost when the Editor exits. Eval runs also record it to a file (`Eval.md`).
+- The transcript lives in memory only and is lost when the Editor exits. Eval runs also record every session to a file (`Eval.md`).
 - `/clear` empties it and resets the session.
 - Assistant messages keep their reasoning. Thinking models need their own earlier reasoning: their chat template otherwise renders an empty think block, and the model stops closing `</think>`. WebQwen also reuses its KV cache only when every earlier reply comes back exactly as it was generated.
 
@@ -50,13 +52,13 @@
 
 | setting | value |
 |---|---|
-| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks, read the skills that may cover it, activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, and steps they do in the Editor), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. The step also says a new thing gets its own name and text from the user even when a similar one exists, that a skill's example folder is a suggestion to offer, and to ask when unsure: left to judge, a model argued itself out of asking, reused a block's name for its new tile and picked folders silently. Small models skipped activation or worked from memory when the procedure was spread over separate hints. Without skills, only the ask-the-user rule is left. |
+| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks, read the skills that may cover it, activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, and steps they do in the Editor), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. The step also says a new thing gets its own name and text from the user even when a similar one exists, that a skill's example folder is a suggestion to offer, and to ask when unsure: left to judge, a model argued itself out of asking, reused a block's name for its new tile and picked folders silently. Small models skipped activation or worked from memory when the procedure was spread over separate hints. A line after the procedure says to ask the wiki when stuck, or before a bigger task that needs knowledge of the game or data from the project (`Wiki.md`). Without skills, only the ask-the-user rule is left. |
 | thinking | on |
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 for the answer and tool calls. With the OpenAI provider, thinking has its own budget of 4000 on top (`thinking_budget_tokens`, llama.cpp; `max_tokens` is the sum): a reply of 30 writes after long thinking hit a shared 4000 cap mid-call. The server closes the thinking at the budget and the model still answers. OpenAI's own API refuses unknown request fields, so it would refuse this one. |
 | length nudge | up to 2 per turn |
-| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`) |
-| free rounds | rounds that call only `skill` and the plan tools |
+| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`), `wiki` (`Wiki.md`) |
+| free rounds | rounds that call only `skill`, the plan tools and `wiki` |
 | end nudge | when an item of the active skill's plan is open (`Skills.md`, Plan); `skill` and the plan tools are its bookkeeping tools |
 | turn-ending tools | `wait_for_user`. The Claude provider gets it over MCP like every tool, but its own loop decides when a turn ends |
 

@@ -10,7 +10,11 @@ public sealed class WebQwenProvider(WebQwenLaunch launch, Action<string> log, IG
 
     public event Action<string>? StatusChanged;
 
-    public IProviderSession OpenSession()
+    public int ContextWindow => IProvider.AssumedContextWindow;
+
+    public bool RunsSubagents => true;
+
+    public IProviderSession OpenSession(string name)
     {
         var session = ClientToolLoop.CreateSession(StreamRoundAsync);
         return gpu == null ? session : new GpuHeldSession(session, gpu);

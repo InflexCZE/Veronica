@@ -43,15 +43,35 @@ public sealed class EvalTests : IDisposable
             if (Refuse != null)
                 return Task.FromResult<string?>(Refuse);
             Sent.Add(text);
-            Run?.TurnStarted(text);
+            Run?.TurnStarted();
             return Task.FromResult<string?>(null);
         }
 
         public void Stop() => Stops++;
     }
 
-    private List<JsonElement> Lines() =>
-        File.ReadAllLines(Path.Combine(_dir, RunTranscript.FileName)).Select(l => JsonDocument.Parse(l).RootElement).ToList();
+    // A provider whose sessions run a scripted turn on the host they are given.
+    private sealed class ScriptedProvider(Func<TurnRequest, ITurnHost, Task> turn) : IProvider
+    {
+        public int ContextWindow => IProvider.AssumedContextWindow;
+        public bool RunsSubagents => true;
+        public IProviderSession OpenSession(string name) => new Session(turn);
+
+        private sealed class Session(Func<TurnRequest, ITurnHost, Task> turn) : IProviderSession
+        {
+            public Task RunTurnAsync(TurnRequest request, ITurnHost host, CancellationToken cancellationToken) => turn(request, host);
+            public Task ResetAsync() => Task.CompletedTask;
+            public void Dispose() { }
+        }
+    }
+
+    private RecordingProvider Recording(Func<TurnRequest, ITurnHost, Task> turn) => new(new ScriptedProvider(turn), _dir, "openai x");
+
+    private static TurnRequest Request(string user, IReadOnlyList<ToolDefinition>? tools = null) =>
+        new("SYS", [new ChatMessage(ChatRole.User, user)], tools ?? [], new TurnLimits());
+
+    private List<JsonElement> Lines(string file = "transcript.jsonl") =>
+        File.ReadAllLines(Path.Combine(_dir, file)).Select(l => JsonDocument.Parse(l).RootElement).ToList();
 
     private static async Task RunScriptedTurn(ITurnHost host)
     {
@@ -68,20 +88,26 @@ public sealed class EvalTests : IDisposable
     [Fact]
     public async Task TranscriptWritesOneLinePerMessage()
     {
-        using (var transcript = new RunTranscript(_dir, "openai x", "SYS", [new ToolDefinition("read", "Reads.", "{\"type\":\"object\"}")]))
+        var inner = new NullHost();
+        var provider = Recording(async (_, host) =>
         {
-            var run = new RunControl(new FakeChat(), transcript);
-            var inner = new NullHost();
-            run.TurnStarted("hi\nthere");
-            await RunScriptedTurn(run.Wrap(inner));
-            run.TurnEnded(TurnOutcome.Failed, "context full");
-            Assert.Equal(3, inner.Appended.Count);
+            await RunScriptedTurn(host);
+            throw new InvalidOperationException("context full");
+        });
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                session.RunTurnAsync(Request("hi\nthere", [new ToolDefinition("read", "Reads.", "{\"type\":\"object\"}")]), inner, CancellationToken.None));
         }
+        Assert.Equal(3, inner.Appended.Count);
 
         var lines = Lines();
         Assert.Equal(["setup", "user", "assistant", "tool", "notice", "nudge", "turn_end"], lines.Select(l => l.GetProperty("type").GetString()));
         Assert.Equal(Enumerable.Range(0, 7), lines.Select(l => l.GetProperty("i").GetInt32()));
         Assert.Equal("SYS", lines[0].GetProperty("system").GetString());
+        Assert.Equal("openai x", lines[0].GetProperty("provider").GetString());
+        Assert.False(lines[0].TryGetProperty("parent", out _));
+        Assert.False(lines[3].TryGetProperty("sessions", out _));
         Assert.Equal("object", lines[0].GetProperty("tools")[0].GetProperty("parameters").GetProperty("type").GetString());
         Assert.Equal("hi\nthere", lines[1].GetProperty("text").GetString());
         var assistant = lines[2];
@@ -97,43 +123,124 @@ public sealed class EvalTests : IDisposable
     }
 
     [Fact]
-    public void TranscriptKeepsUnparsableArgumentsAsText()
+    public async Task SetupIsWrittenAgainOnlyWhenTheSystemPromptChanges()
     {
-        using (var transcript = new RunTranscript(_dir, "p", "S", []))
-            transcript.Wrap(new NullHost()).AppendTranscript(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [new ToolCall("c", "read", "{broken")] });
-
-        Assert.Equal("{broken", Lines()[1].GetProperty("calls")[0].GetProperty("args").GetString());
-    }
-
-    [Fact]
-    public void TranscriptWritesLoneSurrogates()
-    {
-        using (var transcript = new RunTranscript(_dir, "p", "S", []))
+        var provider = Recording((_, _) => Task.CompletedTask);
+        using (var session = provider.OpenSession(IProvider.ChatSession))
         {
-            transcript.WriteUser("bad \ud800 half");
-            transcript.WriteUser("ok");
-            Assert.Null(transcript.WriteError);
+            var tools = new List<ToolDefinition>();
+            await session.RunTurnAsync(Request("a", tools), new NullHost(), CancellationToken.None);
+            await session.RunTurnAsync(Request("b", tools), new NullHost(), CancellationToken.None);
+            await session.RunTurnAsync(Request("c", tools) with { SystemPrompt = "SYS2" }, new NullHost(), CancellationToken.None);
         }
 
         var lines = Lines();
-        Assert.StartsWith("bad ", lines[1].GetProperty("text").GetString());
-        Assert.Equal("ok", lines[2].GetProperty("text").GetString());
-        Assert.Equal([0, 1, 2], lines.Select(l => l.GetProperty("i").GetInt32()));
+        Assert.Equal(["setup", "user", "turn_end", "user", "turn_end", "setup", "user", "turn_end"], lines.Select(l => l.GetProperty("type").GetString()));
+        Assert.Equal("answered", lines[2].GetProperty("outcome").GetString());
     }
 
     [Fact]
-    public async Task TurnEndsEvenWhenTheTranscriptIsClosed()
+    public async Task ClearIsRecordedAndTheNextTurnWritesItsSetupAgain()
     {
-        var transcript = new RunTranscript(_dir, "p", "S", []);
-        var run = new RunControl(new FakeChat(), transcript);
-        run.TurnStarted("x");
-        var wait = run.WaitIdleAsync(TimeSpan.FromMinutes(1), CancellationToken.None);
-        transcript.Dispose();
+        var provider = Recording((_, _) => Task.CompletedTask);
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+        {
+            var tools = new List<ToolDefinition>();
+            await session.RunTurnAsync(Request("a", tools), new NullHost(), CancellationToken.None);
+            await session.ResetAsync();
+            await session.RunTurnAsync(Request("b", tools), new NullHost(), CancellationToken.None);
+        }
 
-        run.TurnEnded(TurnOutcome.Answered, null);
+        Assert.Equal(["setup", "user", "turn_end", "clear", "setup", "user", "turn_end"], Lines().Select(l => l.GetProperty("type").GetString()));
+    }
 
-        await wait.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Contains("transcript_error", run.StatusJson());
+    [Fact]
+    public async Task SessionOpenedDuringAToolCallGetsItsOwnFileLinkedBothWays()
+    {
+        var provider = Recording(async (request, host) =>
+        {
+            if (request.SystemPrompt == "SUB")
+            {
+                host.AppendTranscript(new ChatMessage(ChatRole.Assistant, "the answer"));
+                return;
+            }
+            var call = new ToolCall("c7", "wiki", "{}");
+            host.AppendTranscript(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [call] });
+            await host.OnToolCallAsync(call, new ToolCallContext(false), CancellationToken.None);
+            host.AppendTranscript(new ChatMessage(ChatRole.Tool, "the answer") { ToolCallId = "c7", Name = "wiki" });
+        });
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+            await session.RunTurnAsync(Request("go"), new SubSessionHost(provider), CancellationToken.None);
+
+        var tool = Lines().Single(l => l.GetProperty("type").GetString() == "tool");
+        Assert.Equal(["wiki-1.jsonl"], tool.GetProperty("sessions").EnumerateArray().Select(e => e.GetString()));
+        var sub = Lines("wiki-1.jsonl");
+        Assert.Equal(["setup", "user", "assistant", "turn_end"], sub.Select(l => l.GetProperty("type").GetString()));
+        Assert.Equal("transcript.jsonl", sub[0].GetProperty("parent").GetProperty("file").GetString());
+        Assert.Equal("c7", sub[0].GetProperty("parent").GetProperty("call").GetString());
+        Assert.Equal("brief", sub[1].GetProperty("text").GetString());
+    }
+
+    // Runs a subagent session from inside the chat's tool call, as the wiki tool does.
+    private sealed class SubSessionHost(IProvider provider) : ITurnHost
+    {
+        public void OnRoundStart() { }
+        public void OnText(string delta) { }
+        public void OnReasoning(string delta) { }
+        public void OnRoundStats(RoundStats stats) { }
+        public void OnNotice(string text) { }
+        public void AppendTranscript(ChatMessage message) { }
+
+        public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
+        {
+            using var session = provider.OpenSession("wiki");
+            await session.RunTurnAsync(new TurnRequest("SUB", [new ChatMessage(ChatRole.User, "brief")], [], new TurnLimits()), new NullHost(), cancellationToken);
+            return new ToolResult("the answer");
+        }
+    }
+
+    [Fact]
+    public async Task TranscriptKeepsUnparsableArgumentsAsText()
+    {
+        var provider = Recording((_, host) =>
+        {
+            host.AppendTranscript(new ChatMessage(ChatRole.Assistant, "") { ToolCalls = [new ToolCall("c", "read", "{broken")] });
+            return Task.CompletedTask;
+        });
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+            await session.RunTurnAsync(Request("x"), new NullHost(), CancellationToken.None);
+
+        Assert.Equal("{broken", Lines()[2].GetProperty("calls")[0].GetProperty("args").GetString());
+    }
+
+    [Fact]
+    public async Task TranscriptWritesLoneSurrogates()
+    {
+        var provider = Recording((_, _) => Task.CompletedTask);
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+        {
+            await session.RunTurnAsync(Request("bad \ud800 half"), new NullHost(), CancellationToken.None);
+            await session.RunTurnAsync(Request("ok"), new NullHost(), CancellationToken.None);
+        }
+        Assert.Null(provider.WriteError);
+
+        var lines = Lines();
+        Assert.StartsWith("bad ", lines[1].GetProperty("text").GetString());
+        Assert.Equal("ok", lines[3].GetProperty("text").GetString());
+        Assert.Equal([0, 1, 2, 3, 4], lines.Select(l => l.GetProperty("i").GetInt32()));
+    }
+
+    [Fact]
+    public async Task WriteFailureShowsInStatusAndDoesNotFailTheTurn()
+    {
+        var provider = Recording((_, _) => Task.CompletedTask);
+        var session = provider.OpenSession(IProvider.ChatSession);
+        session.Dispose();
+
+        await session.RunTurnAsync(Request("x"), new NullHost(), CancellationToken.None);
+
+        Assert.NotNull(provider.WriteError);
+        Assert.Contains("transcript_error", new RunControl(new FakeChat(), () => provider.WriteError).StatusJson());
     }
 
     [Fact]
@@ -142,7 +249,7 @@ public sealed class EvalTests : IDisposable
         var run = new RunControl(new FakeChat(), null);
         Assert.Equal("{\"busy\":false,\"turns\":0}", run.StatusJson());
 
-        run.TurnStarted("x");
+        run.TurnStarted();
         run.Wrap(new NullHost()).OnRoundStats(new RoundStats(10, 5, 1, 1) { CachedTokens = 85 });
         Assert.Equal("{\"busy\":true,\"turns\":0,\"context\":100}", run.StatusJson());
 
@@ -156,7 +263,7 @@ public sealed class EvalTests : IDisposable
         var run = new RunControl(new FakeChat(), null);
         await run.WaitIdleAsync(TimeSpan.FromMinutes(1), CancellationToken.None);
 
-        run.TurnStarted("x");
+        run.TurnStarted();
         var wait = run.WaitIdleAsync(TimeSpan.FromMinutes(1), CancellationToken.None);
         Assert.False(wait.IsCompleted);
         run.TurnEnded(TurnOutcome.Answered, null);
