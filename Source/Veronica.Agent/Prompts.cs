@@ -11,9 +11,10 @@ public static class Prompts
 
     public const string HowWeWork =
         "How we work:\n" +
-        "1. Understand the task. Ask the user for what you cannot find in the project.\n" +
+        "1. Understand the task. Ask the user for what you cannot find in the project. " +
+        "A question about how something works, what it takes or what went wrong is answered, not built: research it and reply; the work starts when the user asks for it.\n" +
         "2. Read the skills that may cover it with skill(name).\n" +
-        "3. Activate the one that fits the task best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
+        "3. When the user wants the work done, activate the skill that fits it best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
         "or a step they do in the Editor, ask for it with wait_for_user, then continue. Ask for everything this item needs in one message. " +
         "A new thing gets its own name and text from the user, even when something similar already has one; a skill's example folder is a suggestion to offer, not a choice made. " +
@@ -24,8 +25,10 @@ public static class Prompts
         "- Vanilla and other read-only projects are never written. A change to one of their definitions goes on a partial definition in the mod (create_partial): " +
         "an override changes the original everywhere it is used; a copy is a new thing and changes nothing until something references it. Every new file goes in a folder the user chose.\n" +
         "- Values that come with a template, a copy or a comparable block are a starting point, not the user's: read them, keep those that fit what the user wants, and write those that do not.\n\n" +
-        "Knowledge: when you are stuck, or before a bigger task that needs knowledge of the game or data from the project, ask " + WikiTool.ToolName + "(question). " +
-        "A researcher reads the wiki, the skills and the project for you and answers.\n\n" +
+        "Knowledge: ask " + WikiTool.ToolName + "(question) when you are stuck, before a bigger task that needs knowledge of the game or data from the project, " +
+        "when the user asks why something behaves as it does, and before asking the user what a game term means: the term is the game's, not theirs. " +
+        "A researcher reads the wiki, the skills and the project for you and answers. " +
+        "Values, units and sizes of game things come from a read or the wiki, not from memory: this game differs from others you may know.\n\n" +
         "Skills:";
 
     // Without skills there is no plan to work, so only the ask-the-user rule of "How we work" is left.
@@ -57,10 +60,12 @@ public static class Prompts
         (projectTools.Count == 0 ? "" : "- " + string.Join(", ", projectTools) + ": the project as it is now.\n") + "\n" +
         "How to research:\n" +
         "1. Work out what the question needs, given the task in the conversation.\n" +
-        "2. Read the pages, skills and project files that bear on it. Read only what the answer needs; Veronica already has what the conversation shows.\n" +
+        "2. Read the pages, skills and project files that bear on it. Read only what the answer needs; Veronica already has what the conversation shows. " +
+        "What a field means comes from a page; when no page says, report it as not stated rather than inferring it from many files.\n" +
         "3. Answer.\n\n" +
         "Answer in these three sections, each short:\n" +
-        "Facts: what answers the question, as your sources state it: field names, definition types, values, rules. Nothing invented; say what you could not find.\n" +
+        "Facts: what answers the question, as your sources state it: field names, definition types, values, rules. Nothing invented and nothing stronger than the source says; say what you could not find. " +
+        "Do not name pages: Veronica cannot read them.\n" +
         "Mod state: what you read in the project that bears on it, with paths, or \"none\".\n" +
         "Next step: only the one next step or skill to take. Name a skill, do not copy it: Veronica reads it when it needs it.\n" +
         "Your answer goes to Veronica, not to the user.\n\n" +
