@@ -205,7 +205,7 @@ Explains how content items relate by drawing them, in the user's own visual lang
   - an edge names an unknown id (the error lists the ids);
   - two nodes share an id or an item (the error names the id that holds it); two tiles of one file would read as two files;
   - an edge is repeated or goes from a node to itself;
-  - a note or label is over its length, or there are more than 20 nodes or 30 edges. The limits keep a model from dumping a whole dependency tree.
+  - a note or label is over its length, or there are more than 25 nodes or 30 edges. The limits keep a model from dumping a whole dependency tree. The node refusal says how many to drop: a model told only the count and the limit planned a removal and sent the same nodes again.
   A wrong item on the board would mislead the user; a refusal costs the model one round.
 - Nodes without edges are allowed.
 - **Reply:** `Shown to the user.` The chat shows the call as any tool call.

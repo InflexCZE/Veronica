@@ -72,7 +72,9 @@ public sealed class GraphTests
     public void Limits_AreChecked()
     {
         string many = string.Join(",", Enumerable.Range(0, Graph.MaxNodes + 1).Select(i => $"{{\"id\":\"n{i}\",\"item\":\"I{i}\"}}"));
-        Assert.Contains($"at most {Graph.MaxNodes}", Error($"{{\"nodes\":[{many}]}}"));
+        string tooMany = Error($"{{\"nodes\":[{many}]}}");
+        Assert.Contains($"at most {Graph.MaxNodes}", tooMany);
+        Assert.Contains("Drop 1 of them", tooMany);
 
         string note = new('x', Graph.MaxNote + 1);
         Assert.Contains($"at most {Graph.MaxNote}", Error($"{{\"nodes\":[{{\"id\":\"a\",\"item\":\"A\",\"note\":\"{note}\"}}]}}"));

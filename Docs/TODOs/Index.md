@@ -17,7 +17,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ValueUnits.md](ValueUnits.md) | Chat: units invented for values the model read without one (owner decision) |
 | [BoardStaleAfterReload.md](BoardStaleAfterReload.md) | Board: tiles of the previous project after a reload (owner decision) |
 | [BoardLayoutGaps.md](BoardLayoutGaps.md) | Board: back edges, late size changes, unconnected nodes, cancelled drags |
-| [PresentGraphUse.md](PresentGraphUse.md) | Board: node-limit refusal resent unchanged, a graph in place of show (owner decision) |
+| [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
 | [ProgressionUnlock.md](ProgressionUnlock.md) | Skills: survival unlock of a new block (owner decision) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |

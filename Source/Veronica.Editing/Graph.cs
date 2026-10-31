@@ -9,7 +9,7 @@ public sealed record GraphEdge(string From, string To, string? Label);
 // present_graph's arguments, checked before any item is resolved.
 public sealed class Graph
 {
-    public const int MaxNodes = 20;
+    public const int MaxNodes = 25;
     public const int MaxEdges = 30;
     public const int MaxNote = 300;
     public const int MaxLabel = 30;
@@ -40,7 +40,7 @@ public sealed class Graph
         if (nodeElements.Count == 0)
             throw new EditError("nodes is empty; give at least one node.");
         if (nodeElements.Count > MaxNodes)
-            throw new EditError($"{nodeElements.Count} nodes; at most {MaxNodes} fit on the board. Keep the items the answer is about.");
+            throw new EditError($"{nodeElements.Count} nodes; at most {MaxNodes} fit on the board. Drop {nodeElements.Count - MaxNodes} of them and keep the items the answer is about.");
         if (edgeElements.Count > MaxEdges)
             throw new EditError($"{edgeElements.Count} edges; at most {MaxEdges} fit on the board.");
 
