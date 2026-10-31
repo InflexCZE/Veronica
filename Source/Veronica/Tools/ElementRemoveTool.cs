@@ -26,7 +26,7 @@ public sealed class ElementRemoveTool : ITool
                 return block.ElementRemove(path);
             var (asset, fields) = Content.Definition(resolved);
             Content.RequireWritable(asset);
-            string reply = Elements.Remove(fields.Root, path);
+            string reply = Elements.Remove(fields.Root, path, new ProjectLinks(project, asset));
             Content.Save(asset);
             return reply;
         }, cancellationToken));

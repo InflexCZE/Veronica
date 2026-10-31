@@ -18,7 +18,7 @@ public static class Elements
     {
         if (path.Trim().Length == 0)
             throw new EditError("Give the path of the list or dictionary, e.g. 'Dummies'.");
-        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, links), basePath);
+        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, links), links, basePath);
     }
 
     private static string AddTo(MemberReference collection, string canonical, string? key, string? typeName, IContentLinks links)
@@ -42,7 +42,7 @@ public static class Elements
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new EditError($"'{canonical}' is keyed; pass key for the new element.");
-            parsedKey = Values.FromText(key, keyType);
+            parsedKey = dictionary ? Keys.Parse(collection, key, keyType, links) : Values.FromText(key, keyType);
         }
 
         object? element = Create(elementType, typeName, canonical);
@@ -57,10 +57,10 @@ public static class Elements
         string path;
         if (dictionary)
         {
-            if (collection.DictionaryContainsKey(parsedKey!))
-                throw new EditError($"'{canonical}' already has key '{key}'; write to {FieldPath.Element(canonical, Fields.KeyText(parsedKey))} instead.");
+            if (Keys.Find(collection, key!, keyType!, links) is { } existing)
+                throw new EditError($"'{canonical}' already has key '{key}'; write to {FieldPath.Element(canonical, Keys.Text(existing, links))} instead.");
             collection.AddToDictionary(parsedKey!, element);
-            path = FieldPath.Element(canonical, Fields.KeyText(parsedKey));
+            path = FieldPath.Element(canonical, Keys.Text(parsedKey, links));
             return $"Added {path}:\n{FieldReader.Dump(collection.GetDictionaryItem(parsedKey!), path, links)}";
         }
 
@@ -81,12 +81,12 @@ public static class Elements
     }
 
     // Removes the element at a path read prints, e.g. Dummies[1] or Classes[Ion].
-    public static string Remove(MemberReference root, string path, string basePath = "")
+    public static string Remove(MemberReference root, string path, IContentLinks? links, string basePath = "")
     {
         if (path.Trim().Length == 0)
             throw new EditError("Give the path of the element to remove, e.g. 'Dummies[1]'.");
 
-        var (element, canonical) = FieldWalker.Walk(root, path, basePath);
+        var (element, canonical) = FieldWalker.Walk(root, path, basePath, links);
         if (!element.IsCollectionItem)
             throw new EditError($"'{canonical}' is not a list or dictionary element; remove takes a path like 'Dummies[1]'.");
 

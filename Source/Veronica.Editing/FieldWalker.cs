@@ -9,10 +9,10 @@ public static class FieldWalker
 
     // Resolves a field path from the definition root. Path is the canonical form of what was walked.
     // basePath is how paths print above root, when root is not the definition's own root.
-    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, string basePath = "") => Walk(root, path, null, basePath);
+    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, string basePath = "", IContentLinks? links = null) => Walk(root, path, null, basePath, links);
 
     // For writes: null objects on the way are created like mkdir -p, and listed so a failed write can undo them.
-    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, List<(MemberReference Member, string Path)>? created, string basePath = "")
+    public static (MemberReference Member, string Path) Walk(MemberReference root, string path, List<(MemberReference Member, string Path)>? created, string basePath = "", IContentLinks? links = null)
     {
         var member = root;
         string canonical = basePath;
@@ -24,7 +24,7 @@ public static class FieldWalker
                     (member, canonical) = StepIntoList(member, canonical, segment);
                     break;
                 case MemberValueKind.Dictionary:
-                    (member, canonical) = StepIntoDictionary(member, canonical, segment.Text);
+                    (member, canonical) = StepIntoDictionary(member, canonical, segment.Text, links);
                     break;
                 case MemberValueKind.Value:
                     if (segment.Bracketed)
@@ -125,21 +125,20 @@ public static class FieldWalker
             : $"'{segment.Text}' is not an index; '{path}' takes [0] to [{count - 1}].");
     }
 
-    private static (MemberReference, string) StepIntoDictionary(MemberReference dictionary, string path, string keyText)
+    private static (MemberReference, string) StepIntoDictionary(MemberReference dictionary, string path, string keyText, IContentLinks? links)
     {
         RequireValue(dictionary, path);
         var types = Fields.DictionaryTypes(dictionary.CurrentMemberType)
             ?? throw new EditError($"'{path}' has a key type that cannot be read.");
 
-        object key = Values.FromText(keyText, types.Key);
-        if (!dictionary.DictionaryContainsKey(key))
-            throw new EditError($"'{path}' has no key '{keyText}'. Keys: {ListKeys(dictionary)}.");
-        return (dictionary.GetDictionaryItem(key), FieldPath.Element(path, Fields.KeyText(key)));
+        object key = Keys.Find(dictionary, keyText, types.Key, links)
+            ?? throw new EditError($"'{path}' has no key '{keyText}'. Keys: {ListKeys(dictionary, links)}.");
+        return (dictionary.GetDictionaryItem(key), FieldPath.Element(path, Keys.Text(key, links)));
     }
 
-    public static string ListKeys(MemberReference dictionary, int skip = 0)
+    public static string ListKeys(MemberReference dictionary, IContentLinks? links, int skip = 0)
     {
-        var keys = dictionary.EnumerateDictionaryKeys().Skip(skip).Select(k => Fields.KeyText(k.GetValue<object?>())).ToList();
+        var keys = dictionary.EnumerateDictionaryKeys().Skip(skip).Select(k => Keys.Text(k.GetValue<object?>(), links)).ToList();
         if (keys.Count == 0)
             return "(none)";
         string shown = string.Join(", ", keys.Take(MaxKeysListed));

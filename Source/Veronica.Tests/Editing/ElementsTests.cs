@@ -14,7 +14,7 @@ public sealed class ElementsTests
 
     private string Add(string path, string? key = null, string? type = null) => Elements.Add(Root, path, key, type, _links);
 
-    private string Remove(string path) => Elements.Remove(Root, path);
+    private string Remove(string path) => Elements.Remove(Root, path, _links);
 
     private static string Fails(Func<string> action) => Assert.Throws<EditError>(action).Message;
 

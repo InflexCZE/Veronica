@@ -19,7 +19,7 @@ public static class Transforms
 
     // "<transform>.Euler" and "<transform>.Euler.X" address the angles; they are not fields, so the walker
     // never sees them. Null when the path does not end at a transform's Euler.
-    public static EulerPath? WalkEuler(MemberReference root, string path, string basePath = "")
+    public static EulerPath? WalkEuler(MemberReference root, string path, string basePath = "", IContentLinks? links = null)
     {
         var segments = FieldPath.Parse(path);
         int at = -1;
@@ -37,7 +37,7 @@ public static class Transforms
         var prefix = new System.Text.StringBuilder();
         foreach (var segment in segments.Take(at))
             prefix.Append(segment.Bracketed ? $"[{segment.Text}]" : (prefix.Length == 0 ? segment.Text : "." + segment.Text));
-        var (member, canonical) = FieldWalker.Walk(root, prefix.ToString(), basePath);
+        var (member, canonical) = FieldWalker.Walk(root, prefix.ToString(), basePath, links);
         if (!Fields.TryGetTransform(member, out _, out var orientation))
             return null;
 

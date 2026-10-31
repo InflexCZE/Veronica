@@ -12,19 +12,19 @@ public static class FieldWriter
             throw new EditError(basePath.Length == 0
                 ? "Give the path of the field to write, e.g. 'UIData.Name'."
                 : $"Give the path of a field of '{basePath}', e.g. '{basePath}.Name'.");
-        if (Transforms.WalkEuler(root, path, basePath) is { } euler)
+        if (Transforms.WalkEuler(root, path, basePath, links) is { } euler)
             return Transforms.WriteEuler(euler, value);
 
-        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links), basePath);
+        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links), links, basePath);
     }
 
     // Null objects on the path are created for the edit and removed again if it fails.
-    internal static string CreatingParents(MemberReference root, string path, Func<MemberReference, string, string> edit, string basePath = "")
+    internal static string CreatingParents(MemberReference root, string path, Func<MemberReference, string, string> edit, IContentLinks? links, string basePath = "")
     {
         var created = new List<(MemberReference Member, string Path)>();
         try
         {
-            var (member, canonical) = FieldWalker.Walk(root, path, created, basePath);
+            var (member, canonical) = FieldWalker.Walk(root, path, created, basePath, links);
             string reply = edit(member, canonical);
             return created.Count == 0 ? reply : $"{reply} (created {string.Join(", ", created.Select(c => c.Path))})";
         }

@@ -31,6 +31,7 @@ public partial class Sample
     public StringId ThrustClass;
     public List<ModelDummy> Dummies = [new ModelDummy { Name = "Nozzle" }];
     public Dictionary<string, Entry> Classes = new() { ["Ion"] = new Entry { Speed = 1 }, ["Hydrogen"] = new Entry { Speed = 2 } };
+    public Dictionary<DummyTypeDefinition, Entry> ByType = [];
     public ResourceHandle<ModelAsset> Model;
     public DummyTypeDefinition? DummyType;
     public Inner? Child = new();

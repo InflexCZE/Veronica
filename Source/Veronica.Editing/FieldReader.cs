@@ -22,9 +22,9 @@ public sealed class FieldReader
 
     public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines, string basePath = "")
     {
-        if (Transforms.WalkEuler(root, path, basePath) is { } euler)
+        if (Transforms.WalkEuler(root, path, basePath, links) is { } euler)
             return Transforms.ReadEuler(euler);
-        var (member, canonical) = path.Trim().Length == 0 ? (root, basePath) : FieldWalker.Walk(root, path, basePath);
+        var (member, canonical) = path.Trim().Length == 0 ? (root, basePath) : FieldWalker.Walk(root, path, basePath, links);
         return Dump(member, canonical, links, maxLines);
     }
 
@@ -173,9 +173,9 @@ public sealed class FieldReader
                 var keys = member.EnumerateDictionaryKeys().Select(k => k.GetValue<object?>()).ToList();
                 int shown = Math.Min(keys.Count, MaxElements);
                 for (int i = 0; i < shown && !_truncated; i++)
-                    DumpField(member.GetDictionaryItem(keys[i]!), FieldPath.Element(path, Fields.KeyText(keys[i])), depth + 1);
+                    DumpField(member.GetDictionaryItem(keys[i]!), FieldPath.Element(path, Keys.Text(keys[i], _links)), depth + 1);
                 if (shown < keys.Count)
-                    Add($"{path}: ... (+{keys.Count - shown} more: {FieldWalker.ListKeys(member, shown)}; read \"{path}[<key>]\")");
+                    Add($"{path}: ... (+{keys.Count - shown} more: {FieldWalker.ListKeys(member, _links, shown)}; read \"{path}[<key>]\")");
                 break;
             }
             default:

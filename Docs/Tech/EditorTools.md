@@ -45,6 +45,7 @@ The first set of agent tools that act on the loaded project. The target is build
 
 - Dots for fields, brackets for collection elements: `UIData.Name`, `Dummies[0].Transform.Transform.Position.X`.
 - A dictionary entry is `[key]` or `.key`: `ThrustClasses[Ion]` and `ThrustClasses.Ion` are the same entry. Output always prints `[key]`.
+- A dictionary keyed by a definition (the camera system maps a block's client composition to its cameras) takes the definition's name as key, resolved like a reference value, and prints its path: `CompositionToCameraPrefabs[Assets\MyCockpit\MyCockpit_ClientComposition.partialdef]`. Paths hold dots, so only the bracket form reaches such an entry. Engine definitions compare by reference, so an existing key is matched by its id.
 - A leading `$Root.` is accepted, so the Editor's own member paths can be pasted back as they are.
 - Field names also match ignoring case, when that is unambiguous. Output prints the real name.
 

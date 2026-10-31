@@ -309,7 +309,7 @@ internal sealed class Block
                     : $"Name the tag to remove, e.g. {FieldPath.Member(ComponentNames.PathOf(name), TagsField)}[{TagTexts(component).First()}].");
             return Applied(component, RemoveTag(component, name, tagged));
         }
-        return Applied(component, Elements.Remove(ObjectBuilder(component, name), inner, ComponentNames.PathOf(name)));
+        return Applied(component, Elements.Remove(ObjectBuilder(component, name), inner, Links, ComponentNames.PathOf(name)));
     }
 
     // A shared component's edit lands on its client side; the prefab layer copies it to the server side.
