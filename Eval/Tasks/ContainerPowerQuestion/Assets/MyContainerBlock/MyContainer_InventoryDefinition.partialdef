@@ -1,0 +1,18 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "10b1a085-0b2b-4412-b262-07a76e269473",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "de922dfa-c15d-47b5-ba6c-7136abb9c140",
+      "MaxMass": 2000
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.Items.InventoryDefinition",
+    "PriorityOverride": false
+  }
+}

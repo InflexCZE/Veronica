@@ -1,0 +1,65 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "d553d052-4148-4870-af60-682855093da6",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "fcd7d299-aa54-4b6c-b4da-eb28a9a04987",
+      "Components": {
+        "$DeltaEncoded": true,
+        "Keys": [
+          "b7bf405c-71aa-46a1-a5ec-4c690f2ab7e3",
+          "e58b8f69-45da-40d4-82b0-f1a82564a53a",
+          "a1687822-b4c2-4bcb-961e-3e44fae3221d",
+          "d358358e-30b3-484a-b8b8-2e5568c7298b",
+          "bc5652a0-1296-4040-adc3-a2b9c35d5afc",
+          "4c7a5e12-ff2f-4dc1-be4b-2a103a951fcd",
+          "82387aa9-8ce8-40da-a2be-2f5230bb007a",
+          "91e12dcf-837b-4bec-8269-cf48c52a1e1f",
+          "60e7c36a-2b7a-4a26-bf52-3bf6a5278d7e",
+          "0d739550-839b-414f-859c-6586bb6bcf48",
+          "0d486762-8202-4564-b164-19f08a3d15c4",
+          "167add40-4742-448e-9b73-04e3bc75778e"
+        ],
+        "Changed": [
+          {
+            "Kind": "Update",
+            "Index": 3,
+            "Value": {
+              "Definition": "99d4921f-572e-4351-bee4-4966f5f7c454"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 4,
+            "Value": {
+              "Definition": "5ba62b29-660d-4b6f-8351-e5f5902cdcd2"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 5,
+            "Value": {
+              "Definition": "8600a645-f0be-4363-a6c9-fdc754802a73"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 7,
+            "Value": {
+              "Definition": "61c7c4d6-3039-4703-bd08-36c06df1b896"
+            }
+          }
+        ],
+        "Removed": []
+      }
+    },
+    "DefinitionType": "VRage:Keen.VRage.DCS.Definitions.EntityCompositeDefinition",
+    "PriorityOverride": false
+  }
+}
