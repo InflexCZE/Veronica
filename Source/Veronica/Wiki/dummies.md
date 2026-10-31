@@ -1,7 +1,7 @@
 ---
 name: dummies
 title: Dummies: thruster nozzles, conveyor ports and other spots on a block
-source: moved from the place-dummies reference skill, block-thruster and block-inventory
+source: vanilla BlockModelComponentDefinitions (Dummies) under Assets/Blocks; Veronica's element_add and write tools
 description: What a dummy is, its types (Thruster, UseConveyor), when to copy dummy positions from another block and when the user places them in the Editor.
 ---
 A dummy is an entry in the Dummies of the block's BlockModelComponentDefinition: Name, Type (what it is for), Transform (position and rotation) and Scale.

@@ -1,7 +1,7 @@
 ---
 name: vanilla-layout
 title: Where vanilla content lives and which definition holds what
-source: moved from the override-definition, block-thruster, add-to-gscreen and add-skybox skills
+source: vanilla Assets folders, read with list_folder and find_content
 description: The vanilla folder layout (blocks, thrusters, G-Screen, environment) and which definition of a block holds which value (force, flame, sound, name, power, build cost).
 ---
 Folders:

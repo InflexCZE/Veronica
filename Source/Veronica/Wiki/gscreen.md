@@ -1,7 +1,7 @@
 ---
 name: gscreen
 title: The G-Screen: categories, subcategories, tiles and their order
-source: moved from the add-to-gscreen skill
+source: vanilla G-Screen definitions in Assets/UI/Screens/GScreen and their definition types in the SE2 source
 description: How the G-Screen (the block menu) is built from categories, subcategories, tiles and block kinds, how a block joins a place, and how entries are ordered.
 ---
 The G-Screen nests Category > Subcategory > BlockGroup (a tile) > BlockKind (one block in all its sizes).

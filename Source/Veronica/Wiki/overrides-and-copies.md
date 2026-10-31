@@ -1,7 +1,7 @@
 ---
 name: overrides-and-copies
 title: Partial definitions: overrides and copies
-source: moved from the override-definition skill and the system prompt
+source: Veronica's create_partial tool (Docs/Tech/EditorTools.md)
 description: How a mod changes a definition it does not own: an override versus a copy, what values follow the original, and an override that already exists.
 ---
 Vanilla and other read-only projects are never written. A mod changes their definitions through a partial definition, made with create_partial(def, kind, folder):
