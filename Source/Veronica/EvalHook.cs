@@ -32,7 +32,7 @@ internal static class EvalHook
             return;
 
         var recording = _recording;
-        var run = new RunControl(new PanelControl(panel), recording == null ? null : () => recording.WriteError);
+        var run = new RunControl(new PanelControl(panel), recording == null ? null : () => recording.WriteError, panel.Questions);
         panel.Run = run;
 
         string port = Port;
@@ -59,5 +59,7 @@ internal static class EvalHook
         public Task<string?> SendAsync(string text) => Dispatcher.UIThread.InvokeAsync(() => panel.TrySend(text)).GetTask();
 
         public void Stop() => Dispatcher.UIThread.Post(panel.StopTurn);
+
+        public Task<string?> AnswerAsync(IReadOnlyList<string?> answers) => Dispatcher.UIThread.InvokeAsync(() => panel.AnswerQuestions(answers)).GetTask();
     }
 }

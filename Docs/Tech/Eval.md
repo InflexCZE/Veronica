@@ -24,9 +24,10 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 
 | request | does |
 |---|---|
-| `GET /status` | whether a turn is running, how many turns ended, how the last one ended (answered, stopped, error with its text), and the context used so far |
-| `GET /status?wait=<s>` | as above, but returns as soon as no turn is running, or after `<s>` seconds (at most 10 minutes) |
+| `GET /status` | whether a turn is running, how many turns ended, how the last one ended (answered, stopped, error with its text), the context used so far, and the open question card's questions with their options (`questions`, empty when none is open) |
+| `GET /status?wait=<s>` | as above, but returns as soon as no turn is running or a question card is open, or after `<s>` seconds (at most 10 minutes) |
 | `POST /send` | the body, as plain text, is sent as a user message, as if typed in the panel; refused while a turn runs |
+| `POST /answer` | the body, a JSON array with one answer per open question (`null` skips it), answers the card as the panel's Answer does; refused when no card is open |
 | `POST /stop` | stops the running turn, as the panel's Stop does |
 
 - The channel starts listening when the Veronica panel is created, after the project has loaded. A refused connection means the Editor is not ready yet.
@@ -35,6 +36,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 - A turn counts as running from the moment `/send` accepts it, so `/status` never reports idle for a message just sent.
 - Every turn ends: a context overflow or a server error fails the turn, and `/status` reports it. A run never waits on a turn that cannot finish.
 - Progress during a turn is read from the transcript file, not from the channel.
+- `/answer` runs the card's own code, so a run exercises the answer path a user takes. A Claude turn stays running while its card is open (`ClaudeProvider.md`); the wait returning on an open card gives the fork one rule for every provider.
 - Context used is the whole prompt of the last round plus its reply: llama.cpp reports cached and newly processed prompt tokens apart.
 
 ## Transcript

@@ -7,7 +7,7 @@ public static class Prompts
         "Messages in <harness> tags come from the Editor, not the user; the user has not seen them.";
 
     public const string AskForMissing =
-        "When a task needs a file or value you cannot find in the project, ask the user for it.";
+        "When a task needs a file or value you cannot find in the project, ask the user for it with " + AskUserTool.ToolName + ".";
 
     public const string HowWeWork =
         "How we work:\n" +
@@ -16,7 +16,7 @@ public static class Prompts
         "2. Read the skills that may cover it with skill(name).\n" +
         "3. When the user wants the work done, activate the skill that fits it best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
-        "or a step they do in the Editor, ask for it with wait_for_user, then continue. Ask for everything this item needs in one message. " +
+        "or a step they do in the Editor. Ask for choices with " + AskUserTool.ToolName + ", all this item needs in one call; for a step in the Editor, describe it and call " + WaitForUserTool.ToolName + ". Then continue. " +
         "A new thing gets its own name and text from the user, even when something similar already has one; a skill's example folder is a suggestion to offer, not a choice made. " +
         "When unsure whether a choice is the user's, ask: it costs one short message. " +
         "When its work is done, call mark_completed with a short proof of what you did; " +
@@ -48,7 +48,8 @@ public static class Prompts
         Thinking = true,
         LengthNudge = new LengthNudge(() => LengthNudge + plan.CurrentItemNote(), MaxNudges: 2),
         EndNudge = new EndNudge(_ => plan.EndNudge(), SkillPlan.ToolNames),
-        TurnEndingTools = new HashSet<string> { WaitForUserTool.ToolName },
+        TurnEndingTools = new HashSet<string> { WaitForUserTool.ToolName, AskUserTool.ToolName },
+        UserFacingTools = new HashSet<string> { AskUserTool.ToolName },
     };
 
     public static string Researcher(IReadOnlyList<WikiPage> pages, IReadOnlyList<Skill> skills, IReadOnlyList<string> projectTools) =>

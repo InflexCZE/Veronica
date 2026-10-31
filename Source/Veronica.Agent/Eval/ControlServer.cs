@@ -119,8 +119,41 @@ public sealed class ControlServer : IDisposable
                     return (405, Error("Use POST."));
                 _run.Chat.Stop();
                 return (200, "{\"ok\":true}");
+            case "/answer":
+                if (request.Method != "POST")
+                    return (405, Error("Use POST with a JSON array of answers as the body."));
+                if (ParseAnswers(request.Body) is not { } answers)
+                    return (400, Error("The body must be a JSON array with one string or null per question."));
+                return await _run.Chat.AnswerAsync(answers).ConfigureAwait(false) is { } notTaken
+                    ? (409, Error(notTaken))
+                    : (200, "{\"ok\":true}");
             default:
-                return (404, Error("Unknown path. Paths: GET /status[?wait=<s>], POST /send, POST /stop."));
+                return (404, Error("Unknown path. Paths: GET /status[?wait=<s>], POST /send, POST /answer, POST /stop."));
+        }
+    }
+
+    private static List<string?>? ParseAnswers(string body)
+    {
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+                return null;
+            var answers = new List<string?>();
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == System.Text.Json.JsonValueKind.Null)
+                    answers.Add(null);
+                else if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                    answers.Add(item.GetString());
+                else
+                    return null;
+            }
+            return answers;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
         }
     }
 

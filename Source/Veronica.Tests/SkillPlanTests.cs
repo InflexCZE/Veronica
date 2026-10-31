@@ -251,6 +251,7 @@ public sealed class SkillPlanTests
         Assert.Contains("mark_completed", nudge);
         Assert.Contains("mark_skipped", nudge);
         Assert.Contains("never to wait", nudge);
+        Assert.Contains("ask with ask_user", nudge);
         Assert.EndsWith("call wait_for_user.</harness>", nudge);
         Assert.DoesNotContain("<end_turn>", nudge);
     }
@@ -261,7 +262,8 @@ public sealed class SkillPlanTests
     public void Plan_tool_names_are_free_and_bookkeeping()
     {
         Assert.Equal(new HashSet<string> { "skill", "activate_skill", "mark_completed", "mark_skipped", "wait_for_user" }, SkillPlan.ToolNames);
-        Assert.Equal(new HashSet<string> { "wait_for_user" }, Prompts.ChatLimits(new SkillPlan()).TurnEndingTools);
+        Assert.Equal(new HashSet<string> { "wait_for_user", "ask_user" }, Prompts.ChatLimits(new SkillPlan()).TurnEndingTools);
+        Assert.Equal(new HashSet<string> { "ask_user" }, Prompts.ChatLimits(new SkillPlan()).UserFacingTools);
     }
 
     private sealed record Round(string? Text = null, string? Call = null, string Arguments = "{}");

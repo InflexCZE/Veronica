@@ -21,8 +21,11 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private Task? _turnTask;
     private readonly IProvider _provider;
     private bool _clearing;
+    private QuestionCard? _card;
+    // Answers given before the turn that asked had wound down: sent when it has.
+    private string? _queuedAnswers;
 
-    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki)
+    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, QuestionBoard questions)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -32,6 +35,8 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         _provider = provider;
         _tools = tools;
         _plan = plan;
+        Questions = questions;
+        questions.Changed += () => Dispatcher.UIThread.Post(RefreshCard);
         _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), systemPrompt, Prompts.ChatLimits(plan), tools.Definitions);
         if (provider.RunsSubagents)
             wiki.Attach(RunSubAgentAsync, () => _conversation.Transcript.ToList());
@@ -75,6 +80,21 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     // Set when an eval run drives or records this chat.
     public RunControl? Run { get; set; }
 
+    public QuestionBoard Questions { get; }
+
+    // Shown after the messages while questions are open.
+    public QuestionCard? Card
+    {
+        get => _card;
+        private set
+        {
+            if (_card == value)
+                return;
+            _card = value;
+            OnPropertyChanged(nameof(Card));
+        }
+    }
+
     public bool IsBusy => _turn != null;
 
     public string SendLabel => IsBusy ? "Stop" : "Send";
@@ -87,7 +107,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private void SendOrStop()
     {
         if (_turn != null)
-            _turn.Cancel();
+            StopTurn();
         else
             Submit();
     }
@@ -126,12 +146,56 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     }
 
     // UI thread.
-    public void StopTurn() => _turn?.Cancel();
-
-    private void Start(string text)
+    public void StopTurn()
     {
+        if (_turn is not { } turn)
+            return;
+        _queuedAnswers = null;
+        // Cancelled first, so a blocked question reports a stop rather than a card the user closed.
+        turn.Cancel();
+        Questions.Close();
+    }
+
+    // UI thread. Null when the answers were taken, else why not.
+    public string? AnswerQuestions(IReadOnlyList<string?> answers)
+    {
+        if (_clearing)
+            return "The chat is being cleared.";
+        var result = Questions.Answer(answers);
+        if (result.Refused != null)
+            return result.Refused;
+        // Answers to a blocked call are part of the running Claude turn; to another MCP client's, not of the chat.
+        if (result.Waited != null && _turn != null)
+            Messages.Add(new UserItem(result.Waited));
+        if (result.Unwaited != null)
+        {
+            if (_turn == null)
+                Start(result.Unwaited);
+            else
+                _queuedAnswers = _queuedAnswers == null ? result.Unwaited : _queuedAnswers + "\n\n" + result.Unwaited;
+        }
+        return null;
+    }
+
+    // A message the user sends while questions are open is their reply instead: the card closes unanswered.
+    private void Start(string text, bool closeQuestions = true)
+    {
+        if (closeQuestions)
+            Questions.Close();
+        _queuedAnswers = null;
         Messages.Add(new UserItem(text));
         _turnTask = RunTurnAsync(text);
+    }
+
+    private void RefreshCard()
+    {
+        var (questions, card) = Questions.Snapshot();
+        if (questions.Count == 0)
+            Card = null;
+        else if (Card == null || Card.Generation != card)
+            Card = new QuestionCard(questions, card, answers => AnswerQuestions(answers), Questions.Close);
+        else
+            Card.Update(questions);
     }
 
     private async Task RunTurnAsync(string text)
@@ -160,8 +224,11 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             // Not disposed: Stop can complete the turn inline, inside the token's own Cancel().
             _turn = null;
             BusyChanged();
-            run?.TurnEnded(outcome, error);
+            run?.TurnEnded(outcome, error, nextQueued: _queuedAnswers != null && !_clearing);
         }
+        // Questions asked after these answers stay open for the user.
+        if (_queuedAnswers is { } answers && !_clearing)
+            Start(answers, closeQuestions: false);
     }
 
     private async Task ClearAsync()
@@ -169,7 +236,9 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         _clearing = true;
         try
         {
+            _queuedAnswers = null;
             _turn?.Cancel();
+            Questions.Close();
             if (_turnTask != null)
                 await _turnTask;
             await _conversation.ClearAsync();

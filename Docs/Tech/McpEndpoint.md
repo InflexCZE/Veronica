@@ -24,8 +24,9 @@ Environment variables, read once when the panel is created.
 ## Calls
 
 - A call runs directly and leaves no trace: no chat line, no Stop.
+- `ask_user` from any client shows the question card in the panel and blocks until it is answered or closed (`Agent.md`, Questions to the user). It does not hold the tool queue.
 - A provider that runs its own tool loop routes the calls into its turn while one runs (`ClaudeProvider.md`). The WebQwen and OpenAI-compatible providers route nothing: a call during their turn runs directly too.
-- Tools run one at a time, whichever source calls them (`Agent.md`, Tools), so a call made during a turn waits for the model's tool and the other way round. Which edit wins is still the user's responsibility, as with a click in the Editor's UI.
+- Tools other than `ask_user` run one at a time, whichever source calls them (`Agent.md`, Tools), so a call made during a turn waits for the model's tool and the other way round. Which edit wins is still the user's responsibility, as with a click in the Editor's UI.
 
 ## Testing
 

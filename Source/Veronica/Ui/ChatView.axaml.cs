@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -23,7 +24,10 @@ public partial class ChatView : UserControl
         base.OnAttachedToVisualTree(e);
 
         if (_viewModel != null)
+        {
             _viewModel.Messages.CollectionChanged += OnMessagesChanged;
+            _viewModel.PropertyChanged += OnPanelChanged;
+        }
         MessagesScroll.ScrollChanged += OnScrollChanged;
 
         ScrollToEnd();
@@ -32,13 +36,22 @@ public partial class ChatView : UserControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         if (_viewModel != null)
+        {
             _viewModel.Messages.CollectionChanged -= OnMessagesChanged;
+            _viewModel.PropertyChanged -= OnPanelChanged;
+        }
         MessagesScroll.ScrollChanged -= OnScrollChanged;
 
         base.OnDetachedFromVisualTree(e);
     }
 
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e) => ScrollToEnd();
+
+    private void OnPanelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ChatPanelViewModel.Card))
+            ScrollToEnd();
+    }
 
     // A streamed reply grows the content; follow it unless the user has scrolled up to read.
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)

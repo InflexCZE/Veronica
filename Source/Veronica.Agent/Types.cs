@@ -29,7 +29,8 @@ public sealed record ChatMessage(ChatRole Role, string Content)
 // Parameters is a JSON Schema object, as JSON text.
 public sealed record ToolDefinition(string Name, string Description, string Parameters);
 
-public sealed record ToolResult(string Output, bool EarnedReward = false);
+// Refused: the call did nothing, so a turn-ending tool does not end the turn.
+public sealed record ToolResult(string Output, bool EarnedReward = false, bool Refused = false);
 
 public sealed record ToolCallContext(bool LastRound);
 
@@ -60,6 +61,9 @@ public sealed record TurnLimits
 
     // A round that calls one of these runs its calls, then ends the turn without another round.
     public IReadOnlySet<string> TurnEndingTools { get; init; } = new HashSet<string>();
+
+    // A call to one of these shows the user what to answer, so its round needs no text of its own.
+    public IReadOnlySet<string> UserFacingTools { get; init; } = new HashSet<string>();
 
     public bool? Thinking { get; init; }
 

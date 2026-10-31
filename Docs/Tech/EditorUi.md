@@ -20,6 +20,16 @@
 - Notices (round budget) and errors appear in the chat as plain lines.
 - The view follows a streaming reply unless the user has scrolled up.
 
+## Question card
+
+`ask_user`'s questions (`Agent.md`, Questions to the user) show as a card at the end of the chat.
+
+- One question at a time. The header holds the question, `< n of N >` paging when there are several, and a close X.
+- Each option is a full-width row of clickable text with a thin divider and a hover highlight, not a button. Clicking one answers the question and moves to the next.
+- Below the options, a text field and one button: Skip while the field is empty, Next once something is typed, Answer on the last question. Enter does the same.
+- After the last question the card goes away and the answers show as the user's message.
+- While the card is open in a client-loop chat, the input sends as usual and the card closes unanswered. In a Claude turn blocked on the card, the button stays Stop.
+
 ## Menu
 
 The Window menu is built before plugins load and has no extension point. Veronica adds a top-level `Veronica` menu to the main menu bar with `Show Veronica`, which re-adds the panel if needed and selects it. This covers a closed tab and a restored layout.

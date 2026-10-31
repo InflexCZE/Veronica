@@ -63,18 +63,26 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
     // turn ended while it waited. One at a time, so each call takes the oldest matching tool_use.
     private async Task<ToolResult?> RouteAsync(Turn turn, string name, string arguments, CancellationToken stop)
     {
+        string id;
         await _matchGate.WaitAsync(stop).ConfigureAwait(false);
+        bool held = true;
         try
         {
             if (CurrentTurn != turn)
                 return null;
-            string id = await turn.MatchAsync(name, arguments, MatchWait).ConfigureAwait(false) ?? NextId();
-            return await turn.Host.OnToolCallAsync(new ToolCall(id, name, arguments), new ToolCallContext(false), turn.Cancellation).ConfigureAwait(false);
+            id = await turn.MatchAsync(name, arguments, MatchWait).ConfigureAwait(false) ?? NextId();
+            if (name != AskUserTool.ToolName)
+                return await turn.Host.OnToolCallAsync(new ToolCall(id, name, arguments), new ToolCallContext(false), turn.Cancellation).ConfigureAwait(false);
+            // A question waits for the user; holding the gate would stall every other call meanwhile.
+            _matchGate.Release();
+            held = false;
         }
         finally
         {
-            _matchGate.Release();
+            if (held)
+                _matchGate.Release();
         }
+        return await turn.Host.OnToolCallAsync(new ToolCall(id, name, arguments), new ToolCallContext(false), turn.Cancellation).ConfigureAwait(false);
     }
 
     private Turn? CurrentTurn

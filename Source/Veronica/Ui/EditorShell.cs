@@ -124,11 +124,13 @@ public sealed class EditorShell
     private static ChatPanelViewModel CreatePanel()
     {
         ChatPanelViewModel? panel = null;
-        var tools = new ToolSet(Tools);
+        var questions = new QuestionBoard();
+        // The Claude provider's turn runs in its own loop, which only a blocking call keeps waiting for the answers.
+        var tools = new ToolSet([.. Tools, new AskUserTool(questions, waitsForAnswers: ModelProvider.NeedsEndpoint)]);
         // The researcher reads the chat's transcript, so an MCP client has nothing to ask it about.
-        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName));
+        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).With(new AskUserTool(questions, waitsForAnswers: true)));
         var provider = EvalHook.Record(ModelProvider.Create(status => panel?.ShowStatus(status), endpoint));
-        panel = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki);
+        panel = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, questions);
         EvalHook.Attach(panel);
         ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);
         return panel;

@@ -12,6 +12,9 @@ public interface ITool
     string Parameters { get; }
 
     Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken);
+
+    // False for a tool that may wait on the user: holding the queue would stall every other caller.
+    bool Exclusive => true;
 }
 
 public static class ToolArgs
@@ -44,15 +47,18 @@ public sealed class ToolSet
     // The same tools but one, still run one at a time with this set's.
     public ToolSet Without(string name) => new(_tools.Values.Where(t => t.Name != name), _running);
 
+    // The same tools with one added or replacing the one of its name, still run one at a time with this set's.
+    public ToolSet With(ITool tool) => new(_tools.Values.Where(t => t.Name != tool.Name).Append(tool), _running);
+
     public IReadOnlyList<ToolDefinition> Definitions { get; }
 
     public async Task<ToolResult> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
         if (call.Name.Length == 0)
-            return new ToolResult($"Your tool call could not be parsed: {call.Arguments}\nWrite the call again in the tool call format.");
+            return new ToolResult($"Your tool call could not be parsed: {call.Arguments}\nWrite the call again in the tool call format.", Refused: true);
 
         if (!_tools.TryGetValue(call.Name, out var tool))
-            return new ToolResult($"There is no tool named {call.Name}. The tools are: {string.Join(", ", _tools.Keys)}.");
+            return new ToolResult($"There is no tool named {call.Name}. The tools are: {string.Join(", ", _tools.Keys)}.", Refused: true);
 
         JsonElement arguments;
         try
@@ -62,12 +68,14 @@ public sealed class ToolSet
         }
         catch (JsonException e)
         {
-            return new ToolResult($"The arguments of {call.Name} are not valid JSON ({e.Message}). Write the call again.");
+            return new ToolResult($"The arguments of {call.Name} are not valid JSON ({e.Message}). Write the call again.", Refused: true);
         }
         if (arguments.ValueKind != JsonValueKind.Object)
-            return new ToolResult($"The arguments of {call.Name} must be a JSON object. Write the call again.");
+            return new ToolResult($"The arguments of {call.Name} must be a JSON object. Write the call again.", Refused: true);
 
-        await _running.WaitAsync(cancellationToken).ConfigureAwait(false);
+        bool exclusive = tool.Exclusive;
+        if (exclusive)
+            await _running.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             return await tool.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
@@ -78,11 +86,12 @@ public sealed class ToolSet
         }
         catch (Exception e)
         {
-            return new ToolResult($"{call.Name} failed: {e.Message}");
+            return new ToolResult($"{call.Name} failed: {e.Message}", Refused: true);
         }
         finally
         {
-            _running.Release();
+            if (exclusive)
+                _running.Release();
         }
     }
 }

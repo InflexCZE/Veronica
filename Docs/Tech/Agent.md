@@ -24,7 +24,7 @@
 - **Length nudge:** a round that hits the token cap with no answer text (cut off while thinking) gets an automatic user message and another round, up to `MaxNudges`. A round cut off mid-answer is not nudged, since the model would start its answer over.
 - **Cut tool call:** a round that hits the token cap while writing a tool call keeps that call in the history with `{}` as its arguments, does not run it, and answers it with a result saying it was cut off, to send it again with fewer calls per reply. The round's complete calls run and the turn goes on. Kept as it was, the half-written arguments made the server refuse every later request of the conversation.
 - **End nudge:** when the model ends its turn, a callback can send it back with a message, once. It re-arms only after a tool call outside `BookkeepingTools`.
-- **Turn-ending tools:** a round that calls one of `TurnEndingTools` runs all its calls, in order, then ends the turn: no further round and no end nudge. It lets the model stop on purpose through a tool call, the way small models act. A round with no text of its own does not end this way: the tool's result is replaced by one saying nothing was written for the user and the question belongs in the same reply, and the loop goes on. Only the waiting round's text counts, since models narrate their work in earlier rounds; a wait with no question leaves the user nothing to answer.
+- **Turn-ending tools:** a round that calls one of `TurnEndingTools` runs all its calls, in order, then ends the turn: no further round, no end nudge, and no budget notice even on the last round, since the user's answer starts a fresh budget. It lets the model stop on purpose through a tool call, the way small models act. A round with no text of its own does not end through `wait_for_user`: the tool's result is replaced by one saying nothing was written for the user and the question belongs in the same reply, and the loop goes on. Only the waiting round's text counts, since models narrate their work in earlier rounds; a wait with no question leaves the user nothing to answer. A round that also calls `ask_user` ends without text: the card is what the user answers.
 - Nudges count against the round budget.
 - **Stop:** a stopped round keeps what it generated. Its tool calls are not run: each gets a "stopped by the user" result, so the transcript never carries dangling calls. A tool that returns null (stopped while it ran) also ends the turn this way, for every call left in the round.
 - A failed round appends nothing and fails the turn. There are no retries.
@@ -38,8 +38,23 @@
   - an unknown tool lists the tools there are;
   - arguments that are not a JSON object;
   - an exception thrown by the tool.
-- Tools run on a worker thread, one at a time, whichever source calls them: the chat's turn or an MCP client (`McpEndpoint.md`). Concurrent tools are never wanted; a call waits for the running one.
+- Tools run on a worker thread, one at a time, whichever source calls them: the chat's turn or an MCP client (`McpEndpoint.md`). Concurrent tools are never wanted; a call waits for the running one. A blocking `ask_user` waits outside this queue (Questions to the user).
 - The tools are the Editor tools in `EditorTools.md`. Their descriptions say only what the model would not guess; the system prompt carries no tool guidance.
+
+## Questions to the user
+
+- `ask_user(questions)` asks the user questions, each with optional short answers to pick. It is for every question to the user; `wait_for_user` is left for steps the user does in the Editor (`Skills.md`).
+- The questions travel as arguments, so the user always sees them whole. A question written as reply text before a wait was sometimes cut to its lead-in.
+- The schema says 1-4 questions. It is guidance: more are shown, never dropped, since the model would wait for answers it never gets.
+- The panel shows the questions as a card (`EditorUi.md`). The user picks an option, types an answer or skips, per question. The answers reach the model as one `Q: <question>` / `A: <answer>` pair per question, `(skipped)` for one without an answer.
+- The `ask_user` calls of one round merge into one card.
+- The description says the tool waits for the answers by itself, so the model neither ends its turn nor calls `wait_for_user` after it.
+- A call with no usable question gets a result asking to send it again, and the turn goes on.
+- **Client tool loop:** `ask_user` is a turn-ending tool. Its result says the questions are shown; the answers are the next user message, which starts a turn with a fresh budget. The turn ends instead of waiting so that the Editor's VRAM is free (`VramSharing.md`) while the user answers or works in the Editor. Closing the card sends nothing: the user's next message is what the model sees. A message sent while the card is open closes it unanswered.
+- **Over MCP** (the Claude provider and any other client): the call blocks until the card is answered or closed, and the answers are its result. A closed card's result says the user closed the questions without answering. The wait runs outside the one-at-a-time tool queue, so other calls run while the card is open.
+- `/clear` and Stop close an open card. A blocked call whose wait is cancelled otherwise (its Claude turn ended) takes back only its own questions.
+- Answers given while the asking turn still winds down are sent as soon as it ends; questions asked after them stay open. The eval channel never reports idle in between.
+- A call the tool set could not run (arguments not JSON, an exception) is refused like a malformed one, so a turn-ending tool does not end the turn on it.
 
 ## Conversation
 
@@ -52,15 +67,15 @@
 
 | setting | value |
 |---|---|
-| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks (a question about how something works, what it takes or what went wrong is answered, not built), read the skills that may cover it, once the user wants the work done activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, and steps they do in the Editor), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. The step also says a new thing gets its own name and text from the user even when a similar one exists, that a skill's example folder is a suggestion to offer, and to ask when unsure: left to judge, a model argued itself out of asking, reused a block's name for its new tile and picked folders silently. Small models skipped activation or worked from memory when the procedure was spread over separate hints. A paragraph after the procedure says when to ask the wiki and that values of game things come from a read or the wiki, not memory (`Wiki.md`). Without skills, only the ask-the-user rule is left. |
+| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks (a question about how something works, what it takes or what went wrong is answered, not built), read the skills that may cover it, once the user wants the work done activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, with `ask_user`; steps they do in the Editor, described in the reply, with `wait_for_user`), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. The step also says a new thing gets its own name and text from the user even when a similar one exists, that a skill's example folder is a suggestion to offer, and to ask when unsure: left to judge, a model argued itself out of asking, reused a block's name for its new tile and picked folders silently. Small models skipped activation or worked from memory when the procedure was spread over separate hints. A paragraph after the procedure says when to ask the wiki and that values of game things come from a read or the wiki, not memory (`Wiki.md`). Without skills, only the ask-the-user rule is left. |
 | thinking | on |
 | rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
 | max tokens per round | 4000 for the answer and tool calls. With the OpenAI provider, thinking has its own budget of 4000 on top (`thinking_budget_tokens`, llama.cpp; `max_tokens` is the sum): a reply of 30 writes after long thinking hit a shared 4000 cap mid-call. The server closes the thinking at the budget and the model still answers. OpenAI's own API refuses unknown request fields, so it would refuse this one. |
 | length nudge | up to 2 per turn |
-| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`), `wiki` (`Wiki.md`) |
+| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`), `wiki` (`Wiki.md`), `ask_user` |
 | free rounds | rounds that call only `skill`, the plan tools and `wiki` |
 | end nudge | when an item of the active skill's plan is open (`Skills.md`, Plan); `skill` and the plan tools are its bookkeeping tools |
-| turn-ending tools | `wait_for_user`. The Claude provider gets it over MCP like every tool, but its own loop decides when a turn ends |
+| turn-ending tools | `ask_user`, `wait_for_user`. The Claude provider gets them over MCP like every tool, but its own loop decides when a turn ends |
 
 ## WebQwen provider
 

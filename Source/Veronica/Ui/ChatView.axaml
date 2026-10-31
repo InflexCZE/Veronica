@@ -54,10 +54,57 @@
     <Style Selector="Border.message.notice.error SelectableTextBlock">
       <Setter Property="Foreground" Value="IndianRed" />
     </Style>
+    <Style Selector="TextBlock.model">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="{DynamicResource MediumFontSize}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.option">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.option:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+    </Style>
+    <Style Selector="Button.option:pressed">
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.option:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto,Auto" Margin="6">
     <ScrollViewer x:Name="MessagesScroll" Grid.Row="0">
+      <StackPanel>
       <ItemsControl ItemsSource="{Binding Messages}">
         <ItemsControl.DataTemplates>
           <DataTemplate DataType="ui:UserItem">
@@ -113,6 +160,44 @@
           </DataTemplate>
         </ItemsControl.DataTemplates>
       </ItemsControl>
+      <ContentControl Content="{Binding Card}" IsVisible="{Binding Card, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <ContentControl.ContentTemplate>
+          <DataTemplate DataType="ui:QuestionCard">
+            <Border Classes="card">
+              <StackPanel>
+                <Grid ColumnDefinitions="*,Auto" Background="{DynamicResource SemiDarkGrayColor}">
+                  <TextBlock Grid.Column="0" Classes="model" FontWeight="Bold" Margin="8,6" Text="{Binding Question}" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
+                    <Button Classes="icon" Content="&lt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoBack}" Command="{Binding PreviousCommand}" ToolTip.Tip="Previous question" />
+                    <TextBlock Text="{Binding Position}" IsVisible="{Binding Paging}" VerticalAlignment="Center" Opacity="0.6"
+                               FontSize="{DynamicResource SmallFontSize}" Foreground="{DynamicResource PrimaryTextColor}" />
+                    <Button Classes="icon" Content="&gt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoForward}" Command="{Binding NextCommand}" ToolTip.Tip="Next question" />
+                    <Button Classes="icon" Content="X" Command="{Binding CloseCommand}" ToolTip.Tip="Close without answering" />
+                  </StackPanel>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding HasOptions}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="ui:QuestionOption">
+                      <Button Classes="option" Command="{Binding Pick}">
+                        <TextBlock Classes="model" Text="{Binding Text}" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="*,Auto" Margin="8,6">
+                  <TextBox Grid.Column="0" Text="{Binding Typed}" Watermark="Type your answer" TextWrapping="Wrap" MaxHeight="120">
+                    <TextBox.KeyBindings>
+                      <KeyBinding Gesture="Enter" Command="{Binding CommitCommand}" />
+                    </TextBox.KeyBindings>
+                  </TextBox>
+                  <Button Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Bottom" Content="{Binding CommitLabel}" Command="{Binding CommitCommand}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ContentControl.ContentTemplate>
+      </ContentControl>
+      </StackPanel>
     </ScrollViewer>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">

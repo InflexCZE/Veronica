@@ -48,6 +48,11 @@ public sealed class EvalTests : IDisposable
         }
 
         public void Stop() => Stops++;
+
+        public QuestionBoard? Board { get; init; }
+
+        public Task<string?> AnswerAsync(IReadOnlyList<string?> answers) =>
+            Task.FromResult(Board == null ? "No board." : Board.Answer(answers).Refused);
     }
 
     // A provider whose sessions run a scripted turn on the host they are given.
@@ -270,6 +275,23 @@ public sealed class EvalTests : IDisposable
         await wait.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
+    [Fact]
+    public async Task Turn_with_a_queued_next_one_never_reports_idle()
+    {
+        var run = new RunControl(new FakeChat(), null);
+        run.TurnStarted();
+        var wait = run.WaitIdleAsync(TimeSpan.FromMinutes(1), CancellationToken.None);
+
+        run.TurnEnded(TurnOutcome.Answered, null, nextQueued: true);
+        run.TurnStarted();
+        await Task.Delay(100);
+        Assert.False(wait.IsCompleted);
+        Assert.Contains("\"busy\":true,\"turns\":1", run.StatusJson());
+
+        run.TurnEnded(TurnOutcome.Answered, null);
+        await wait.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
     private static async Task<(int Status, string Body)> Http(int port, string method, string path, string? body = null)
     {
         using var client = new HttpClient();
@@ -317,6 +339,32 @@ public sealed class EvalTests : IDisposable
         Assert.Equal(400, (await Http(server.Port, "GET", "/status?wait=NaN")).Status);
         Assert.Equal(400, (await Http(server.Port, "GET", "/status?wait=Infinity")).Status);
         Assert.Equal(404, (await Http(server.Port, "GET", "/nope")).Status);
+    }
+
+    [Fact]
+    public async Task ServerShowsOpenQuestionsAndTakesTheirAnswers()
+    {
+        var board = new QuestionBoard();
+        var chat = new FakeChat { Board = board };
+        var run = chat.Run = new RunControl(chat, null, board);
+        using var server = new ControlServer(0, run);
+
+        Assert.Equal((200, "{\"busy\":false,\"turns\":0,\"questions\":[]}"), await Http(server.Port, "GET", "/status"));
+        Assert.Equal(409, (await Http(server.Port, "POST", "/answer", "[\"x\"]")).Status);
+
+        run.TurnStarted();
+        var waiting = Http(server.Port, "GET", "/status?wait=60");
+        await Task.Delay(200);
+        Assert.False(waiting.IsCompleted);
+        var answer = board.WaitAsync([new Question("Name?", ["Bob", "Ann"]), new Question("Folder?", [])], CancellationToken.None);
+        var (_, body) = await waiting.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("{\"busy\":true,\"turns\":0,\"questions\":[{\"question\":\"Name?\",\"options\":[\"Bob\",\"Ann\"]},{\"question\":\"Folder?\",\"options\":[]}]}", body);
+
+        Assert.Equal(400, (await Http(server.Port, "POST", "/answer", "{\"a\":1}")).Status);
+        Assert.Equal(400, (await Http(server.Port, "POST", "/answer", "[1]")).Status);
+        Assert.Equal(409, (await Http(server.Port, "POST", "/answer", "[\"Bob\"]")).Status);
+        Assert.Equal((200, "{\"ok\":true}"), await Http(server.Port, "POST", "/answer", "[\"Bob\",null]"));
+        Assert.Equal("Q: Name?\nA: Bob\n\nQ: Folder?\nA: (skipped)", await answer.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     [Fact]

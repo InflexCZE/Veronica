@@ -114,7 +114,7 @@ public sealed class SkillPlan
                 return null;
             return $"<harness>You ended your turn, but item {current + 1} of {_items.Count} of {_skill} is still open: {_items[current].Text}. " +
                 $"Continue it, or call {MarkCompletedTool.ToolName} with proof if you did it, or {MarkSkippedTool.ToolName} with a reason only if it does not apply to the task, never to wait. " +
-                $"If you asked the user something, they have not seen this reminder and have not answered yet: to wait for their answer, call {WaitForUserTool.ToolName}.</harness>";
+                $"The user has not seen this reminder. If you need the user's answer, ask with {AskUserTool.ToolName}; if you described a step for them in the Editor, call {WaitForUserTool.ToolName}.</harness>";
         }
     }
 
@@ -228,7 +228,7 @@ public sealed class WaitForUserTool : ITool
 
     public string Name => ToolName;
 
-    public string Description => "Ends your turn to wait for the user's answer, after your reply asked them something.";
+    public string Description => $"Ends your turn to wait while the user does a step in the Editor that your reply described. Ask questions with {AskUserTool.ToolName} instead.";
 
     public string Parameters => """{"type":"object","properties":{}}""";
 

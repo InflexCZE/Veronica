@@ -118,6 +118,92 @@ public sealed class ClientToolLoopTests
         Assert.Equal(1, run.Remaining);
     }
 
+    private static readonly TurnLimits Asking = Poking() with
+    {
+        TurnEndingTools = new HashSet<string> { "wait", "ask" },
+        UserFacingTools = new HashSet<string> { "ask" },
+    };
+
+    [Fact]
+    public async Task User_facing_tool_ends_the_turn_without_text()
+    {
+        var run = new Run([new Round("tool_calls", Call: "ask"), new Round("stop", Text: "never")]);
+
+        await run.Go(Asking);
+
+        Assert.Equal([A, T], run.Roles);
+        Assert.Equal("RESULT", run.Transcript[1].Content);
+        Assert.Equal(1, run.Remaining);
+    }
+
+    [Fact]
+    public async Task User_facing_call_after_a_wait_lets_the_textless_wait_end_the_turn()
+    {
+        var run = new Run([new Round("tool_calls", Call: "wait", Call2: "ask"), new Round("stop", Text: "never")]);
+
+        await run.Go(Asking);
+
+        Assert.Equal([A, T, T], run.Roles);
+        Assert.All(run.Transcript.Skip(1), m => Assert.Equal("RESULT", m.Content));
+        Assert.Equal(1, run.Remaining);
+    }
+
+    [Fact]
+    public async Task Refused_user_facing_call_neither_ends_the_turn_nor_speaks_for_a_wait()
+    {
+        var run = new Run([new Round("tool_calls", Call: "ask", Call2: "wait"), new Round("stop", Text: "STOP")])
+        {
+            Tool = (call, _) => new ToolResult(call.Name == "ask" ? "BAD" : "RESULT", Refused: call.Name == "ask"),
+        };
+
+        await run.Go(Asking);
+
+        Assert.Equal([A, T, T, A], run.Roles);
+        Assert.Equal("BAD", run.Transcript[1].Content);
+        Assert.Equal(ClientToolLoop.SilentWaitOutput("wait"), run.Transcript[2].Content);
+    }
+
+    [Fact]
+    public async Task User_facing_call_the_tool_set_could_not_run_does_not_end_the_turn()
+    {
+        var tools = new Veronica.Agent.Tools.ToolSet([new AskUserTool(new QuestionBoard(), waitsForAnswers: false)]);
+        var run = new Run([new Round("tool_calls", Call: "ask_user"), new Round("stop", Text: "STOP")])
+        {
+            Tool = (call, _) => tools.ExecuteAsync(call with { Arguments = "{not json" }, CancellationToken.None).Result,
+        };
+
+        await run.Go(Asking with { TurnEndingTools = new HashSet<string> { "ask_user" }, UserFacingTools = new HashSet<string> { "ask_user" } });
+
+        Assert.Equal([A, T, A], run.Roles);
+        Assert.Contains("not valid JSON", run.Transcript[1].Content);
+    }
+
+    [Fact]
+    public async Task Turn_ending_call_on_the_last_round_ends_without_the_budget_notice()
+    {
+        var run = new Run([new Round("tool_calls", Call: "read"), new Round("tool_calls", Call: "ask"), new Round("stop", Text: "never")]);
+
+        await run.Go(Asking with { MaxRounds = 2 });
+
+        Assert.Empty(run.Notices);
+        Assert.Equal(1, run.Remaining);
+    }
+
+    [Fact]
+    public async Task Stop_during_a_later_call_keeps_the_earlier_results()
+    {
+        var run = new Run([new Round("tool_calls", Call: "read", Call2: "slow")])
+        {
+            Tool = (call, _) => call.Name == "slow" ? null : new ToolResult("RESULT"),
+        };
+
+        await run.Go();
+
+        Assert.Equal([A, T, T], run.Roles);
+        Assert.Equal("RESULT", run.Transcript[1].Content);
+        Assert.Equal(ClientToolLoop.CancelledToolOutput, run.Transcript[2].Content);
+    }
+
     [Fact]
     public async Task Plain_reply_ends_the_turn_with_reasoning_kept()
     {

@@ -13,7 +13,7 @@ public static class ClientToolLoop
         $"Stopped after {maxRounds} tool rounds in one turn. Send a new message (e.g. \"continue\") if the work is unfinished.";
 
     public static string SilentWaitOutput(string tool) =>
-        $"You wrote nothing for the user with this call, so there is nothing for them to answer. In one reply, write your question to the user and call {tool}.";
+        $"You wrote nothing for the user with this call, so there is nothing for them to answer or do. In one reply, write what you need from the user and call {tool}.";
 
     public const string CutCallOutput =
         "Your reply hit the length limit while writing this call, so it was cut off and not run. Send it again, and continue with fewer calls per reply.";
@@ -178,30 +178,53 @@ public static class ClientToolLoop
             if (!result.ToolCalls.All(c => limits.FreeRoundTools.Contains(c.Name)))
                 spentRounds++;
             bool lastRound = spentRounds == maxRounds || round == hardRoundCap;
-            // Models narrate as they work, so only the waiting round's own text can be the question.
-            bool roundHasText = result.Text.Trim().Length > 0;
+            // Results are appended once the round's calls ran: whether a wait is silent depends on
+            // every call of the round, a user-facing one may come after it.
+            var results = new List<(ToolCall Call, ToolResult? Result)>();
             for (int i = 0; i < result.ToolCalls.Count; i++)
             {
                 var call = result.ToolCalls[i];
                 if (ReferenceEquals(call, result.CutCall))
                 {
-                    AppendToolResult(call, CutCallOutput);
+                    results.Add((call, null));
                     continue;
                 }
                 var toolResult = await host.OnToolCallAsync(call, new ToolCallContext(lastRound), cancellationToken).ConfigureAwait(false);
                 if (toolResult == null)
                 {
+                    foreach (var (done, doneResult) in results)
+                        AppendToolResult(done, doneResult?.Output ?? CutCallOutput);
                     // The transcript never carries dangling tool calls into the next turn.
                     for (int j = i; j < result.ToolCalls.Count; j++)
                         AppendToolResult(result.ToolCalls[j], CancelledToolOutput);
                     return;
                 }
-                bool silentWait = !roundHasText && limits.TurnEndingTools.Contains(call.Name);
-                AppendToolResult(call, silentWait ? SilentWaitOutput(call.Name) : toolResult.Output);
+                results.Add((call, toolResult));
+            }
+
+            // Models narrate as they work, so only the waiting round's own text can be the question.
+            bool speaks = result.Text.Trim().Length > 0
+                || results.Any(r => r.Result is { Refused: false } && limits.UserFacingTools.Contains(r.Call.Name));
+            bool endsTurn = false;
+            foreach (var (call, toolResult) in results)
+            {
+                if (toolResult == null)
+                {
+                    AppendToolResult(call, CutCallOutput);
+                    continue;
+                }
+                bool ending = !toolResult.Refused && limits.TurnEndingTools.Contains(call.Name);
+                if (ending && !speaks)
+                {
+                    AppendToolResult(call, SilentWaitOutput(call.Name));
+                    continue;
+                }
+                endsTurn |= ending;
+                AppendToolResult(call, toolResult.Output);
                 if (toolResult.EarnedReward)
                     spentRounds = Math.Max(0, spentRounds - maxRounds / 2);
             }
-            if (roundHasText && result.ToolCalls.Any(c => !ReferenceEquals(c, result.CutCall) && limits.TurnEndingTools.Contains(c.Name)))
+            if (endsTurn)
                 return;
             if (lastRound)
             {

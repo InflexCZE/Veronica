@@ -69,6 +69,8 @@ Claude sees Veronica's tools and nothing else from the user's Claude Code setup.
 - A call from Claude carries the id of its tool call in the stream: the provider matches the call by tool name and arguments, so the chat, the transcript and eval timings agree.
 - A call that arrived during a turn and was still waiting when the turn ended does not run.
 - Between turns a call runs directly, like with any provider.
+- `ask_user` blocks until the card is answered or closed, and the answers are its result (`Agent.md`, Questions to the user): Claude's loop keeps its turn, and the provider holds no VRAM to give back. The panel's button stays Stop meanwhile.
+- `--max-turns` counts inside the `claude -p` process, so an answered question does not reset it the way a new turn does with the client loop. The limit is large enough that this is accepted.
 
 ## Testing
 
