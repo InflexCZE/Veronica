@@ -13,6 +13,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [QuestionCutBeforeWait.md](QuestionCutBeforeWait.md) | Chat: a question cut to its lead-in before wait_for_user (owner decision) |
+| [ValueUnits.md](ValueUnits.md) | Chat: units invented for values the model read without one (owner decision) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
