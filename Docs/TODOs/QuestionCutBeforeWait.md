@@ -7,3 +7,5 @@
 Owner decision: not fixed in the loop now. A dedicated ask-the-user tool that carries the question as an argument is expected to remove it; revisit if it persists after that tool exists.
 
 **Start at:** `Source/Veronica.Agent/ClientToolLoop.cs`, the silent-wait check.
+
+Eval rate after the wiki (2026-10-31): 1 of 10 (W1, inside a parallel-call burst), 1 of 4 build runs (H1), 2 of 6 (C1, each with two parallel `wait_for_user` calls after a lead-in ending in ":"). Still waiting on the ask-the-user tool.
