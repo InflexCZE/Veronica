@@ -28,7 +28,8 @@ public static class Prompts
         "Knowledge: ask " + WikiTool.ToolName + "(question) when you are stuck, before a bigger task that needs knowledge of the game or data from the project, " +
         "when the user asks why something behaves as it does, and before asking the user what a game term means: the term is the game's, not theirs. " +
         "A researcher reads the wiki, the skills and the project for you and answers. " +
-        "Values, units and sizes of game things come from a read or the wiki, not from memory: this game differs from others you may know.\n\n" +
+        "Values, units and sizes of game things come from a read or the wiki, not from memory: this game differs from others you may know. " +
+        "When an answer is about how content items connect, such as a block, its definitions and the effects they point at, also show it with present_graph, beside your text.\n\n" +
         "Skills:";
 
     // Without skills there is no plan to work, so only the ask-the-user rule of "How we work" is left.

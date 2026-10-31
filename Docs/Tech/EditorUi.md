@@ -10,6 +10,27 @@
 - The saved layout is user-wide and keeps the Veronica tab itself. On the next start the panel reuses that tab, so its position is remembered. A project that does not load Veronica shows the tab empty; Veronica is assumed to be loaded in every project.
 - The panel docks in `MainRightDockGroup`. If the user's layout has no such group, it goes to the first tabbed group in the layout, with a log line; a dock item whose group is missing is never shown.
 
+## Board
+
+The panel that shows `present_graph` (`EditorTools.md`).
+
+- A second `DockItemViewModel`, registered like the Veronica panel, docked in the Render View's group: a graph needs the main area, and the chat panel is narrow. Without that group it goes where the Veronica panel would.
+- Each `present_graph` replaces the graph and brings the Board to front. It keeps the last graph until the next one, across `/clear` and project reloads; there is no history.
+- **Canvas:** the Editor's own node editor control (Nodify.Avalonia, shipped with the Editor and used by its Animation Controller and Behavior Tree), for pan, zoom, node dragging and connections. It has no general layout and no edge labels.
+- **Layout:** MSAGL (`AutomaticGraphLayout`) computes the node positions only, layered left to right: a referencing item left of what it references. Nodes have tiles with notes under them, taller than wide, so columns of tiles fit better than rows. Edges are the Editor's usual Nodify connections with an arrowhead at the referenced end, so they follow a dragged node. Dragged positions are not kept; the next graph is laid out fresh.
+- **Edge labels** sit at the middle of their edge, as decorators on the canvas. Columns stand far enough apart for the widest label.
+- **Node:** the item's Content Browser tile, the Editor's `ProjectExplorerFile` control bound to the item's own explorer view model, with the note under it. The tile brings the browser's thumbnail or type icon, its partial and template overlays, and its lock, warning and detached markers, all live. The view model comes from the explorer's internal file map, by reflection.
+- **The tile is for show only and takes no input:**
+  - its context menu's commands (Delete, Rename, Duplicate) act on the Content Browser's selection, not on the tile they were opened from;
+  - a double click on its name renames the real file;
+  - its own clicks swallow the press, so the node could neither be clicked nor dragged;
+  - F2 and new items in the Content Browser start a rename or take focus on every visible tile of the same view model, so the Board's tile never renames or takes focus.
+  The node's own background takes the input instead. The view drops its tiles when the dock closes it, since the explorer's view models would keep them alive.
+- **Clicks:** the node handles them:
+  - a click selects the item in the Project Explorer and Property Inspector, without opening it, so the Board stays in front;
+  - a double click opens it in the Render View, as `show` does.
+- Notes are model text and use the model-text font (see Fonts).
+
 ## Chat
 
 - Each tool call shows as a dim line in the reply's bubble, `name arguments -> result`. The text after a tool call starts a new bubble.

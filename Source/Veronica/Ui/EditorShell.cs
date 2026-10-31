@@ -31,7 +31,7 @@ public sealed class EditorShell
         ShowPanel();
     }
 
-    private static Window? MainWindow =>
+    internal static Window? MainWindow =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 
     private void RegisterTemplates()
@@ -119,6 +119,7 @@ public sealed class EditorShell
         new PlanHintedTool(new CreatePartialTool(), Plan),
         new PlanHintedTool(new CreateDefinitionTool(), Plan),
         new ShowTool(),
+        new PresentGraphTool(),
     ];
 
     private static ChatPanelViewModel CreatePanel()
@@ -136,7 +137,7 @@ public sealed class EditorShell
         return panel;
     }
 
-    private static string? PickDockGroup(DockManager dock)
+    internal static string? PickDockGroup(DockManager dock)
     {
         if (dock.ConnectedGroups.Any(g => g.DockId == PreferredDockGroup))
             return PreferredDockGroup;

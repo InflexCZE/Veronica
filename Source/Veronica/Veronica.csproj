@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- A plugin's NuGet dependencies (the graph layout) must sit beside it; a class library does not copy them by default. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <!-- The Editor arguments the mod HUB passes, shared by Launch-Editor.ps1 and launchSettings.json. -->
@@ -40,6 +42,7 @@
     <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.Xaml.dll" Private="false" />
     <Reference Include="$(EditorDir)Microsoft.Extensions.Logging.Abstractions.dll" Private="false" />
+    <Reference Include="$(EditorDir)Nodify.Avalonia.dll" Private="false" />
     <Reference Include="$(EditorDir)ReactiveUI.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.ContentPipeline.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.ContentPipeline.Game.dll" Private="false" />

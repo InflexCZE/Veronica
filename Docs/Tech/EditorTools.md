@@ -20,6 +20,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | `component_add(prefab, type, definition?)` | adds a component to a block, on the sides its type belongs to, with its dependencies |
 | `component_remove(prefab, component)` | removes a component from a block |
 | `show(target)` | selects an item in the Editor and opens it in the Render View |
+| `present_graph(nodes, edges)` | shows the user a graph of content items and their references on the Board |
 
 `add(a, b)` is removed when these land.
 
@@ -189,12 +190,32 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
 - An item with no preview at all is only selected, and the reply gives the Editor's reason.
 - Items that open their own editor or an external app (FMOD projects, particle effects, ...) are only selected; opening them is the user's call.
 
+## present_graph
+
+Explains how content items relate by drawing them, in the user's own visual language: each node is the item's Content Browser tile, so the user recognises it there afterwards. The Board that shows it is in `EditorUi.md`.
+
+- **Arguments:**
+  - `nodes`: `[{id, item, note?}]`. `id` is a short moniker the model picks (`prefab`, `flame_emitter`), so it never numbers nodes. Ids match ignoring case. `item` is a content item resolved like a target. `note` is optional text shown under the tile, at most ~300 characters.
+  - `edges`: `[{from, to, label?}]`. `from` and `to` are node ids. `label` is optional, at most ~30 characters, typically the field that holds the reference (`Effect`, `Emitters[0]`).
+- **Direction:** an edge always points from the item that references to the item referenced. The description says so: one rule a small model keeps.
+- **Nodes are content items only**, with the target rules: no source files, folders or free concepts. The model has no tool that reads source files, so links to them would be guesses. Field-level nodes and concept nodes are possible extensions.
+- **Validation:** the whole call is refused, and nothing reaches the user, when:
+  - an item does not resolve (the usual not-found and ambiguity errors, with nearest names);
+  - an edge names an unknown id (the error lists the ids);
+  - two nodes share an id or an item (the error names the id that holds it); two tiles of one file would read as two files;
+  - an edge is repeated or goes from a node to itself;
+  - a note or label is over its length, or there are more than 20 nodes or 30 edges. The limits keep a model from dumping a whole dependency tree.
+  A wrong item on the board would mislead the user; a refusal costs the model one round.
+- Nodes without edges are allowed.
+- **Reply:** `Shown to the user.` The chat shows the call as any tool call.
+- The model explains in text as well; the graph supports the answer, it does not replace it.
+
 ## Assemblies
 
 | assembly | holds | tested by |
 |---|---|---|
-| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
-| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer) and the `ITool` wrappers | by hand in the Editor: a full thruster build on the dev mod, and adding, editing and removing a component on its block, reverted afterwards |
+| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming, graph argument validation and layout | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
+| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer), the `ITool` wrappers and the Board | by hand in the Editor: a full thruster build on the dev mod, adding, editing and removing a component on its block, reverted afterwards, and a graph on the Board |
 
 - `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The prefab visibility rule therefore recognises the prefab root by its type name. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.
 - `Veronica.Agent.dll` stays free of SE2 references.

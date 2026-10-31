@@ -11,6 +11,10 @@
     <Reference Include="$(EditorDir)VRage.UI.Shared.dll" Private="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="AutomaticGraphLayout" Version="1.1.12" />
+  </ItemGroup>
+
   <Target Name="CheckEditorDir" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(EditorDir)VRage.Library.dll')">
     <Error Text="VRage.Library.dll not found in '$(EditorDir)'. Set SE2Root (or EditorDir) in Directory.Build.local.props, see Directory.Build.local.props.template." />
   </Target>

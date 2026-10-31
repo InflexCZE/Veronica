@@ -6,4 +6,7 @@
   <DataTemplate x:Key="VeronicaChatPanel">
     <ui:ChatView />
   </DataTemplate>
+  <DataTemplate x:Key="VeronicaBoardPanel">
+    <ui:BoardView />
+  </DataTemplate>
 </ResourceDictionary>

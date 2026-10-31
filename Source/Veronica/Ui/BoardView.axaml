@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Veronica.Ui"
+             xmlns:nodify="clr-namespace:Nodify.Avalonia;assembly=Nodify.Avalonia"
+             xmlns:connections="clr-namespace:Nodify.Avalonia.Connections;assembly=Nodify.Avalonia"
+             x:Class="Veronica.Ui.BoardView"
+             x:DataType="ui:BoardPanelViewModel">
+
+  <UserControl.Resources>
+    <FontFamily x:Key="VeronicaUiFont">avares://VRage.UI.Shared/Resources/Fonts/Roboto/Roboto-*.ttf#Roboto</FontFamily>
+    <FontFamily x:Key="VeronicaTextFont">Segoe UI, Segoe UI Emoji, Segoe UI Symbol</FontFamily>
+    <!-- The tile reads these from the Content Browser's view, which is not above it here. -->
+    <x:Int32 x:Key="ItemNameMaxLines">3</x:Int32>
+    <x:Double x:Key="ItemNameFontSize">10</x:Double>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://VRage.Editor/Windows/ProjectExplorer/ExplorerItems/ProjectExplorerFile.axaml" />
+    <!-- The Editor's global TextBlock font has a relative URI that crashes glyph fallback; see ChatView. -->
+    <Style Selector=":is(TextBlock)">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaUiFont}" />
+    </Style>
+    <Style Selector="TextBlock.note">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+      <Setter Property="Margin" Value="8,0,8,8" />
+    </Style>
+    <Style Selector="nodify|ItemContainer" x:DataType="ui:BoardNode">
+      <Setter Property="Location" Value="{Binding Location}" />
+      <Setter Property="PreviewLocation" Value="{Binding PreviewLocation}" />
+      <Setter Property="ActualSize" Value="{Binding Size, Mode=TwoWay}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="nodify|DecoratorContainer" x:DataType="ui:BoardLabel">
+      <Setter Property="Location" Value="{Binding Location, Mode=OneWay}" />
+      <Setter Property="ActualSize" Value="{Binding Size, Mode=TwoWay}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <TextBlock Text="Veronica shows graphs here when she explains how content items connect."
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               Foreground="{DynamicResource PrimaryTextColor}" Opacity="0.6"
+               IsVisible="{Binding !Nodes.Count}" />
+
+    <nodify:NodifyEditor x:Name="Editor"
+                         ItemsSource="{Binding Nodes}"
+                         Connections="{Binding Edges}"
+                         Decorators="{Binding Labels}"
+                         ViewportLocation="{Binding ViewportLocation}"
+                         ViewportZoom="{Binding ViewportZoom}"
+                         MinViewportZoom="0.2"
+                         MaxViewportZoom="2"
+                         Background="Transparent">
+      <nodify:NodifyEditor.ItemTemplate>
+        <DataTemplate DataType="ui:BoardNode">
+          <Border Width="180"
+                  CornerRadius="6"
+                  BorderThickness="1"
+                  BorderBrush="{DynamicResource LightestGrayColor}"
+                  Background="{DynamicResource SecondaryBackground}"
+                  Tapped="OnNodeTapped"
+                  DoubleTapped="OnNodeDoubleTapped">
+            <StackPanel Spacing="4">
+              <Panel IsVisible="{Binding HasTile}" HorizontalAlignment="Center" Margin="0,8,0,0">
+                <ui:BoardTile DataContext="{Binding Tile}" DisplayType="Grid" />
+              </Panel>
+              <TextBlock Text="{Binding Name}" IsVisible="{Binding !HasTile}"
+                         TextWrapping="Wrap" TextAlignment="Center" Margin="8,8,8,0"
+                         Foreground="{DynamicResource PrimaryTextColor}" />
+              <TextBlock Classes="note" Text="{Binding Note}" IsVisible="{Binding HasNote}" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </nodify:NodifyEditor.ItemTemplate>
+
+      <nodify:NodifyEditor.ConnectionTemplate>
+        <DataTemplate DataType="ui:BoardEdge">
+          <connections:Connection Source="{Binding Source}"
+                                  Target="{Binding Target}"
+                                  SourceOffset="0,0"
+                                  TargetOffset="0,0"
+                                  Spacing="0"
+                                  StrokeThickness="2"
+                                  Stroke="{DynamicResource PrimaryAccentColor}"
+                                  Fill="{DynamicResource PrimaryAccentColor}" />
+        </DataTemplate>
+      </nodify:NodifyEditor.ConnectionTemplate>
+
+      <nodify:NodifyEditor.DecoratorTemplate>
+        <DataTemplate DataType="ui:BoardLabel">
+          <Border CornerRadius="3" Padding="4,1"
+                  Background="{DynamicResource SecondaryBackground}">
+            <TextBlock Text="{Binding Text}"
+                       FontSize="{DynamicResource SmallFontSize}"
+                       Foreground="{DynamicResource PrimaryTextColor}" />
+          </Border>
+        </DataTemplate>
+      </nodify:NodifyEditor.DecoratorTemplate>
+    </nodify:NodifyEditor>
+  </Panel>
+</UserControl>

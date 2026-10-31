@@ -35,6 +35,7 @@ A plugin compiled against VRage build N does not load into an Editor with a lowe
 ## Dependencies
 
 - `Veronica.Agent.dll` (providers, tool loop, WebQwen client) is a private dependency and sits beside `Veronica.dll`.
+- `AutomaticGraphLayout.dll` (MSAGL, MIT, NuGet `AutomaticGraphLayout`) lays out the Board's graphs and is a private dependency beside `Veronica.dll`. `Nodify.Avalonia.dll` is the Editor's and referenced like its other DLLs.
 - Until WebQwen is installed by Veronica, the plugin runs `WebQwen.exe` from this repo's build output (`Source/WebQwen/bin/x64/<Configuration>/net9.0`), with the Bonsai model from `.deps/models`. The build writes the exe path into `Veronica.dll` as assembly metadata.
 
 ## Dev mod
