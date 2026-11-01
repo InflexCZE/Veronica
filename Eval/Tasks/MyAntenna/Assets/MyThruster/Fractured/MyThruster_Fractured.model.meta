@@ -1,0 +1,61 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "d3357744-5d16-4bfb-8db8-264ea7957924",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "zzn3bgqF4WUpgrtWNzSpew=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 40,
+          "Identifier": "P_MODEL"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "roGXodtowpYTeem7gRATPQ==",
+            "FileName": "MyThruster_Fractured.vrm"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [
+          {
+            "Guid": "188d439c-0d50-4e55-a3d1-3bc01d7159c3",
+            "Hash": "UWTtmEsSILFpq/EXjuuV4g=="
+          },
+          {
+            "Guid": "271391a1-f165-41f1-a9e1-ea9ef8fc1c55",
+            "Hash": "IbdDaCdNbD74fPOjIRrKqg=="
+          },
+          {
+            "Guid": "31097131-170f-457d-94a2-9cf1a8eb5161",
+            "Hash": "xsvDj1E2UXZr4Z70LA1Vww=="
+          },
+          {
+            "Guid": "b8e564e7-bb17-4a93-87bf-183042c8747f",
+            "Hash": "qycua6req8KzCQXrNB/AxQ=="
+          },
+          {
+            "Guid": "d718cb7b-e748-409c-8cf2-eaa6ee6cc60c",
+            "Hash": "IBYWgxZePZ98CDfonurjcA=="
+          }
+        ],
+        "AssetHash": "zzn3bgqF4WUpgrtWNzSpew==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.DefinitionFlagsMetadata",
+        "Flags": "None"
+      }
+    ]
+  }
+}
