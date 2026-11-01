@@ -21,3 +21,4 @@
 | Wind turbine: blades, indicator | spinning blades (subpart model, ConditionalSubPartsComponent, animation controller), efficiency indicator material; OptimalDistanceToGroundHeight and OcclusionDetection stay as the template has them | vanilla WindTurbine750 |
 | Landing gear | many coupled components (two DummyShapedEntityDetectors, FixedPhysicsConstraint, magnetic lock and detection, cooldown) and two mandatory sized dummies (LockArea, CooldownRange; a missing one throws at init) | vanilla Assets/Blocks/LandingGear |
 | Laser antenna | no template and no game code for it: Assets/Blocks/LaserAntenna holds only LOD models | - |
+| Gravity generator: rings, fall-off | spinning rings (subparts, animation controller), LCD panel, material swapper, damage particles; TriggerSettings (how often the field checks) left none; FallOffPower and AccelerationDistance stay at the template's constant field | vanilla GravityGenerator500 |
