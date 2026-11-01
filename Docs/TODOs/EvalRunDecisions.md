@@ -16,3 +16,5 @@
 | Shared | create-block step 4 names the block component's definition as the one with UIData, not BreakableBlockDefinition | all 3 gyro runs wrote UIData to BreakableBlockDefinition first; 0/3 antenna runs after the fix, regressions pass |
 | Antenna | MyAntenna Pass 6 is a knowledge follow-up (custom HUD text) inside a build task; the wiki says the HUD text is a per-block player setting a mod does not set | AntennaObjectBuilder fields have no ForceShowInInspector, so the Editor cannot set them either |
 | Antenna | write accepted MaxBroadcastRange 0 although the game's Range attribute rejects it; the skill states the bounds | tools do not enforce [Range]; related to ValidationTool TODO |
+| Spotlight | block-light covers point and spot (one skill per feature); MyLight runs now ask point or spot first | owner rule; MyLight regressions 2/2 |
+| Spotlight | MySpotlight Pass 3 requires reach (FalloffRangeMultiplier) 8, which 2 of 3 runs matched from vanilla without asking the user | stricter variant would require asking |
