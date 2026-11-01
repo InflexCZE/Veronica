@@ -1,12 +1,13 @@
 using System.Text.Json;
 using Keen.VRage.Library.Serialization;
+using Keen.VRage.Library.Serialization.Validation;
 
 namespace Veronica.Editing;
 
 public static class FieldWriter
 {
     // Returns "Path: old -> new".
-    public static string Write(MemberReference root, string path, JsonElement value, IContentLinks links, string basePath = "")
+    public static string Write(MemberReference root, string path, JsonElement value, IContentLinks links, string basePath = "", IDefinitionLocatorStrategy? definitions = null)
     {
         if (path.Trim().Length == 0)
             throw new EditError(basePath.Length == 0
@@ -15,7 +16,7 @@ public static class FieldWriter
         if (Transforms.WalkEuler(root, path, basePath, links) is { } euler)
             return Transforms.WriteEuler(euler, value);
 
-        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links), links, basePath);
+        return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links, definitions), links, basePath);
     }
 
     // Null objects on the path are created for the edit and removed again if it fails.
@@ -36,7 +37,7 @@ public static class FieldWriter
         }
     }
 
-    private static string WriteField(MemberReference member, string canonical, JsonElement value, IContentLinks links)
+    private static string WriteField(MemberReference member, string canonical, JsonElement value, IContentLinks links, IDefinitionLocatorStrategy? definitions)
     {
         if (member.IsRoot)
             throw new EditError("Give the path of a field, e.g. 'UIData.Name'.");
@@ -62,7 +63,8 @@ public static class FieldWriter
         else
             throw Composite(member, canonical);
 
-        return $"{canonical}: {before} -> {FieldReader.Describe(member, links)}";
+        string reply = $"{canonical}: {before} -> {FieldReader.Describe(member, links)}";
+        return ValueChecks.Hint(member, definitions) is { } hint ? $"{reply} (game validation: {hint})" : reply;
     }
 
     // Null empties references and nullables and resets plain values; it never removes an object or a list.

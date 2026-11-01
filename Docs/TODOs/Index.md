@@ -36,6 +36,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |
 | [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps (owner decision) |
 | [ValidationTool.md](ValidationTool.md) | Editor tools: agent cannot see validation issues |
+| [WriteValueChecks.md](WriteValueChecks.md) | Editor tools: write hints only on the written field's own validation (owner decision) |
 | [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
 | [ContentQuery.md](ContentQuery.md) | Editor tools: no way to query a field across many items (owner decision) |

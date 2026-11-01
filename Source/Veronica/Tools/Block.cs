@@ -16,6 +16,7 @@ using Keen.VRage.DCS.Internal;
 using Keen.VRage.Editor.Windows.PropertyInspector.PropertyElements.Custom.Definitions.Prefabs.Core;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Serialization;
+using Keen.VRage.Library.Serialization.Validation;
 using Keen.VRage.Library.Utils;
 using Keen.VRage.UI.Shared.ObjectInspector;
 using Keen.VRage.UI.Shared.ObjectInspector.Extensions;
@@ -305,7 +306,7 @@ internal sealed class Block
         }
         else
         {
-            reply = FieldWriter.Write(ObjectBuilder(component, name), inner, value, Links, basePath);
+            reply = FieldWriter.Write(ObjectBuilder(component, name), inner, value, Links, basePath, new ComponentDefinition(_project, component));
         }
         return Applied(component, reply);
     }
@@ -350,6 +351,18 @@ internal sealed class Block
         component.ApplyChanges();
         Save();
         return $"{Content.Shown(Item)}: {reply}";
+    }
+
+    // Bounds that game validation takes from a component's definition, read from the definition's file as read shows it,
+    // so a value just written there counts at once.
+    private sealed class ComponentDefinition(LoadedProject project, IComponentNode component) : IDefinitionLocatorStrategy
+    {
+        private MemberReference? _root;
+
+        public MemberReference GetDefinitionMember(MemberReference source) => _root ??=
+            DefinitionId(component) is { } id && project.GetAssetFileByGuid(id) is ExplorerAssetFile asset
+                ? Content.Definition(asset).Fields.Root
+                : throw new EditError("The component has no definition.");
     }
 
     private string WriteDefinition(IComponentNode component, string name, JsonElement value)

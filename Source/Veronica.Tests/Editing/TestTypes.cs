@@ -5,6 +5,7 @@ using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Localization;
 using Keen.VRage.Library.Mathematics;
 using Keen.VRage.Library.Serialization;
+using Keen.VRage.Library.Serialization.Validation;
 using Keen.VRage.Library.UI.PropertyInspector.Visibility;
 using Keen.VRage.Library.Utils;
 using Veronica.Editing;
@@ -113,6 +114,47 @@ public partial class Box : Shape
 public partial class Ball : Shape
 {
     public float Radius = 1;
+}
+
+[Serialize]
+public partial class Bounded
+{
+    [Range<float>(0, 50_000, RangeMode.ExIn)]
+    public float Reach = 100;
+
+    [FixedPointRange(0, nameof(Discharge), RangeMode.InEx)]
+    public FixedPoint Charge = (FixedPoint)1;
+
+    [FixedPointRange(nameof(Charge), float.MaxValue, RangeMode.ExIn)]
+    public FixedPoint Discharge = (FixedPoint)3;
+
+    [StringLength(1, 8)]
+    public string Label = "Short";
+
+    [UnitVector]
+    public Vector3 Direction = Vector3.Forward;
+
+    [DefinitionTestRange(0, "Limit")]
+    public float Speed = 1;
+
+    [Range<int>(0, 10)]
+    public int? Optional;
+}
+
+// Stands in for the game's DefinitionRange, named like it: the bound sits on a definition found through IDefinitionLocatorStrategy.
+public sealed class DefinitionTestRangeAttribute(float min, string maxMember) : BaseRangeAttribute<float, (ValidationContext, MemberReference)>(min, maxMember)
+{
+    protected override Keen.VRage.Library.Threading.Task<(ValidationContext, MemberReference)> GetRangeLimitsContext(ValidationContext context, MemberReference member) =>
+        Keen.VRage.Library.Threading.Task.FromResult((context, member));
+
+    protected override MemberReference GetRangeLimitMember((ValidationContext, MemberReference) context, string identifier) =>
+        context.Item1.Get<IDefinitionLocatorStrategy>().GetDefinitionMember(context.Item2)[identifier];
+}
+
+[Serialize]
+public partial class OwnerDefinition
+{
+    public float Limit = 5;
 }
 
 // The project side of references, over a fixed set of items.
