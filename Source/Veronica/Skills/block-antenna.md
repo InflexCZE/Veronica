@@ -16,7 +16,7 @@ Plan:
 Steps:
 1. read(block) lists its components; the AntennaComponent names its AntennaDefinition, the PowerableBlockComponent its PowerableBlockDefinition. Read MaxBroadcastRange on the first and ConsumedResource on the second.
 2. Ask the user, with ask_user, how far it broadcasts and how much power it draws; offer a vanilla antenna to match as a suggestion. Values left from the template were not chosen for this block.
-3. Range: MaxBroadcastRange is in metres, above 0 and at most 50000. A block made from the template uses the template's shared AntennaDefinition, a vanilla file that also serves the vanilla antennas. For a range of its own:
+3. Range: MaxBroadcastRange is in metres. A block made from the template uses the template's shared AntennaDefinition, a vanilla file that also serves the vanilla antennas. For a range of its own:
    create_partial(that AntennaDefinition, "copy", folder), then write(block, "Components[AntennaComponent].Definition", <the copy>), then write(copy, "MaxBroadcastRange", n).
    When the range the user wants is the shared definition's own, the block keeps it.
 4. Power: read the matched antenna's PowerableBlockDefinition when the user named one. write(PowerableBlockDefinition, "ConsumedResource.Amount", n): kW of Electricity drawn while the block is on. Write it when it does not fit what the user wants.

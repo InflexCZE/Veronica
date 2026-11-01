@@ -17,6 +17,6 @@ How it makes power:
 
 Vanilla solar panels: Assets/Blocks/SolarPanel/SolarPanel/<size> (500, 1000), standing panels with cells toward the model's -Z and +Z, six sensors on each face (the back ones turned 180 degrees about Y).
 
-The Solar Panels template: a block made from it gets its own SolarGeneratorDefinition (1000 kW, EfficiencyMultiplier 2) and its own FunctionalBlockDefinition in the vanilla solar panels' G-Screen family. Its dummies list is empty: no sun sensors until they are added.
+The Solar Panels template: a block made from it gets its own SolarGeneratorDefinition (two-sided: EfficiencyMultiplier 2) and its own FunctionalBlockDefinition in the vanilla solar panels' G-Screen family. Its dummies list is empty: no sun sensors until they are added.
 
 Looks only, not needed for power: the damage particles (on a Particles dummy in vanilla), the material swapper and the LOD materials of the vanilla panels.

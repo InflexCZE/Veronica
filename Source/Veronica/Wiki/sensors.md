@@ -16,6 +16,6 @@ Parts:
 
 Set by players on each built block, in its terminal: the six field sizes (left, right, up, down, forward, back, each up to the maximum), what it detects (ships, floating objects, players, terrain, the owner, friends, enemies) and the toolbar actions. These belong to each built block: a mod does not set them on the block, and the Editor does not show them.
 
-The vanilla sensor: Assets/Blocks/Sensor/25. It uses the template's shared SensorComponentDefinition (starts 1 m each way, at most 50 m each way).
+The vanilla sensor: Assets/Blocks/Sensor/25. It uses the template's shared SensorComponentDefinition.
 
 The Sensor template: a block made from it gets its own PowerableBlockDefinition (Amount 0, in the vanilla sensor's G-Screen family) but keeps the template's shared SensorComponentDefinition. Field sizes of its own need a definition of its own: a copy of the shared one, set on the block's SensorComponent.

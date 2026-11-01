@@ -13,6 +13,6 @@ How it turns the ship: the ship adds up the MaxTorque of all its working gyrosco
 
 Vanilla gyroscopes: Assets/Blocks/Gyroscopes/Gyroscopes/<size in cm> (50, 250, 750), each with its own GyroscopeDefinition and PowerableBlockDefinition.
 
-The Gyroscopes template: a block made from it gets its own GyroscopeDefinition with MaxTorque 0 and its own PowerableBlockDefinition with the 50 cm gyroscope's power draw, in the vanilla gyroscopes' G-Screen family.
+The Gyroscopes template: a block made from it gets its own GyroscopeDefinition with no torque (MaxTorque 0) and its own PowerableBlockDefinition with the smallest gyroscope's power draw, in the vanilla gyroscopes' G-Screen family.
 
 Looks only, not needed to turn: the spinning parts of vanilla gyroscopes (a ConditionalSubPartsComponent with subpart models and a RotatingSubparts dummy), the animation controller, the material swapper, and the damage particles and humming sound of the BlockEffectsComponentDefinition.

@@ -8,8 +8,8 @@ Classes: Ion and Atmospheric draw Electricity, Hydrogen draws Hydrogen. Vanilla 
 
 Parts:
 - ThrusterComponent with its ThrusterDefinition: the thrust. The definition's fields set how the thruster behaves; each should fit what the user wants: as the matched vanilla thruster, changed as the user asks, or their own value.
-  - ThrustPower: in N. Vanilla Ion 100: 8950.306.
-  - ResourcesRequiredToThrust: in the class's resource unit: kW of Electricity, L/s of Hydrogen. It is all or nothing: the full amount while firing at any strength, none otherwise. Vanilla Ion 100: 40 kW.
+  - ThrustPower: in N.
+  - ResourcesRequiredToThrust: in the class's resource unit: kW of Electricity, L/s of Hydrogen. It is all or nothing: the full amount while firing at any strength, none otherwise.
 - Thruster-type dummies: the nozzles (the dummies page).
 - ThrusterEffectsComponent: on the client, draws the flame at the Thruster-type dummies. The flame is in its ThrusterEffectsComponentDefinition; the sound is in the block's BlockEffectsComponentDefinition. Both stay as they are unless the user asks.
   - The ThrusterEffectsComponentDefinition holds the flame's size (FlameLength, FlameRandomScale) and which particle effects play (OnThrustPoweredParticleEffect, OnLandingParticleEffect); it has no colour of its own (the particle-effects page).

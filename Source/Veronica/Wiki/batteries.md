@@ -10,9 +10,9 @@ Parts:
 - PowerableBlockComponent as the block component.
 
 Energy:
-- The energy a battery holds is the sum of the power cells in its slots, each as charged as it is. One PowerModule cell holds 3600000 kW*s, which is 1 MWh. An empty slot holds nothing; a battery with no cells has no capacity and gives no power.
+- The energy a battery holds is the sum of the power cells in its slots, each as charged as it is. A cell holds the MaxStored of its ResourceContainerItemDefinition, in kW*s (3600 kW*s is 1 kWh). An empty slot holds nothing; a battery with no cells has no capacity and gives no power.
 - Charging and discharging charges and drains the cells themselves, so a cell keeps its charge when moved to another battery.
-- MaxCapacity on the definition is replaced at run time by what the cells hold; vanilla sets it to the cells' total (3600000 per slot).
+- MaxCapacity on the definition is replaced at run time by what the cells hold; vanilla sets it to the cells' total.
 - A newly built block starts with the cells listed in its prefab's slots; the Battery template's one slot holds one PowerModule, partly charged.
 
 Power draw:
@@ -25,7 +25,7 @@ CellSlot dummies:
 - Without a CellSlot dummy the block fails to load: the Editor's preview of it errors.
 
 Templates: find_template("battery") lists two. Battery is how the vanilla batteries are built: power cells in slots. Batteries is an older one with a plain stored amount and no cells.
-The Battery template gives the new block its own PowerableBlockDefinition (no BlockKind, so no block menu place; ConsumedResource Electricity at 0) and its own ResourceContainerInventoryDefinition (998 kW charging, 999 kW output), one cell slot and no CellSlot dummy.
+The Battery template gives the new block its own PowerableBlockDefinition (no BlockKind, so no block menu place; ConsumedResource Electricity at 0) and its own ResourceContainerInventoryDefinition with the template's rates, one cell slot and no CellSlot dummy.
 
 Vanilla batteries: Assets/Blocks/Batteries/Battery/<size in cm> (50, 150, 250). They differ in rates and number of slots (one on the 50 and 150, four on the 250); the smallest takes a smaller cell.
 
