@@ -1,0 +1,61 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "6f6efd87-56ed-4703-af01-1f3b2784ad61",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "XRLpJSxI2HP0cBenvURfWw=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 40,
+          "Identifier": "P_MODEL"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "zUw9de0gf/NjHUE5L9gb7A==",
+            "FileName": "MyThruster_Deformed.vrm"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [
+          {
+            "Guid": "05413f2a-4004-4791-a914-f3034a537b29",
+            "Hash": "3WSZl+DYQmh3ipp00qFZ3Q=="
+          },
+          {
+            "Guid": "072e8628-ee1a-46f1-b9f1-adc2be5a96e2",
+            "Hash": "Z2ZswowjBgC1af6ofLegow=="
+          },
+          {
+            "Guid": "7aae0fda-f433-4274-ab75-9572c2b7da24",
+            "Hash": "hCcRkWW8H7chG1h3xXuvag=="
+          },
+          {
+            "Guid": "8e033df1-eda0-47f1-b7af-e618e270446e",
+            "Hash": "UWTtmEsSILFpq/EXjuuV4g=="
+          },
+          {
+            "Guid": "954ab371-33b8-4d81-aa50-e7b6fc29ed6c",
+            "Hash": "zYnOe9/4zXzLULxjicsruA=="
+          }
+        ],
+        "AssetHash": "XRLpJSxI2HP0cBenvURfWw==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.DefinitionFlagsMetadata",
+        "Flags": "None"
+      }
+    ]
+  }
+}

@@ -28,7 +28,7 @@ Steps:
 5. On the BlockModelComponentDefinition:
    write(def, "Model", <Model>)
    write(def, "FractureModel", <FractureModel>) and write(def, "DamagedModel", <DamagedModel>) when the block breaks. FractureModel is the block broken into pieces (vanilla names it Fractured), DamagedModel the dented block (vanilla names it Deformed). Models another block already uses are copied from its BlockModelComponentDefinition as they are.
-6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust, block-inventory for storage, block-cockpit for a seat to fly from, block-light for a lamp or spotlight, block-gyro for turning the ship, block-antenna for broadcasting, block-solar for power from sunlight, block-ore-detector for finding ore). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
+6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust, block-inventory for storage, block-cockpit for a seat to fly from, block-light for a lamp or spotlight, block-gyro for turning the ship, block-antenna for broadcasting, block-solar for power from sunlight, block-ore-detector for finding ore, block-sensor for detecting what comes near). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
 
 Show:
 show(the block's prefab). Ask the user to check the model and its dummies in the Render View (Preview Settings, Dummies).

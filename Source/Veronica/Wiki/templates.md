@@ -2,7 +2,7 @@
 name: templates
 title: Block templates
 source: vanilla block templates (Assets/Templates/Blocks), read with find_template, create_prefab and read
-description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel and ore detector templates come with.
+description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel, ore detector and sensor templates come with.
 ---
 find_template("<what it does>") lists the templates of a function; create_prefab(template, name, folder) makes a new placeable block from one.
 
@@ -17,5 +17,6 @@ find_template("<what it does>") lists the templates of a function; create_prefab
 - An antenna template (Antennas) brings an AntennaComponent that keeps the template's shared AntennaDefinition (a vanilla file; a range of its own needs a copy), and a PowerableBlockComponent as the block component. It needs no dummy.
 - A solar panel template (Solar Panels) brings a SolarGeneratorComponent with its own SolarGeneratorDefinition, and a FunctionalBlockComponent as the block component. It brings no sun sensor dummies: the dummies list is empty, and the block makes no power until they are added.
 - An ore detector template (Ore Detector) brings an OreDetectorComponent on both sides that keeps the template's shared OreDetectorComponentDefinition, its own PowerableBlockDefinition with power Amount 0, and no dummies.
+- A sensor template (Sensor) brings a SensorComponent on the server that keeps the template's shared SensorComponentDefinition, the two toolbars the field triggers, its own PowerableBlockDefinition with power Amount 0, and no dummies.
 - A template's own values, such as its Recipe, icon and names, come from some vanilla block of its family. They say nothing about the new block: the Cargo Containers template's recipe is CargoContainer150's, whatever size the new block is.
 - A block made from a template for another function has none of these parts; they are added with component_add (the block-components page).
