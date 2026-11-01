@@ -2,7 +2,7 @@
 name: templates
 title: Block templates
 source: vanilla block templates (Assets/Templates/Blocks), read with find_template, create_prefab and read
-description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel, ore detector, sensor, battery and timer templates come with, and the sound block, wind turbine and gravity generator templates' missing parts and starting values.
+description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel, ore detector, sensor, battery, timer and gas tank templates come with, and the sound block, wind turbine and gravity generator templates' missing parts and starting values.
 ---
 find_template("<what it does>") lists the templates of a function; create_prefab(template, name, folder) makes a new placeable block from one.
 
@@ -22,6 +22,7 @@ find_template("<what it does>") lists the templates of a function; create_prefab
 - The Wind Turbine template brings a WindTurbineComponent on the template's shared WindTurbineDefinition, whose output and clearance probe geometry fit the vanilla turbine's model; a block of its own size needs its own copy (the block-wind-turbine skill). It has no spinning blades.
 - A timer template (Timers) brings a TimerBlockServerComponent that keeps the template's shared TimerBlockDefinition, the toolbar it runs, its sounds and status glow parts, its own PowerableBlockDefinition with power Amount 0, and no dummies.
 - A battery template (Battery) brings a ResourceContainerInventoryComponent with its own ResourceContainerInventoryDefinition, one power cell slot (an InventoryComponent tagged CellSlot0 holding one cell), and its own PowerableBlockDefinition with no BlockKind and a ConsumedResource vanilla batteries do not have. It brings no CellSlot dummy. The older Batteries template stores a plain amount, without cells.
+- A gas tank template (Tanks) brings a ResourceContainerComponent with its own ResourceContainerDefinition (hydrogen, capacity and rates next to nothing), a ConveyorComponent, the explosion a full tank makes when destroyed (its own definition, with no Explosion), a FunctionalBlockComponent as the block component, no BlockKind and no dummies, so no conveyor ports.
 - A sensor template (Sensor) brings a SensorComponent on the server that keeps the template's shared SensorComponentDefinition, the two toolbars the field triggers, its own PowerableBlockDefinition with power Amount 0, and no dummies.
 - A template's own values, such as its Recipe, icon and names, come from some vanilla block of its family. They say nothing about the new block: the Cargo Containers template's recipe is CargoContainer150's, whatever size the new block is.
 - A block made from a template for another function has none of these parts; they are added with component_add (the block-components page).
