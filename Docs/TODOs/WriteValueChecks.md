@@ -8,3 +8,4 @@
 - Other validation attributes (`DefinitionAllowedElements`, `NotEmpty`, ...).
 - `TimeRange`: left out because the game reports it in ticks while `read` shows a TimeSpan; it needs its bounds converted before it can hint.
 - A null string under `StringLength`: the game's check throws on it, so no hint is given.
+- A bare number written to a TimeSpan field is read as days (`write(DurationMin, 5)` stored 5.00:00:00); `block-timer` names the hh:mm:ss form and no MyTimer run hit it. Whether the tool refuses a bare number or reads it as seconds is an owner decision.
