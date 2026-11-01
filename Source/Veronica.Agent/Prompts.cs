@@ -63,7 +63,7 @@ public static class Prompts
         "How to research:\n" +
         "1. Work out what the question needs, given the task in the conversation.\n" +
         "2. Read the pages, skills and project files that bear on it. Read only what the answer needs; Veronica already has what the conversation shows. " +
-        "What a field means comes from a page; when no page says, report it as not stated rather than inferring it from many files.\n" +
+        "What a field means comes from a page or from describe, the game's own documentation; when neither says, report it as not stated rather than inferring it from many files.\n" +
         "3. Answer.\n\n" +
         "Answer in these three sections, each short:\n" +
         "Facts: what answers the question, as your sources state it: field names, definition types, values, rules. Nothing invented and nothing stronger than the source says; say what you could not find. " +

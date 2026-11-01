@@ -32,7 +32,7 @@ public static class FieldWalker
                     // A reference holds the engine's runtime object, not the referenced file's data; walking it read
                     // placeholders and uninitialized arrays.
                     if (!member.IsRoot && Fields.GetReference(member) != null)
-                        throw new EditError($"'{canonical}' is a reference to another item; read \"{canonical}\" to see which, then read that item for its fields.");
+                        throw ReferenceStep(canonical);
                     if (created != null && !member.IsRoot && member.GetValue<object?>() is null)
                         Create(member, canonical, created);
                     RequireValue(member, canonical);
@@ -46,6 +46,9 @@ public static class FieldWalker
         }
         return (member, canonical);
     }
+
+    internal static EditError ReferenceStep(string path) =>
+        new($"'{path}' is a reference to another item; read \"{path}\" to see which, then read that item for its fields.");
 
     private static void Create(MemberReference member, string path, List<(MemberReference, string)> created)
     {
@@ -70,7 +73,7 @@ public static class FieldWalker
         created.Add((member, path));
     }
 
-    private static MemberReference Child(MemberReference parent, string parentPath, string name)
+    internal static MemberReference Child(MemberReference parent, string parentPath, string name)
     {
         var visible = Fields.VisibleMembers(parent);
         // A transform's quaternion is never addressed: its angles are the Euler path (Transforms.WalkEuler).

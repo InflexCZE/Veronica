@@ -5,7 +5,7 @@ source: SE2 source AntennaComponent, AntennaDefinition, AntennaObjectBuilder, An
 description: What an antenna block does: its broadcast range and unit, the HUD marker other players see and its text, how antennas link grids, power, what the template brings, and the parts that are only looks.
 ---
 Parts:
-- AntennaComponent, on the server only, with its AntennaDefinition: MaxBroadcastRange, in metres, above 0 and at most 50000; and HUDMarker, the marker shown on other players' HUD (none: no marker).
+- AntennaComponent, on the server only, with its AntennaDefinition: MaxBroadcastRange, in metres, above 0 and at most 50000; and HUDMarker, the marker shown on other players' HUD.
 - PowerableBlockComponent as the block component. Its PowerableBlockDefinition's ConsumedResource is Electricity; its Amount is the kW the antenna draws while it is on. Range and power are independent: a longer range draws no more power.
 - No dummy is needed for the antenna to work.
 

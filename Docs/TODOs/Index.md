@@ -14,6 +14,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [QuestionCutBeforeWait.md](QuestionCutBeforeWait.md) | Chat: a question cut to its lead-in before wait_for_user (owner decision) |
 | [McpAskDisconnect.md](McpAskDisconnect.md) | Chat: ask_user from an MCP client that disconnected stays on the card |
+| [DescribeGaps.md](DescribeGaps.md) | Tools: describe's component summaries need doc files; prefab rule below a list |
 | [ValueUnits.md](ValueUnits.md) | Chat: units invented for values the model read without one (owner decision) |
 | [BoardStaleAfterReload.md](BoardStaleAfterReload.md) | Board: tiles of the previous project after a reload (owner decision) |
 | [BoardLayoutGaps.md](BoardLayoutGaps.md) | Board: back edges, late size changes, unconnected nodes, cancelled drags |

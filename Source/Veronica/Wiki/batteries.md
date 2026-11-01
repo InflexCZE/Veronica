@@ -5,7 +5,7 @@ source: SE2 source ResourceContainerComponent, ResourceContainerInventoryCompone
 description: How a battery block stores and gives electricity: power cells in slots, charge and output rates and their unit, why vanilla batteries draw no power, the CellSlot dummies, what the template brings, and the parts that are only looks.
 ---
 Parts:
-- ResourceContainerInventoryComponent, on the server, with its ResourceContainerInventoryDefinition: MaxDischargeRate, the most power it gives, and MaxChargingRate, the most it takes while charging, both in kW. MaxChargingRate must be below MaxDischargeRate; vanilla keeps it 1 kW below (0.1 kW on the smallest).
+- ResourceContainerInventoryComponent, on the server, with its ResourceContainerInventoryDefinition: MaxDischargeRate and MaxChargingRate, both in kW. MaxChargingRate must be below MaxDischargeRate; vanilla keeps it 1 kW below (0.1 kW on the smallest).
 - Cell slots: each is an InventoryComponent that holds one power cell, tagged with a name ending in its number (CellSlot0, CellSlot 1, ...); slots are ordered by that number.
 - PowerableBlockComponent as the block component.
 

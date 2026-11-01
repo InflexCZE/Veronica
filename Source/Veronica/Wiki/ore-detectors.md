@@ -5,9 +5,9 @@ source: SE2 source OreDetectorComponent and OreDetectorComponentDefinition (VRag
 description: What an ore detector block does: its range and unit, which ores it finds, who sees what it finds, power, what the template brings, and the parts that are only looks.
 ---
 Parts:
-- OreDetectorComponent, on both sides, with its OreDetectorComponentDefinition: Range, in metres, the most a player can set in the block's terminal (a built block starts at it); and DetectableOreMaterials, the voxel materials it finds.
+- OreDetectorComponent, on both sides, with its OreDetectorComponentDefinition: Range, the most a player can set in the block's terminal (a built block starts at it); and DetectableOreMaterials.
 - OreDetectorBlockServerComponent and OreDetectorBlockClientComponent, with no definition: the block's Broadcast switch, set by players.
-- PowerableBlockComponent as the block component. Its PowerableBlockDefinition's ConsumedResource is Electricity; its Amount is the kW the detector draws while it is on. With Amount 0 it draws nothing but still needs power on the grid.
+- PowerableBlockComponent as the block component. Its PowerableBlockDefinition's ConsumedResource is Electricity; its Amount is the kW the detector draws while it is on.
 - No dummy is needed for the detector to work.
 
 What it does: it finds ore of its materials within Range metres of the block, in a box around it, while the block works (built, on and powered). The ore shows on the HUD of players controlling its ship, and of players connected to the ship by antenna while the block's Broadcast is on.

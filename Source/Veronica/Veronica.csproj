@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <Reference Include="$(EditorDir)Avalonia.Base.dll" Private="false" />
+    <Reference Include="$(EditorDir)DocsByReflection.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Controls.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.dll" Private="false" />
     <Reference Include="$(EditorDir)Avalonia.Markup.Xaml.dll" Private="false" />

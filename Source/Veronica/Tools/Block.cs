@@ -272,6 +272,49 @@ internal sealed class Block
         return $"{header}\n{DefinitionLine(component, name)}\n{FieldPath.Member(basePath, TagsField)} = {TagList(component)}\n{fields}";
     }
 
+    public string Describe(string path, ITypeCatalog catalog)
+    {
+        string header = $"{Content.Describe(Item)} (block):";
+        if (path.Trim().Length == 0 || ComponentNames.IsCollection(path))
+        {
+            var names = ComponentNames.Assign(Entries());
+            var lines = new List<string> { header };
+            foreach (var c in Root.Components.OrderBy(c => names[c.Id], StringComparer.OrdinalIgnoreCase))
+            {
+                string line = $"{ComponentNames.PathOf(names[c.Id])}: {c.ComponentType.Name}";
+                if (DefinitionTypeOf(c) is { } needed)
+                    line += $", takes {needed.Name}";
+                lines.Add(line);
+                if (catalog.Summary(c.ComponentType) is { } summary)
+                    lines.Add("  " + summary.Split('\n')[0]);
+            }
+            lines.Add($"Describe a component with member {ComponentNames.PathOf("<name>")}.");
+            return string.Join("\n", lines);
+        }
+
+        var (component, name, inner) = Locate(path);
+        string basePath = ComponentNames.PathOf(name);
+        if (inner.Length > 0 && IsDefinition(inner, out bool deeper))
+        {
+            var type = DefinitionTypeOf(component) ?? throw new EditError($"A {component.ComponentType.Name} takes no definition.");
+            if (deeper)
+                throw new EditError($"'{FieldPath.Member(basePath, DefinitionField)}' is a reference to another item; describe {type.Name} for its fields.");
+            return $"{header}\n{FieldPath.Member(basePath, DefinitionField)}: ref {type.Name}\n\n{Describer.Listing(type, catalog.Fields(type), catalog)}";
+        }
+
+        if (inner.Length > 0 && IsTags(inner, out _))
+            return $"{header}\n{FieldPath.Member(basePath, TagsField)}: list of tags; systems find the component by them, and a side holds one component per tag.";
+
+        if (RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder == null)
+        {
+            if (inner.Length > 0)
+                throw new EditError($"{basePath} has no fields; only its {DefinitionField} can be set.");
+            return $"{header}\n{basePath}: {Describer.Listing(component.ComponentType, null, catalog)}";
+        }
+
+        return $"{header}\n{(inner.Length == 0 ? $"{basePath}: " : "")}{Describer.OfValue(component.ObjectBuilder, inner, catalog, Links, basePath)}";
+    }
+
     public List<string> FindLinks(IReadOnlySet<Guid> targets)
     {
         var names = ComponentNames.Assign(Entries());

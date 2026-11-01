@@ -60,8 +60,14 @@ public static class Fields
     // this assembly does not reference the game assemblies the type lives in.
     private const string PrefabRootType = "Keen.VRage.Core.Game.Definitions.PrefabDefinitionObjectBuilder";
 
+    // describe lists a component's fields from a lone object builder; it is shown as it is inside a prefab.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, object> PrefabParts = new();
+
+    public static void ShowAsInPrefab(object instance) => PrefabParts.AddOrUpdate(instance, instance);
+
     private static bool InPrefab(MemberReference member) =>
-        member.Manipulator.Root.Manipulator.Instance?.GetType().FullName == PrefabRootType;
+        member.Manipulator.Root.Manipulator.Instance is { } root
+        && (root.GetType().FullName == PrefabRootType || PrefabParts.TryGetValue(root, out _));
 
     // Inside a prefab a field shows only through [ForceShowInInspector] on it, its type or a parent, met before
     // any member without a public setter on the way up.

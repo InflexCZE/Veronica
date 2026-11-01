@@ -5,7 +5,7 @@ source: SE2 source GyroscopeComponent, GyroscopeDefinition, GridMovementCollecto
 description: How a gyroscope block turns a ship: its torque and unit, how the ship's gyroscopes add up, power, what happens with 0 torque, and the parts that are only looks.
 ---
 Parts:
-- GyroscopeComponent, on the server only, with its GyroscopeDefinition. The definition has one field: MaxTorque, the most turning force the block adds to its ship, in N*m.
+- GyroscopeComponent, on the server only, with its GyroscopeDefinition.
 - PowerableBlockComponent as the block component. Its PowerableBlockDefinition's ConsumedResource is Electricity; its Amount is the kW the gyroscope draws while it is on.
 - No dummy is needed for the gyroscope to work.
 

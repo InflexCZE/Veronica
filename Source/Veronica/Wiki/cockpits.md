@@ -32,6 +32,6 @@ Cameras: the camera system definition (CameraSystem, a vanilla CameraSystemDefin
 Inventory: ModelChangingSeatComponentDefinition's Inventory names, by tag, the InventoryComponent the seated pilot opens from the terminal ("Inventory" on vanilla Cockpit). A block without storage leaves it empty.
 
 Seat settings (SeatComponentDefinition):
-- RequireSupply: sitting down needs power. Off on vanilla seats.
-- RequireFunctional: sitting down needs the block built and undamaged enough to work, and the pilot is put out when it stops working. On by default.
+- RequireSupply: off on vanilla seats.
+- RequireFunctional: sitting down also needs the block built and undamaged enough to work. On by default.
 - While seated, the character's backpack is hidden (ModelChangingSeatComponentDefinition's PilotPresetToHide), so it does not cut through the seat.

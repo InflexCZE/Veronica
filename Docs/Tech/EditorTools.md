@@ -10,6 +10,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | `find_references(target)` | lists the content items that point at an item, with the field that holds each reference |
 | `list_folder(folder_path)` | lists a folder's direct children |
 | `read(target, path?)` | shows a definition, or one field or subtree of it |
+| `describe(subject, member?)` | explains a type from the game's own documentation: its members, relations and units |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
 | `element_add(target, path, key?, type?)` | adds a default element to a list or dictionary |
 | `element_remove(target, path)` | removes one list element or dictionary entry |
@@ -163,6 +164,36 @@ Lists what points at one item, one step: "which effects use this emitter", "whic
 - Output as find_content's: grouped by project, the mod first, each row `path (DefinitionType): fields`. The header counts every row; the first 50 are shown.
 - Read-only, so the researcher has it too.
 
+## describe
+
+What a field or type means, from the game's own documentation, from the two sources the Property Inspector uses:
+- the `<summary>` doc comments the serialization generator bakes into every serializable type's `AccessibleTypeInfo`, shown as field tooltips. They need no doc files. Other doc tags (`remarks`, `seealso`) are dropped by the generator.
+- the XML doc files beside the game's assemblies, read through the Editor's `DocsService` for the inspector's Documentation section of a component. A type summary comes from them when none is baked in: a component's own class is not serializable, so only the files carry its doc.
+
+- **Subject:** a type name or a content item.
+  - A type is any type the inspector can show (it has an `AccessibleTypeInfo`), or a component type. A short name is enough; an ambiguous one lists the full names and an unknown one lists the types containing its words, as `create_definition` does.
+  - A definition or component type is shown under its own name with the fields of its object builder, the fields `read` and `write` take. An object builder's name resolves to the same type.
+  - A component's fields are listed as the inspector shows them inside a prefab, as `read` does on a block.
+  - The type names come from a scan of the engine's and game's assemblies: the attribute index misses plain serializable types such as `ModelDummy`.
+  - A definition item describes its definition type. A block (any of its files) lists its components, each with its type's summary and the definition type it needs.
+  - The header names the type the subject resolved to, so the model learns the name for later calls.
+- **member:** a field path in `read`'s format, indexes included, so the model never meets a second path syntax.
+  - On a content item the path walks the values that are there, as `read` does: an element of a polymorphic list is described as the type it actually holds, and a missing index is `read`'s error.
+  - On a type name there is no value, so a step walks the declared type, and an index walks to the declared element type.
+  - On a block, `Components[X]` is that component's type, its object builder fields and the definition type it needs.
+  - A transform is its `Position` and `Euler` angles, as in `read`; `...Euler` and `...Euler.X` are described as angles in degrees, and the quaternion is never listed.
+  - A dictionary entry is `[key]` or `.key`. A step through a reference, an element that is a reference included, is refused with a pointer to describe the referenced type.
+- **Without member:** the type's summary, its relations and its member list. Only member names are listed, never their summaries: details come from a member query, so a listing does not flood the context.
+  - One line per visible field: `ThrustPower: float, N*s`, ` (read-only)` where `read` marks it, a reference as `Effect: ref ParticleEffectDefinition`. Visibility is `read`'s.
+  - The type's own fields first, then one group per base type, nearest first. No character budget, since lines are short; `read`'s 150-line cap applies.
+- **Relations:** the base types; the concrete derived types; for a component, the definition type it takes; for a definition type, the components that take it. Further relations (tag dependencies, ranges) wait for eval evidence.
+- **Units:** the unit a field declares (`IUnitAttribute`), as its symbol. A unit is a label only: nothing in the Editor converts values, so the stored value is in that unit. Power and resource amounts mostly declare none.
+- **Overrides:** a short hand-kept list in Veronica corrects what the game declares wrongly about a member, a game bug: a unit attribute that names another quantity, or a doc comment that describes another field. An entry gives the unit to show (or none) and the summary to show instead. Entries join as they are confirmed in the game code, and leave when the game is fixed.
+- **With member:** the member's line, its full summary, then the listing of the member's type: the element type for a list or dictionary, the referenced definition type for a reference. One call drills one level. A scalar stops after its summary; an enum also lists its values.
+- **Abstract types:** a type subject or a declared element type that is abstract has no fields of its own to list; the reply lists its concrete types to describe next.
+- **Doc markup** is rendered as plain text by the inspector's own rules (`XmlToRichTextConverter`): a `<see cref>` becomes its short name, `<br/>` a new line, other tags their text. Links to web documents (`<see href>`, `<seealso href>`) are left out: the model cannot open them, and their titles alone read as stray lines. A member with no doc gets no summary line.
+- Read-only, so the researcher and MCP clients have it too.
+
 ## create_folder
 
 Creates every missing level of `folder_path` inside the mod. An existing folder is a success ("already exists"). The project root itself is read-only in the Editor, so new folders go under its top folders, such as `Assets`.
@@ -233,8 +264,8 @@ Explains how content items relate by drawing them, in the user's own visual lang
 
 | assembly | holds | tested by |
 |---|---|---|
-| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming, graph argument validation and layout | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
-| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer), the `ITool` wrappers and the Board | by hand in the Editor: a full thruster build on the dev mod, adding, editing and removing a component on its block, reverted afterwards, and a graph on the Board |
+| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming, graph argument validation and layout, describe's type walk, listings and doc text | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
+| `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer), the type catalog behind describe (type names, component relations), the `ITool` wrappers and the Board | by hand in the Editor: a full thruster build on the dev mod, adding, editing and removing a component on its block, reverted afterwards, and a graph on the Board |
 
 - `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The prefab visibility rule therefore recognises the prefab root by its type name. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.
 - `Veronica.Agent.dll` stays free of SE2 references.
