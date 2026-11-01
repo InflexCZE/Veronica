@@ -36,6 +36,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ValidationTool.md](ValidationTool.md) | Editor tools: agent cannot see validation issues |
 | [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
+| [ContentQuery.md](ContentQuery.md) | Editor tools: no way to query a field across many items (owner decision) |
 | [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |
 | [ContextWindow.md](ContextWindow.md) | Chat: providers assume a 45K context window |
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |

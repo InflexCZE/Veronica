@@ -112,14 +112,17 @@ internal static class Content
         DefinitionTypeName(item) is { } type ? $"{Shown(item)} ({type})" : Shown(item);
 
     // Items grouped under one header per project: the mod first, then its dependencies in load order.
-    public static List<string> ByProject(LoadedProject root, IEnumerable<ExplorerItem> items)
+    public static List<string> ByProject(LoadedProject root, IEnumerable<ExplorerItem> items) =>
+        ByProject(root, items.Select(i => (i, Line(i))));
+
+    public static List<string> ByProject(LoadedProject root, IEnumerable<(ExplorerItem Item, string Line)> rows)
     {
         var order = ProjectOrder(root);
         var lines = new List<string>();
-        foreach (var group in items.GroupBy(i => i.Project).OrderBy(g => order.GetValueOrDefault(g.Key, int.MaxValue)))
+        foreach (var group in rows.GroupBy(r => r.Item.Project).OrderBy(g => order.GetValueOrDefault(g.Key, int.MaxValue)))
         {
             lines.Add($"{group.Key.Name}{(group.Key.IsReadOnly ? " (read-only)" : "")}:");
-            lines.AddRange(group.Select(i => "  " + Line(i)));
+            lines.AddRange(group.Select(r => "  " + r.Line));
         }
         return lines;
     }

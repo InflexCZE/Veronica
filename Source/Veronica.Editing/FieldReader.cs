@@ -9,15 +9,26 @@ public sealed class FieldReader
     public const int MaxElements = 5;
     public const int MaxDepth = 3;
 
+    // Deep enough for any definition; only stops a cycle.
+    private const int FindDepth = 64;
+
     private readonly IContentLinks _links;
     private readonly int _maxLines;
+    private readonly int _maxElements;
+    private readonly int _maxDepth;
     private readonly List<string> _lines = [];
     private bool _truncated;
 
-    private FieldReader(IContentLinks links, int maxLines)
+    private readonly IReadOnlySet<Guid>? _targets;
+    private readonly List<string> _found = [];
+
+    private FieldReader(IContentLinks links, int maxLines, int maxElements = MaxElements, int maxDepth = MaxDepth, IReadOnlySet<Guid>? targets = null)
     {
         _links = links;
         _maxLines = maxLines;
+        _maxElements = maxElements;
+        _maxDepth = maxDepth;
+        _targets = targets;
     }
 
     public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines, string basePath = "")
@@ -33,6 +44,18 @@ public sealed class FieldReader
         var reader = new FieldReader(links, maxLines);
         reader.DumpRequested(member, path);
         return reader.Text();
+    }
+
+    // The paths of every field and dictionary key under member that points at target, walked as read walks but
+    // without read's cuts, so a reference past the fifth element or below the third level is still found.
+    public static List<string> FindLinks(MemberReference member, Guid target, IContentLinks links, string basePath = "") =>
+        FindLinks(member, new HashSet<Guid> { target }, links, basePath);
+
+    public static List<string> FindLinks(MemberReference member, IReadOnlySet<Guid> targets, IContentLinks links, string basePath = "")
+    {
+        var reader = new FieldReader(links, int.MaxValue, int.MaxValue, FindDepth, targets);
+        reader.DumpRequested(member, basePath);
+        return reader._found;
     }
 
     // One line for a field, as write reports it: the value, or the struct inline, or the collection size.
@@ -90,7 +113,8 @@ public sealed class FieldReader
             if (_truncated)
                 return;
             var field = Fields.Unwrap(child);
-            if (Fields.IsComputed(field))
+            // The index counts read-only references too, so find mode walks what read leaves out.
+            if (_targets == null && Fields.IsComputed(field))
                 continue;
             DumpField(field, FieldPath.Member(path, child.Name), depth);
         }
@@ -131,7 +155,7 @@ public sealed class FieldReader
                 return;
             }
 
-            if (depth >= MaxDepth)
+            if (depth >= _maxDepth)
             {
                 Add($"{path}: {label} {{{string.Join(", ", Fields.VisibleMembers(member).Select(m => m.Name))}}} (read \"{path}\")");
                 return;
@@ -160,7 +184,7 @@ public sealed class FieldReader
             {
                 string element = Fields.ElementType(member.CurrentMemberType) is { } type ? Fields.TypeLabel(type) : "?";
                 Add(count == 0 ? $"{path}: empty list of {element}" : $"{path}: list of {count} {element}");
-                int shown = Math.Min(count, MaxElements);
+                int shown = Math.Min(count, _maxElements);
                 for (int i = 0; i < shown && !_truncated; i++)
                     DumpField(member.GetListItem(i), FieldPath.Element(path, i.ToString()), depth + 1);
                 if (shown < count)
@@ -171,14 +195,22 @@ public sealed class FieldReader
             {
                 Add(count == 0 ? $"{path}: empty dictionary" : $"{path}: dictionary of {count}");
                 var keys = member.EnumerateDictionaryKeys().Select(k => k.GetValue<object?>()).ToList();
-                int shown = Math.Min(keys.Count, MaxElements);
+                int shown = Math.Min(keys.Count, _maxElements);
                 for (int i = 0; i < shown && !_truncated; i++)
+                {
+                    if (Wanted(keys[i]))
+                        _found.Add(FieldPath.Element(path, Keys.Text(keys[i], _links)));
                     DumpField(member.GetDictionaryItem(keys[i]!), FieldPath.Element(path, Keys.Text(keys[i], _links)), depth + 1);
+                }
                 if (shown < keys.Count)
                     Add($"{path}: ... (+{keys.Count - shown} more: {FieldWalker.ListKeys(member, _links, shown)}; read \"{path}[<key>]\")");
                 break;
             }
             default:
+                // Elements of a set have no path of their own, so a reference among them names the set.
+                if (_targets != null && member.GetValue<object?>() is System.Collections.IEnumerable elements
+                    && elements.Cast<object?>().Any(e => Wanted(e)))
+                    _found.Add(path);
                 Add($"{path}: {member.MemberKind.ToString().ToLowerInvariant()} of {count} (not readable here)");
                 break;
         }
@@ -186,6 +218,13 @@ public sealed class FieldReader
 
     private void ScalarLine(MemberReference member, string path)
     {
+        if (_targets != null)
+        {
+            if (Fields.GetReference(member) is { } reference && Wanted(member.GetValue<object?>(), reference.Kind == ReferenceKind.AssetGuid))
+                _found.Add(path);
+            return;
+        }
+
         string label = Label(member) + (Fields.IsWritable(member) ? "" : ", read-only");
         string value;
         try
@@ -220,9 +259,12 @@ public sealed class FieldReader
         return current != declared && Nullable.GetUnderlyingType(declared) != current ? $"{label}: {Fields.TypeLabel(current)}" : label;
     }
 
+    private bool Wanted(object? value, bool assetGuid = false) =>
+        _targets != null && Values.LinkId(value, assetGuid) is { } id && _targets.Contains(id);
+
     private void Add(string line)
     {
-        if (_truncated)
+        if (_truncated || _targets != null)
             return;
         if (_lines.Count == _maxLines)
         {

@@ -85,6 +85,23 @@ internal sealed class Block
         throw new EditError($"{Content.Shown(bindingAsset)} is a prefab binding with no client or server prefab set.");
     }
 
+    // The block an asset belongs to, named by the item TryOpen would make its Item, without loading the block.
+    public static Guid? KeyOf(LoadedProject project, ExplorerAssetFile asset)
+    {
+        Type? type = DefinitionType(asset);
+        bool binding = asset.IsPrefabBindingDefinition();
+        if (!binding && type != typeof(PrefabDefinition) && type != typeof(EntityCompositeDefinition))
+            return null;
+        if (binding)
+            return asset.AssetID;
+        if (project.TryGetPrefabBindingInProject(asset.AssetID) is { } bindingAsset)
+            return bindingAsset.AssetID;
+        return type == typeof(PrefabDefinition) ? asset.AssetID : project.TryGetPrefabGuidOfCompositeDefinition(asset.AssetID);
+    }
+
+    // The binding and every prefab and composition of the block.
+    public IEnumerable<Guid> FileIds() => Files().Select(f => f.AssetID).Append(Item.AssetID).Distinct();
+
     private static Type? DefinitionType(ExplorerAssetFile asset)
     {
         try
@@ -252,6 +269,21 @@ internal sealed class Block
             ? $"{basePath}: (no fields)"
             : FieldReader.Read(component.ObjectBuilder, "", Links, maxLines: FieldReader.MaxLines - 2, basePath: basePath);
         return $"{header}\n{DefinitionLine(component, name)}\n{FieldPath.Member(basePath, TagsField)} = {TagList(component)}\n{fields}";
+    }
+
+    public List<string> FindLinks(IReadOnlySet<Guid> targets)
+    {
+        var names = ComponentNames.Assign(Entries());
+        var found = new List<string>();
+        foreach (var component in Root.Components.OrderBy(c => names[c.Id], StringComparer.OrdinalIgnoreCase))
+        {
+            string basePath = ComponentNames.PathOf(names[component.Id]);
+            if (DefinitionId(component) is { } id && targets.Contains(id))
+                found.Add(FieldPath.Member(basePath, DefinitionField));
+            if (RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder != null)
+                found.AddRange(FieldReader.FindLinks(component.ObjectBuilder, targets, Links, basePath));
+        }
+        return found;
     }
 
     public string Write(string path, JsonElement value)

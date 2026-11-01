@@ -4,4 +4,3 @@
 
 **Missing:**
 - Content beyond the skills: facts mined from the game source (art rules, mount points, LODs, texture and cubemap naming, FMOD routing), and later the official SE2 modding guides on Steam rewritten without click-by-click walkthroughs.
-- A way to find what references a definition ("which effects use this emitter", "which blocks use this model"). Without it the researcher lists folder after folder, up to 12 rounds and 20K context. A read-only reference search tool for the researcher, and maybe the chat model, needs an owner decision.

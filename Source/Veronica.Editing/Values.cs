@@ -96,6 +96,19 @@ public static class Values
         _ => value.ToString() ?? "null",
     };
 
+    // The item a reference value points at, or null when the value is no reference or points at nothing.
+    public static Guid? LinkId(object? value, bool assetGuid = false)
+    {
+        Guid? id = value switch
+        {
+            Definition definition => definition.Guid,
+            IResourceHandle handle => handle.TryGetGuid(),
+            Guid guid when assetGuid => guid,
+            _ => null,
+        };
+        return id == Guid.Empty ? null : id;
+    }
+
     private static string RenderLink(Guid id, IContentLinks links)
     {
         if (id == Guid.Empty)

@@ -7,6 +7,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | tool | does |
 |---|---|
 | `find_content(query, folder?)` | finds content items by name or definition type |
+| `find_references(target)` | lists the content items that point at an item, with the field that holds each reference |
 | `list_folder(folder_path)` | lists a folder's direct children |
 | `read(target, path?)` | shows a definition, or one field or subtree of it |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
@@ -144,6 +145,19 @@ A block is a prefab binding that pairs a client prefab with a server composition
   - When the path exists in several projects (the mod and Vanilla), there is one section per project.
   - Subfolders print as `Name\ (N items)` and files as `Name (DefinitionType)`.
   - Capped at about 100 lines.
+
+## find_references
+
+Lists what points at one item, one step: "which effects use this emitter", "which blocks use this model". Without it, research into what an override would also change swept folder after folder: 15 to 34 calls, 14K to 33K of context and up to 9 minutes per question. The sweeps then claimed "nothing else uses it" after covering only the thruster folders.
+
+- The referrers come from the Editor's own reference index, the one behind the Content Browser's referencing search. It covers definitions, assets, partial copies and overrides, and the mod with its dependencies. So the count is complete, and the description says that a short list means nothing else uses the item. An empty or disabled index is an error, never an empty list.
+- The index names files, not fields. Each referrer is then walked as `read` walks a definition, without read's cuts on elements, depth and lines, and every field or definition key that points at the target is listed by the path `read` and `write` take. A partial whose base is the target says "copy of it" or "override of it". A referrer whose field the walk does not find still gets its row ("refers to it"), so the count stays true.
+- A block's files (binding, prefabs, compositions) make one row for the block, with component paths such as `Components[ThrusterEffectsComponent].Definition`, as `read` shows a block.
+- A partial's link to its base is not always in the index, so the target's own copies and overrides are added from the Editor's list of partials. A set's elements have no path of their own, so a reference among them names the set. Read-only reference fields are walked too: the index counts them.
+- An override as the target is searched as its original, since every reference to the original gets the override's values; the reply says so. A block as the target is searched through all its files.
+- One step only: the model follows a chain by calling it on a referrer. A chain in one call would dump whole dependency trees.
+- Output as find_content's: grouped by project, the mod first, each row `path (DefinitionType): fields`. The header counts every row; the first 50 are shown.
+- Read-only, so the researcher has it too.
 
 ## create_folder
 
