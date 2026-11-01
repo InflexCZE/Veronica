@@ -24,10 +24,11 @@ Steps:
    write(def, "UIData.Name", name)
    write(def, "UIData.Icon", icon) when there is an icon
    Its BlockKind already makes the block a size variant of the vanilla family of the template, in that family's G-Screen place. For another place, activate add-to-gscreen once this plan is done.
+   Some templates (Lights (Point)) leave BlockKind none: such a block has no G-Screen place, so players cannot pick it. Ask the user where it goes: the family of a vanilla block of the same function (write that block's BlockKind), or a place of its own with add-to-gscreen.
 5. On the BlockModelComponentDefinition:
    write(def, "Model", <Model>)
    write(def, "FractureModel", <FractureModel>) and write(def, "DamagedModel", <DamagedModel>) when the block breaks. FractureModel is the block broken into pieces (vanilla names it Fractured), DamagedModel the dented block (vanilla names it Deformed). Models another block already uses are copied from its BlockModelComponentDefinition as they are.
-6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust, block-inventory for storage, block-cockpit for a seat to fly from). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
+6. For each thing the block does, activate its skill when the skill list has one (block-thruster for thrust, block-inventory for storage, block-cockpit for a seat to fly from, block-light for a lamp). Otherwise read the template's definition for that function and the same definition of a comparable vanilla block (find_content in Assets/Blocks), and write the values that should match the new block.
 
 Show:
 show(the block's prefab). Ask the user to check the model and its dummies in the Render View (Preview Settings, Dummies).

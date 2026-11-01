@@ -19,6 +19,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [BoardLayoutGaps.md](BoardLayoutGaps.md) | Board: back edges, late size changes, unconnected nodes, cancelled drags |
 | [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
 | [ProgressionUnlock.md](ProgressionUnlock.md) | Skills: survival unlock of a new block (owner decision) |
+| [SkippedBlockKinds.md](SkippedBlockKinds.md) | Skills: block kinds and parts left out of the wide block run (owner decision) |
+| [EvalRunDecisions.md](EvalRunDecisions.md) | Eval: calls made during the unattended wide block run (owner review) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |

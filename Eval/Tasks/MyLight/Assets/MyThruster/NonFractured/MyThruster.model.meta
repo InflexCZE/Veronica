@@ -1,0 +1,61 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "80daf2f1-7198-4b43-a372-9b70944f18b8",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "Jr4vINpCMXem9AfAQFC2eQ=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 40,
+          "Identifier": "P_MODEL"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "8DnMZ7GJsRrSPwU6/MbOFg==",
+            "FileName": "MyThruster.vrm"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [
+          {
+            "Guid": "1757e5cb-c12a-407d-9641-dcca0a252d4a",
+            "Hash": "kx9T3LRFW8OpWp79e+ySbw=="
+          },
+          {
+            "Guid": "1815c82b-b32e-40ed-9aa4-fcaf636a40bd",
+            "Hash": "czB01yLVX+9DHm4rfyPbWA=="
+          },
+          {
+            "Guid": "a186f261-fab3-46ea-8106-d4632a61c2a7",
+            "Hash": "lp2DdcRlpPYOD126yAmIbw=="
+          },
+          {
+            "Guid": "aacaeca3-136a-4ffe-b464-18ac3c5ddffa",
+            "Hash": "ZhbfrwbzWmvXsre3mQ/BVg=="
+          },
+          {
+            "Guid": "d7e16246-5efe-46ff-9ec0-2b36984f960f",
+            "Hash": "nBuEnYUQNSO+ZWXoIBYgQA=="
+          }
+        ],
+        "AssetHash": "Jr4vINpCMXem9AfAQFC2eQ==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.DefinitionFlagsMetadata",
+        "Flags": "None"
+      }
+    ]
+  }
+}
