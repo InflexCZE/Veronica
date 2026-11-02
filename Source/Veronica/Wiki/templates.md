@@ -2,7 +2,7 @@
 name: templates
 title: Block templates
 source: vanilla block templates (Assets/Templates/Blocks), read with find_template, create_prefab and read
-description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel, ore detector, sensor, battery, timer, gas tank and reactor templates come with, and the sound block, wind turbine and gravity generator templates' missing parts and starting values.
+description: What a block template brings: breakable or not, the files create_prefab generates, the family and G-Screen place the new block joins, templates with no family, and the parts thruster, storage, point light, gyroscope, antenna, solar panel, ore detector, sensor, battery, timer, gas tank, reactor and landing gear templates come with, and the sound block, wind turbine and gravity generator templates' missing parts and starting values.
 ---
 find_template("<what it does>") lists the templates of a function; create_prefab(template, name, folder) makes a new placeable block from one.
 
@@ -15,6 +15,7 @@ find_template("<what it does>") lists the templates of a function; create_prefab
 - A point light template (Lights (Point)) brings a PointLightComponent on both sides with its own PointLightDefinition, a PointLightRenderComponent with its own PointLightRenderDefinition, and a PowerableBlockComponent as the block component. It brings no Light-type dummy: the dummies list is empty, and the block gives no light until one is added. A spot light template (Lights (Spot)) brings the same with SpotLightComponent, SpotLightDefinition and SpotLightRenderComponent, and has the vanilla spotlights' BlockKind.
 - A gyroscope template (Gyroscopes) brings a GyroscopeComponent with its own GyroscopeDefinition, whose MaxTorque is 0, and a PowerableBlockComponent as the block component. It needs no dummy.
 - An antenna template (Antennas) brings an AntennaComponent that keeps the template's shared AntennaDefinition (a vanilla file; a range of its own needs a copy), and a PowerableBlockComponent as the block component. It needs no dummy.
+- A landing gear template (Landing Gear) brings the MagneticBlockComponent, a lock detector and a release detector (DummyShapedEntityDetectorComponents), the alignment check, the cooldown and a PowerableBlockComponent as the block component. It brings neither detector's dummy (LockArea, CooldownRange): the dummies list is empty, and the block fails when built until both are added.
 - A solar panel template (Solar Panels) brings a SolarGeneratorComponent with its own SolarGeneratorDefinition, and a FunctionalBlockComponent as the block component. It brings no sun sensor dummies: the dummies list is empty, and the block makes no power until they are added.
 - An ore detector template (Ore Detector) brings an OreDetectorComponent on both sides that keeps the template's shared OreDetectorComponentDefinition, its own PowerableBlockDefinition with power Amount 0, and no dummies.
 - The Sound Block template brings its own PowerableBlockDefinition with power Amount 0 but no sound components: SoundBlockServerComponent and SoundBlockComponent are added (the block-sound skill). It has no BreakableBlockComponent.
