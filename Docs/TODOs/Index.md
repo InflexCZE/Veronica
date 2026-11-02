@@ -21,6 +21,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
 | [ProgressionUnlock.md](ProgressionUnlock.md) | Skills: survival unlock of a new block (owner decision) |
 | [SkippedBlockKinds.md](SkippedBlockKinds.md) | Skills: block kinds and parts left out of the wide block run (owner decision) |
+| [RespawnPreviewCrash.md](RespawnPreviewCrash.md) | Editor: show of a block with a respawn point crashes the Editor; medical room kind held (owner decision) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
