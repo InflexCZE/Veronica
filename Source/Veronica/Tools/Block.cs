@@ -36,6 +36,7 @@ internal sealed class Block
     private static readonly Dictionary<string, ComponentScope> SideOverrides = new()
     {
         ["Keen.Game2.Simulation.WorldObjects.Items.InventoryComponent"] = ComponentScope.Server,
+        ["Keen.Game2.Simulation.WorldObjects.Items.ItemRequesterComponent"] = ComponentScope.Server,
     };
 
     private readonly LoadedProject _project;
