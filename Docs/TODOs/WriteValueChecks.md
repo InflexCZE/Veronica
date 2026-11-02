@@ -9,3 +9,4 @@
 - `TimeRange`: left out because the game reports it in ticks while `read` shows a TimeSpan; it needs its bounds converted before it can hint.
 - A null string under `StringLength`: the game's check throws on it, so no hint is given.
 - A bare number written to a TimeSpan field is read as days (`write(DurationMin, 5)` stored 5.00:00:00); `block-timer` names the hh:mm:ss form and no MyTimer run hit it. Whether the tool refuses a bare number or reads it as seconds is an owner decision.
+- Writing none to a resource handle the game requires (`UIData.Icon`) is accepted without a hint and leaves a lasting `ResourceHandleValidator` error ("Resource handle <undefined> is not a guid", run `.tmp/eval/runs/20261102-064122-MyDrill`). `create-block` now keeps the template's icon when the user has none; whether `write` should also hint it is an owner decision.
