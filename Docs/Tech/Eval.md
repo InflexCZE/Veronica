@@ -62,8 +62,8 @@ Every run starts a fresh Editor on a clean dev mod. The Editor's load time is ac
 3. Copies the task's fixture folder into the dev mod, when the task has one.
 4. Builds `Veronica.dll`, so uncommitted context edits are in the run.
 5. Creates the run folder and saves the changes under `Source` against `HEAD`, new files included, as `context.patch`, so each run records what differed.
-6. Writes `run.json`: task, commit, dirty flag, model (the server's first listed unless `-Model`), start time, Editor process id, port.
-7. Starts the Editor with the OpenAI-compatible provider pointed at the llama.cpp server (`-LlamaUrl`, default `http://localhost:8080/v1`), the control port (`-Port`, default 47811), the run folder and the MCP endpoint (`McpEndpoint.md`, `-McpPort`, default 47812). The endpoint lets the fork play the user's Editor steps, such as moving a dummy the model asked the user to position, by calling the tools as the user would edit in the Editor (`Eval/Mcp-Call.ps1`); the task's User section says what to do.
+6. Writes `run.json`: task, commit, dirty flag, model (the server's first listed unless `-Model`), reasoning effort (`-Effort`, empty for the template's default), start time, Editor process id, port.
+7. Starts the Editor with the OpenAI-compatible provider pointed at the llama.cpp server (`-LlamaUrl`, default `http://localhost:8080/v1`), the effort, the control port (`-Port`, default 47811), the run folder and the MCP endpoint (`McpEndpoint.md`, `-McpPort`, default 47812). The endpoint lets the fork play the user's Editor steps, such as moving a dummy the model asked the user to position, by calling the tools as the user would edit in the Editor (`Eval/Mcp-Call.ps1`); the task's User section says what to do.
 8. Prints the run folder, the port, the Editor's process id and the MCP port.
 
 `Eval/Wait-Ready.ps1 -RunDir <dir>` waits for the control channel to answer, at most `-Seconds` (default 540), and prints `Ready`, `NotReady` or `Exited`. The wait is bounded so a fork waits with blocking calls: a fork that leaves work running in the background notifies the master each time it pauses, flooding the master's context.

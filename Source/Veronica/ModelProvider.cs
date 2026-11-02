@@ -17,7 +17,7 @@ internal static class ModelProvider
     private static bool IsClaude => Provider.Equals("claude", StringComparison.OrdinalIgnoreCase);
 
     public static string Describe() =>
-        IsOpenAi ? $"openai {Environment.GetEnvironmentVariable("VERONICA_OPENAI_URL")} model={Environment.GetEnvironmentVariable("VERONICA_OPENAI_MODEL") ?? "(first listed)"}"
+        IsOpenAi ? $"openai {Environment.GetEnvironmentVariable("VERONICA_OPENAI_URL")} model={Environment.GetEnvironmentVariable("VERONICA_OPENAI_MODEL") ?? "(first listed)"} effort={Environment.GetEnvironmentVariable("VERONICA_OPENAI_EFFORT") ?? "(template default)"}"
         : IsClaude ? $"claude model={ReadClaudeSettings().Model}"
         : "webqwen";
 
@@ -30,7 +30,8 @@ internal static class ModelProvider
             var settings = new OpenAiSettings(
                 Environment.GetEnvironmentVariable("VERONICA_OPENAI_URL") ?? "",
                 Environment.GetEnvironmentVariable("VERONICA_OPENAI_MODEL"),
-                Environment.GetEnvironmentVariable("VERONICA_OPENAI_API_KEY"));
+                Environment.GetEnvironmentVariable("VERONICA_OPENAI_API_KEY"),
+                Environment.GetEnvironmentVariable("VERONICA_OPENAI_EFFORT"));
             Log.Default.WriteLine($"[Veronica] OpenAI-compatible provider at '{LocalModel.AsciiOnly(settings.BaseUrl)}'.");
             var openAi = new OpenAiProvider(settings);
             openAi.StatusChanged += showStatus;

@@ -86,6 +86,23 @@ public sealed class OpenAiProviderTests
         Assert.Equal(sentBudget, json.TryGetProperty("thinking_budget_tokens", out var b) ? b.GetInt32() : null);
     }
 
+    [Theory]
+    [InlineData("medium", true, "medium")]
+    [InlineData(" low ", null, "low")]
+    [InlineData("medium", false, null)]
+    [InlineData(null, true, null)]
+    [InlineData("", true, null)]
+    public async Task SendsReasoningEffortToTheChatTemplate(string? effort, bool? thinking, string? sent)
+    {
+        var server = new Server((_, _) => Sse("{\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}"));
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null, effort), server);
+
+        await provider.StreamRoundAsync(Request with { Thinking = thinking }, _ => { }, CancellationToken.None);
+
+        var json = JsonDocument.Parse(Assert.Single(server.Requests).Body).RootElement;
+        Assert.Equal(sent, json.TryGetProperty("chat_template_kwargs", out var kwargs) ? kwargs.GetProperty("reasoning_effort").GetString() : null);
+    }
+
     [Fact]
     public async Task TakesTheFirstListedModelOnce()
     {

@@ -4,6 +4,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Task,
     [string]$LlamaUrl = 'http://localhost:8080/v1',
     [string]$Model = '',
+    [string]$Effort = '',
     [int]$Port = 47811,
     [int]$McpPort = 47812
 )
@@ -78,6 +79,7 @@ if ($Model -eq '') {
 $env:VERONICA_PROVIDER = 'openai'
 $env:VERONICA_OPENAI_URL = $LlamaUrl
 $env:VERONICA_OPENAI_MODEL = $Model
+$env:VERONICA_OPENAI_EFFORT = $Effort
 $env:VERONICA_CONTROL_PORT = "$Port"
 $env:VERONICA_RUN_DIR = $runDir
 # The fork plays the user's Editor steps (moving a dummy) by calling the tools through the MCP endpoint.
@@ -93,6 +95,7 @@ $runJson = [ordered]@{
     commit  = $commit
     dirty   = $dirty
     model   = $Model
+    effort  = $Effort
     started = (Get-Date).ToString('o')
     editor  = $editorName
     pid     = $editor.Id

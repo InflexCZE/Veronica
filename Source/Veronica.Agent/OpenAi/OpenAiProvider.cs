@@ -6,8 +6,8 @@ using System.Text.Json.Nodes;
 namespace Veronica.Agent.OpenAi;
 
 // BaseUrl includes the API prefix, e.g. http://localhost:8080/v1. A null Model takes the
-// first one the server lists.
-public sealed record OpenAiSettings(string BaseUrl, string? Model, string? ApiKey);
+// first one the server lists. ReasoningEffort goes to the chat template; null leaves the template's default.
+public sealed record OpenAiSettings(string BaseUrl, string? Model, string? ApiKey, string? ReasoningEffort = null);
 
 public sealed class OpenAiException(string message) : Exception(message);
 
@@ -47,7 +47,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
     {
         string model = await ModelAsync(cancellationToken).ConfigureAwait(false);
         using var post = NewRequest(HttpMethod.Post, "chat/completions");
-        post.Content = new StringContent(Body(model, request), Encoding.UTF8, "application/json");
+        post.Content = new StringContent(Body(model, request, _settings.ReasoningEffort), Encoding.UTF8, "application/json");
         using var response = await _http.SendAsync(post, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
             throw new OpenAiException(await ErrorMessageAsync(response, cancellationToken).ConfigureAwait(false));
@@ -104,7 +104,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         return request;
     }
 
-    private static string Body(string model, RoundRequest request)
+    private static string Body(string model, RoundRequest request, string? reasoningEffort)
     {
         var body = new JsonObject
         {
@@ -112,6 +112,8 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             ["messages"] = new JsonArray(request.Messages.Select(m => (JsonNode?)ToWire(m)).ToArray()),
             ["stream"] = true,
         };
+        if (request.Thinking != false && !string.IsNullOrWhiteSpace(reasoningEffort))
+            body["chat_template_kwargs"] = new JsonObject { ["reasoning_effort"] = reasoningEffort.Trim() };
         int budget = request.Thinking != false && request.ThinkingBudget is > 0 and var b ? b : 0;
         if (budget > 0)
             body["thinking_budget_tokens"] = budget;

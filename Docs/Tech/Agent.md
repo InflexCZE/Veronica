@@ -96,8 +96,10 @@
 | `VERONICA_OPENAI_URL` | base URL including the API prefix, e.g. `http://localhost:8080/v1` |
 | `VERONICA_OPENAI_MODEL` | optional; unset takes the first model the server lists |
 | `VERONICA_OPENAI_API_KEY` | optional bearer token |
+| `VERONICA_OPENAI_EFFORT` | optional reasoning effort, sent as the chat template's `reasoning_effort`; unset leaves the template's default |
 
 - The request body is plain chat completions plus `max_tokens`, which llama.cpp takes and OpenAI's own reasoning models reject. Thinking stays at the server's default, which is on for thinking models.
+- The effort goes in `chat_template_kwargs`, so it reaches models whose template reads it (the Qwen 27B templates default to `xhigh`) and is ignored by others. It is the one generation setting the client sends: it is compared per run in evals, which would otherwise need a server restart per value.
 - Reasoning is read from `reasoning_content` or `reasoning`. Each assistant message sends its reasoning back as `reasoning_content` (see Conversation).
 - Round stats come from llama.cpp's `timings`; other servers show none.
 - Any server certificate is accepted: locally hosted servers are typically self-signed.
