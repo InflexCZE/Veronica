@@ -19,7 +19,7 @@ You are the master. Each batch is a fork of you, so everything here reaches the 
 - Start each batch with the Agent tool, `subagent_type: "fork"`. The fork runs all of it, one run after another, and returns once.
 - The brief names: the model and server URL, the commit and what the working tree changes, the tasks in order with run counts, what is new since the last batch, what to look at (a hypothesis, a failure mode to provoke, regressions), and when to stop the batch (build fails, the Editor will not start twice, the server is down).
 - For a hypothesis batch, edit the context (skills in `Source/Veronica/Skills`, the system prompt, tools) in the working tree before the fork starts. `Start-Run.ps1` saves the diff in each run folder. Change nothing under `Source` or `Eval/Tasks` until the batch ends.
-- After the batch, save each run's note as `report.md` in its run folder (subagents cannot write report files), and add to `.tmp/eval/findings.md`: patterns with run folder references, hypotheses and their outcome.
+- After the batch, add to `.tmp/eval/findings.md`: patterns with run folder references, hypotheses and their outcome.
 - Do not grade runs again; the fork's report is the verdict. Re-read a transcript, or have a fork or Haiku do it, only to verify a pattern.
 - For a fact about the game, send a fork that reads the SE2 source only (`SE2Root` in `Directory.Build.local.props`), with no Editor or MCP while a batch runs.
 - After a batch, revert experimental context edits that did not hold, then propose context changes to the owner with the runs that support them. Commit only what the owner approves.
@@ -40,6 +40,6 @@ Wait in the foreground only: blocking tool calls with a timeout of up to 600000 
    - **Hopeless** (loops, repeats failing calls, lost the goal): end it, even before the context runs out. Running into the context limit is also an accepted end.
 5. `powershell -File Eval/Stop-Run.ps1 -RunDir <dir>`.
 6. Judge the run against the task's Pass criteria. If the transcript is too long to keep reading, use a Haiku subagent to extract notable sections or what the model is asking about, instead of reading it all.
-7. Note the run: the run folder, the verdict per criterion, how the run ended, user turns and context used, notable moments with transcript line numbers, values the model invented instead of asking, and every answer you gave as the user. Vary your answers between runs.
+7. Write the run's note to `<run folder>/report.md` before starting the next run: the run folder, the verdict per criterion, how the run ended, user turns and context used, notable moments with transcript line numbers, values the model invented instead of asking, and every answer you gave as the user. Vary your answers between runs.
 
-After the last run, return the take-aways across the batch first (verdict table, what the context change did, failure modes with run and line references, proposals split into skill wording, system prompt, tool shape and knowledge), then each run's note for the master to save as its `report.md`.
+After the last run, return the take-aways across the batch first (verdict table, what the context change did, failure modes with run and line references, proposals split into skill wording, system prompt, tool shape and knowledge), then one line per run: its folder and verdict. The full notes stay in the `report.md` files.

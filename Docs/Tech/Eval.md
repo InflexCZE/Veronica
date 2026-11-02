@@ -8,8 +8,8 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 
 | role | does |
 |---|---|
-| master agent | Claude Code with the `veronica-eval` skill loaded. Picks tasks, starts one fork per batch (the runs of one context variant), saves the run reports, keeps the findings log, tests context hypotheses with further batches, and proposes context changes to the owner. It does not grade. |
-| fork | a fork of the master, so it inherits the skill and the master's current investigation. Runs a batch one run after another, each end to end: starts the Editor, sends the task, answers the model's questions, watches progress, ends the run. Returns once, with the take-aways across the batch and a note per run. One fork per batch keeps the per-run detail out of the master's context. |
+| master agent | Claude Code with the `veronica-eval` skill loaded. Picks tasks, starts one fork per batch (the runs of one context variant), keeps the findings log, tests context hypotheses with further batches, and proposes context changes to the owner. It does not grade. |
+| fork | a fork of the master, so it inherits the skill and the master's current investigation. Runs a batch one run after another, each end to end: starts the Editor, sends the task, answers the model's questions, watches progress, ends the run, writes the run's `report.md`. Returns once, with the take-aways across the batch. One fork per batch keeps the per-run detail out of the master's context. |
 | Haiku | optional, at the fork's or master's choice: reads a transcript and extracts what is asked of it (notable sections, what the model is asking about now), so the caller does not read the whole transcript itself. |
 
 - One run at a time: the Editor and the model share one machine.
