@@ -5,8 +5,8 @@ source: SE2 source IntegrityToolComponent, IntegrityToolDefinition, DummyInterac
 description: What a ship welder is made of: weld speed and its unit, the welding area and the dummy that places it, where the components it welds with come from, power, what the Welder template lacks, and the parts that are only looks.
 ---
 Parts:
-- IntegrityToolComponent, on the server, with its IntegrityToolDefinition: the welding. IntegrityChange multiplies how fast a block gets built: 1 is the block's own build time, 2 twice as fast; a negative value grinds blocks down instead. IsAreaTool makes it work on every block in its area. MaxInteractionDistance is in metres from the tool's centre.
-- SphereShapeEntityDetectorComponent with its SphereShapeEntityDetectorDefinition: the welding area, a sphere of QueryRadius metres around its QueryDummy.
+- IntegrityToolComponent, on the server, with its IntegrityToolDefinition: the welding. IntegrityChange multiplies how fast a block gets built: 1 is the block's own build time, 2 twice as fast; a negative value grinds blocks down instead. IsAreaTool makes it work on every block in its area. MaxInteractionDistance is in metres from the tool's centre, above 0 and at most 100; it limits how far a block can be targeted and does not widen the welding area.
+- SphereShapeEntityDetectorComponent with its SphereShapeEntityDetectorDefinition: the welding area, a sphere of QueryRadius metres around its QueryDummy. QueryRadius is at most 50 metres; a larger welding area needs a larger QueryRadius here.
 - DummyInteractedEntityProviderAdapterComponent: the tool's working point, at the dummy its definition names.
 - AreaIntegrityToolEntityDetectorComponent: collects the blocks inside the area.
 - InventoryComponent, on the server: holds the components the welder uses.

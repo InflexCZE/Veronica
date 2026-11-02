@@ -1,8 +1,8 @@
 ---
 name: lights
 title: Lights: point and spot lights, colour, brightness, reach, beam width, light dummy, power
-source: SE2 source LightComponent, LightObjectBuilder, LightDefinition, SpotLightDefinition, LightRenderComponent, PointLightRenderComponent, SpotLightRenderComponent, ColoringMaterialSwapperComponent, PowerableBlockDefinition, the Brightness unit; vanilla Interior Light 50 and Spotlight 50 and 250 (Assets/Blocks/Lights), the Lights (Point) and Lights (Spot) templates
-description: How a light block works, point and spot: where its colour, brightness, reach and beam width are set, what brightness numbers mean, the Light and Flare dummies, the model's glowing parts, toggling with the ship's lights, and power.
+source: SE2 source LightComponent, LightObjectBuilder, LightDefinition, SpotLightDefinition, LightRenderComponent, PointLightRenderComponent, SpotLightRenderComponent, ColoringMaterialSwapperComponent, ColoringMaterialSwapperDefinition, ColorIndicatorMaterialDefinition, PBREmissiveMaterialDefinition, BlockColorLightComponent, AreaLightDefinition, PowerableBlockDefinition, the Brightness unit; vanilla Interior Light 50 and Spotlight 50 and 250 (Assets/Blocks/Lights), the Lights (Point) and Lights (Spot) templates
+description: How a light block works, point and spot: where its colour, brightness, reach and beam width are set, what brightness numbers mean, the Light and Flare dummies, why a light block gives no light, the model's glowing parts and making them follow the light's colour or the block's paint, area lights' barn doors, toggling with the ship's lights, and power.
 ---
 Parts of a point light block (vanilla Interior Light, Assets/Blocks/Lights/Interior/50):
 - PointLightComponent, on both sides, with its PointLightDefinition: the light's settings.
@@ -29,9 +29,15 @@ Colour and brightness:
 
 Dummies, in the BlockModelComponentDefinition:
 - Light: where the light shines from; only its position counts. The light render definition's LightDummyType names its type (Light). Without it the block gives no light. Neither light template brings one.
+- One light render component gives one light at one Light dummy: more Light dummies on the block do not add lights.
+- No light: check that the model definition has a dummy of type Light (the validator warns 'Model definition doesn't contain dummy ... required by LightRenderComponent'), that the render component sits beside its light component (PointLightRenderComponent needs PointLightComponent), and that it is linked to the block's render parent (an 'Unsatisfied dependency IRenderParent' error otherwise).
 - Flare: where the lens flare sits (the FlareDummyType, Flare).
 - Players never see dummies in game.
 
-Glowing parts of the model: the ColoringMaterialSwapperDefinition lists the models (WorkingReplacementModels) and their emissive mesh parts that follow the light's colour. It depends on the model's own mesh part names, which are set up when the model is made.
+Glowing parts of the model: the ColoringMaterialSwapperDefinition lists the models (WorkingReplacementModels: the main model and its fractured models) and their emissive mesh parts that follow the light's colour (WorkingReplacementsMeshParts: key = the material name in the model's MaterialAssignments, e.g. vanilla EmissiveColorable, and Fracture_NN-<material> for fractured models; value = the glowing material). It depends on the model's own material names, which are set up when the model is made.
+- The replacement materials must be ColorIndicatorMaterialDefinition or PBREmissiveMaterialDefinition (vanilla PBRLightBulbColorIndicator_NoShadow); other types fail, and so does the component on a block without a light component. BrightnessMultiplier (default 1) scales their glow.
+- To make the light's colour follow the block's paint, add BlockColorLightComponent.
+
+Area lights (AreaLightDefinition): Dimensions, BarnLength (flaps at the sides that cut the light's spread) and BarnAngle (radians). Keep BarnAngle a small radian value.
 
 Power: the block component is a PowerableBlockComponent. Its PowerableBlockDefinition's ConsumedResource is Electricity with Amount 0 on vanilla lights and both templates.

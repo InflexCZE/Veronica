@@ -1,7 +1,7 @@
 ---
 name: button-panels
 title: Buttons and button panels: the toolbar slots, the button dummies and their names
-source: SE2 source BlockToolbarServerComponent, BlockToolbarServerDefinition, BlockToolbarValidator, UseToolbarSlotAction, UseToolbarSlotActionDefinition, UseActionDefinition.GetSlotIndex, PowerableBlockDefinition; vanilla UseActionBindings.def, vanilla buttons and button panels (Assets/Blocks/Button, Assets/Blocks/ButtonPanels), the Buttons template
+source: SE2 source BlockToolbarServerComponent, BlockToolbarServerDefinition, BlockToolbarValidator, UseToolbarSlotAction, UseToolbarSlotActionDefinition, UseActionDefinition.GetSlotIndex, BlockGroupToolbarTile, PowerableBlockDefinition; vanilla UseActionBindings.def, vanilla buttons and button panels (Assets/Blocks/Button, Assets/Blocks/ButtonPanels), the Buttons template
 description: How a button or button panel block works: the toolbar component and its slot counts, the UseToolbarSlot dummies and how their names pick a slot, what players set in game, power, what the template brings, and the parts that are only looks.
 ---
 Parts:
@@ -12,7 +12,8 @@ Parts:
 Buttons:
 - A button is a dummy of Type UseToolbarSlot in the block's BlockModelComponentDefinition. Looking at it and pressing use activates one tile of the block's toolbar.
 - Which tile: the last word of the dummy's Name, a number counted from 0 ("Button 0", "Button 1", ...). The words before it are free. A name with no number at its end, or a number past the last tile, presses nothing.
-- A button whose tile has no action opens the block's control panel instead, where players assign actions. What each tile does is set by players in game, not by a mod.
+- Buttons reach one toolbar group only, the ToolbarGroupIndex of the UseToolbarSlot action definition; tiles in other groups cannot be pressed by a button. Pressing needs no seat.
+- A button whose tile has no action opens the block's control panel instead, where players assign actions. What each tile does is set by players in game, not by a mod; a tile can target a block group as well as a single block.
 - The dummy's position and Scale make the spot players look at; its forward does not matter for pressing.
 
 Vanilla: Assets/Blocks/Button (a single button) and Assets/Blocks/ButtonPanels (a panel). Each has its own toolbar definition, and they sit in two block menu families (single buttons, button panels).

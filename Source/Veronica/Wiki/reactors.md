@@ -7,6 +7,7 @@ description: What a reactor block does: the fuel it burns, the power it makes an
 Parts:
 - ItemToResourceConverterComponent, on the server, with its ItemToResourceConverterDefinition:
   - ItemConsumed: the fuel item. None: the block burns nothing and makes no power.
+    - Any item can be the fuel, but fuel is always an item in the fuel inventory: no component turns a gas or another resource into power, so a generator fed from a gas tank is not possible.
   - ResourceProduced: what it makes, Electricity for a reactor.
   - MaxResourceProduction: the most power it makes, in kW.
   - ResourcesPerItem: the energy one unit of fuel gives, in kW*s (kJ). At full power the block burns MaxResourceProduction / ResourcesPerItem units of fuel a second. An ore's unit is 1 kg (its ItemDefinition's MassPerUnit).
