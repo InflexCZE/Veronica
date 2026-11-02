@@ -1,0 +1,153 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Models.ModelAssetData",
+  "$Value": {
+    "MaterialAssignments": [
+      {
+        "MaterialName": "PaintedMetalDarker",
+        "MaterialReference": "cb933a73-bce4-4224-a7d8-c5083935dac8"
+      },
+      {
+        "MaterialName": "PaintedMetalColorable",
+        "MaterialReference": "be89c5c3-25ce-42e9-93f9-72ba32c3d8a7"
+      },
+      {
+        "MaterialName": "BrushedMetal",
+        "MaterialReference": "0c3be477-8bff-4e2c-8a0e-d7d842905ae9"
+      },
+      {
+        "MaterialName": "Rubber",
+        "MaterialReference": "ea603341-6e46-42f7-afae-ce60b8848ec5"
+      },
+      {
+        "MaterialName": "AtlasDecal_Trims01",
+        "MaterialReference": "35d26308-2dc4-4b01-af36-0c713d10e571"
+      },
+      {
+        "MaterialName": "AtlasDecal_Parts01",
+        "MaterialReference": "0d1f9867-1aee-4388-b5bb-4a7ce0cdc5e2"
+      },
+      {
+        "MaterialName": "AtlasDecal_Trims02",
+        "MaterialReference": "aa49b17e-58dc-4da8-8ba2-3bd643325681"
+      },
+      {
+        "MaterialName": "AtlasDecal_Stickers02",
+        "MaterialReference": "c3e749ff-35ff-469c-b7ae-84a5a5d829b3"
+      },
+      {
+        "MaterialName": "IonThruster100_LastLOD",
+        "MaterialReference": "7aa99145-c063-4574-9e73-579f93aae02b"
+      }
+    ],
+    "MaterialStateOverrides": [],
+    "GeometryAssets": [
+      {
+        "AssetReference": "{G}d7e16246-5efe-46ff-9ec0-2b36984f960f",
+        "UsedMaterials": [
+          "PaintedMetalDarker",
+          "PaintedMetalColorable",
+          "BrushedMetal",
+          "Rubber",
+          "AtlasDecal_Trims01",
+          "AtlasDecal_Parts01",
+          "AtlasDecal_Trims02",
+          "AtlasDecal_Stickers02"
+        ],
+        "Transformations": {
+          "Translation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Rotation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Scale": 1
+        }
+      },
+      {
+        "AssetReference": "{G}1757e5cb-c12a-407d-9641-dcca0a252d4a",
+        "UsedMaterials": [
+          "PaintedMetalColorable",
+          "PaintedMetalDarker",
+          "AtlasDecal_Parts01",
+          "AtlasDecal_Trims02",
+          "AtlasDecal_Trims01",
+          "AtlasDecal_Stickers02",
+          "BrushedMetal",
+          "Rubber"
+        ],
+        "Transformations": {
+          "Translation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Rotation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Scale": 1
+        }
+      },
+      {
+        "AssetReference": "{G}1815c82b-b32e-40ed-9aa4-fcaf636a40bd",
+        "UsedMaterials": [
+          "PaintedMetalColorable",
+          "PaintedMetalDarker",
+          "AtlasDecal_Parts01",
+          "AtlasDecal_Stickers02",
+          "BrushedMetal",
+          "Rubber"
+        ],
+        "Transformations": {
+          "Translation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Rotation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Scale": 1
+        }
+      },
+      {
+        "AssetReference": "{G}aacaeca3-136a-4ffe-b464-18ac3c5ddffa",
+        "UsedMaterials": [
+          "IonThruster100_LastLOD"
+        ],
+        "Transformations": {
+          "Translation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Rotation": {
+            "X": 0,
+            "Y": 0,
+            "Z": 0
+          },
+          "Scale": 1
+        }
+      }
+    ],
+    "SnapToGrid": false,
+    "SuggestedModelSize": null,
+    "CollisionShapesAsset": {
+      "AssetReference": "{G}a186f261-fab3-46ea-8106-d4632a61c2a7",
+      "GroupsByFracture": [],
+      "GeneratePreciseCollider": true
+    }
+  }
+}
