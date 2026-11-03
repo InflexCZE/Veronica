@@ -12,7 +12,7 @@ Block unlocks:
 - Unlocking a vanilla kind, subcategory or category also unlocks the vanilla blocks in it.
 - Unlocks are shared by a faction. Blocks unlocked later come from block reward groups (BlockRewardGroupDefinition, its Blocks list of _Server prefabs), referenced from a contract's BlockRewards (vanilla contracts in Assets/Colonization/VS2-*/Contracts), a block schematic's reward or a mission's unlock-blocks action.
 - A block's component items and progression checkpoints do not lock it: they only add recommended progression and tech level hints to its G-Screen tile.
-- Items, ammo included, are never locked. Whether players can get an item in survival depends on recipes (production blocks or backpack crafting), mining, grinding and rewards, not on progression.
+- Items, ammo included, are never locked by progression; unlocking a block needs nothing for its items.
 
 Grid cleanup:
 - Trash removal starts when the total PCU of all player grids (separately, of all NPC grids) reaches ExecuteCleanupLimit. It then deletes whole grids, smallest PCU first, until the total is at or below TargetCleanupLimit. Pinned grids are skipped. One large grid is not deleted for its own size.

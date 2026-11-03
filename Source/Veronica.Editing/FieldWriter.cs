@@ -81,9 +81,12 @@ public static class FieldWriter
             || declared.IsValueType
             || (member.MemberKind == MemberValueKind.Value && member.IsNullableReferenceType);
         if (!nullable)
-            throw new EditError(member.MemberKind == MemberValueKind.Value
-                ? $"'{path}' cannot be null; write its fields instead."
-                : $"'{path}' cannot be null; write its elements like '{path}[0]'.");
+            throw new EditError(member.MemberKind switch
+            {
+                MemberValueKind.Value => $"'{path}' cannot be null; write its fields instead.",
+                MemberValueKind.List or MemberValueKind.Dictionary => $"'{path}' cannot be null; write its elements like '{path}[0]'.",
+                _ => $"'{path}' is a {member.MemberKind.ToString().ToLowerInvariant()}; the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.",
+            });
         member.SetDefault();
     }
 

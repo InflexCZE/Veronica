@@ -8,4 +8,4 @@
 
 A partial stores a set as a delta (added and removed elements), so an override adds an element and keeps vanilla's.
 
-**Owner decision:** how a set element is addressed. Recommendation: like a dictionary key, by the element's printed name (`Blocks[MyGatling_Server]`): `read` lists the elements, `element_add(path, key)` adds one, `element_remove("Blocks[X]")` removes one. Start in `Source/Veronica.Editing/Elements.cs` and `FieldReader.DumpCollection`.
+**Owner decision (approved in principle):** a set element is addressed like a dictionary key, by the element's printed name (`Blocks[MyGatling_Server]`): `read` lists the elements, `element_add(path, ...)` adds one, `element_remove("Blocks[X]")` removes one. `element_add` is tolerant: it takes the element from either the key or the value argument. Start in `Source/Veronica.Editing/Elements.cs` and `FieldReader.DumpCollection`.
