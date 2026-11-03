@@ -1,0 +1,64 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "f104e970-bdcc-4a09-892d-8cc96e039998",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "99d4921f-572e-4351-bee4-4966f5f7c454",
+      "Model": "{G}80daf2f1-7198-4b43-a372-9b70944f18b8",
+      "Dummies": {
+        "$DeltaEncoded": true,
+        "Keys": [
+          "ff57d9f6-03b3-45f4-bc6a-52fd2af382d7"
+        ],
+        "Changed": [
+          {
+            "Kind": "Insert",
+            "Index": 0,
+            "Value": {
+              "Name": "ConveyorBack",
+              "Transform": {
+                "Transform": {
+                  "Position": {
+                    "X": 0,
+                    "Y": 0,
+                    "Z": -0.625
+                  },
+                  "Orientation": {
+                    "X": 0,
+                    "Y": 0,
+                    "Z": 0,
+                    "W": 1
+                  }
+                },
+                "EulerHint": {
+                  "X": 0,
+                  "Y": 0,
+                  "Z": 0
+                }
+              },
+              "Scale": {
+                "X": 1,
+                "Y": 1,
+                "Z": 0.05
+              },
+              "Type": "29d45e5b-2ddf-4ba5-9031-885260550947",
+              "SupportingFracture": null,
+              "HighlightSection": null
+            }
+          }
+        ],
+        "Removed": []
+      },
+      "FractureModel": "{G}d3357744-5d16-4bfb-8db8-264ea7957924",
+      "DamagedModel": "{G}6f6efd87-56ed-4703-af01-1f3b2784ad61"
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.Models.BlockModelComponentDefinition",
+    "PriorityOverride": false
+  }
+}

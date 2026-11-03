@@ -1,0 +1,23 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "c7b8e669-e76b-4edb-aa18-8067d0340b96",
+    "PartialDefinitionKind": "Override",
+    "Manipulator": {
+      "Blocks": {
+        "$DeltaEncoded": true,
+        "Removed": [],
+        "Added": [
+          "cd518311-d5b6-4122-a51e-3c20a64e5a20"
+        ]
+      }
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.GameSystems.Progression.ProgressionInitialUnlockConfiguration",
+    "PriorityOverride": false
+  }
+}

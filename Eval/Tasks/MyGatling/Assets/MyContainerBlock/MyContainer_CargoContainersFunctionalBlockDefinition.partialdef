@@ -1,0 +1,20 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "1f272188-f639-4685-a8fb-9b0f8dd47106",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "61c7c4d6-3039-4703-bd08-36c06df1b896",
+      "UIData": {
+        "Name": "My Container"
+      }
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.FunctionalBlockDefinition",
+    "PriorityOverride": false
+  }
+}
