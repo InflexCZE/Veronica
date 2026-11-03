@@ -1,5 +1,7 @@
-# Validation issues for the agent
+# Validation issues
 
-**Exists:** editor tools edit definitions but the agent cannot see whether the result is valid. The user finds issues in the Editor or in-game.
+**Exists:** editor tools edit definitions but neither the agent nor an eval run sees whether the result is valid. Validation messages appear only in the Editor's log; eval grading does not read them, so a block with an unsatisfied component dependency passed (MyGatling H3).
 
-**Missing:** a tool listing the Editor's validation issues (errors, warnings, field paths) for a target or folder, after waiting until asset processing and content pushes are idle. Start from `AssetValidationFeature.Validator.ValidationControllers` (public, ContentPipeline) and `ProcessingManager` queue and push status for idleness.
+**Missing:** a validation endpoint on the eval control channel, listing the Editor's validation issues (errors, warnings, field paths), after waiting until asset processing and content pushes are idle. Start from `AssetValidationFeature.Validator.ValidationControllers` (public, ContentPipeline) and `ProcessingManager` queue and push status for idleness. Eval grading then fails a run on a validation error; warnings pass.
+
+**Owner decision:** the endpoint is for the eval control channel only, not a tool for the model: valid mods carry many benign warnings that would mislead it.
