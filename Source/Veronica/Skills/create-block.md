@@ -13,6 +13,7 @@ Plan:
 - Get the name and folder from the user
 - Create the prefab from the template of what the block does
 - Fill block name and icon
+- Give the block a G-Screen place when the template leaves BlockKind none: ask the user where it goes
 - Fill the models: the Model, FractureModel and DamagedModel assets
 - Next skill: activate the skill of what the block does; without one, mirror a vanilla block's values and show the block
 
