@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Serialization;
 using Keen.VRage.Library.Serialization.ObjectBuilders;
@@ -7,28 +8,74 @@ using Keen.VRage.UI.Shared.ObjectInspector;
 
 namespace Veronica.Editing;
 
-// Adding and removing elements of lists and dictionaries.
+// Adding and removing elements of lists, dictionaries and sets.
 public static class Elements
 {
     public const int MaxTypeChoices = 50;
 
-    // Adds a default element: appended to a list, or under key in a dictionary or keyed list.
-    // Returns its path and its fields, ready for write.
-    public static string Add(MemberReference root, string path, string? key, string? typeName, IContentLinks links, string basePath = "")
+    // Adds an element: a default one appended to a list or under key in a dictionary or keyed list, or the
+    // given one to a set. Returns its path, and a list or dictionary element's fields, ready for write.
+    // A value with a list or dictionary element is written to it, so a scalar entry takes one call.
+    public static string Add(MemberReference root, string path, string? key, string? typeName, IContentLinks links, string basePath = "", string? value = null)
     {
         if (path.Trim().Length == 0)
-            throw new EditError("Give the path of the list or dictionary, e.g. 'Dummies'.");
-        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, links), links, basePath);
+            throw new EditError("Give the path of the list, dictionary or set, e.g. 'Dummies'.");
+        return FieldWriter.CreatingParents(root, path, (collection, canonical) => AddTo(collection, canonical, key, typeName, value, links), links, basePath);
     }
 
-    private static string AddTo(MemberReference collection, string canonical, string? key, string? typeName, IContentLinks links)
+    private static string AddTo(MemberReference collection, string canonical, string? key, string? typeName, string? value, IContentLinks links)
     {
-        if (collection.MemberKind is not (MemberValueKind.List or MemberValueKind.Dictionary))
-            throw new EditError(collection.MemberKind == MemberValueKind.Value
-                ? $"'{canonical}' is not a list or dictionary."
-                : $"'{canonical}' is a {collection.MemberKind.ToString().ToLowerInvariant()}; the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.");
+        if (collection.MemberKind is not (MemberValueKind.List or MemberValueKind.Dictionary or MemberValueKind.Set))
+            throw new EditError($"'{canonical}' is not a list, dictionary or set.");
         RequireEditable(collection, canonical);
 
+        if (collection.MemberKind == MemberValueKind.Set)
+            return AddToSet(collection, canonical, key, value, links);
+
+        string added = AddDefault(collection, canonical, key, typeName, links, out var element);
+        if (string.IsNullOrWhiteSpace(value))
+            return added;
+        try
+        {
+            return $"Added {element.Path}; {FieldWriter.WriteMember(element.Member, element.Path, JsonSerializer.SerializeToElement(value), links)}";
+        }
+        catch (Exception)
+        {
+            element.Member.RemoveCollectionItem();
+            throw;
+        }
+    }
+
+    // The element is the key or the value, whichever was given.
+    private static string AddToSet(MemberReference set, string canonical, string? key, string? value, IContentLinks links)
+    {
+        string? text = string.IsNullOrWhiteSpace(key) ? value : key;
+        if (string.IsNullOrWhiteSpace(text))
+            throw new EditError($"'{canonical}' is a set; pass the element to add as key, e.g. its name.");
+        if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value) && key.Trim() != value.Trim())
+            throw new EditError($"'{canonical}' is a set: its elements have no values. Pass the element once, as key.");
+        text = text.Trim();
+
+        Type itemType = Fields.SetItemType(set.CurrentMemberType)
+            ?? throw new EditError($"The element type of '{canonical}' cannot be read.");
+        if (set.GetValue<object?>() is null)
+        {
+            if (!Fields.IsWritable(set))
+                throw new EditError($"'{canonical}' is null and read-only.");
+            set.SetNew();
+        }
+        else if (Keys.FindInSet(set, text, itemType, links) is { } existing)
+        {
+            throw new EditError($"'{canonical}' already has {FieldPath.Element(canonical, Keys.Text(existing, links))}.");
+        }
+
+        object element = Keys.Parse(set, text, itemType, links);
+        set.AddToSet(element);
+        return $"Added {FieldPath.Element(canonical, Keys.Text(element, links))}; {Fields.CollectionCount(set)} in the set.";
+    }
+
+    private static string AddDefault(MemberReference collection, string canonical, string? key, string? typeName, IContentLinks links, out (MemberReference Member, string Path) added)
+    {
         bool dictionary = collection.MemberKind == MemberValueKind.Dictionary;
         Type? keyType = dictionary
             ? Fields.DictionaryTypes(collection.DeclaredMemberType)?.Key
@@ -63,7 +110,8 @@ public static class Elements
                 throw new EditError($"'{canonical}' already has key '{key}'; write to {FieldPath.Element(canonical, Keys.Text(existing, links))} instead.");
             collection.AddToDictionary(parsedKey!, element);
             path = FieldPath.Element(canonical, Keys.Text(parsedKey, links));
-            return $"Added {path}:\n{FieldReader.Dump(collection.GetDictionaryItem(parsedKey!), path, links)}";
+            added = (collection.GetDictionaryItem(parsedKey!), path);
+            return $"Added {path}:\n{FieldReader.Dump(added.Member, path, links)}";
         }
 
         int index = Fields.CollectionCount(collection);
@@ -79,7 +127,8 @@ public static class Elements
         }
 
         path = FieldPath.Element(canonical, index.ToString(CultureInfo.InvariantCulture));
-        return $"Added {path}:\n{FieldReader.Dump(collection.GetListItem(index), path, links)}";
+        added = (collection.GetListItem(index), path);
+        return $"Added {path}:\n{FieldReader.Dump(added.Member, path, links)}";
     }
 
     // Removes the element at a path read prints, e.g. Dummies[1] or Classes[Ion].
@@ -90,7 +139,7 @@ public static class Elements
 
         var (element, canonical) = FieldWalker.Walk(root, path, basePath, links);
         if (!element.IsCollectionItem)
-            throw new EditError($"'{canonical}' is not a list or dictionary element; remove takes a path like 'Dummies[1]'.");
+            throw new EditError($"'{canonical}' is not a list, dictionary or set element; remove takes a path like 'Dummies[1]'.");
 
         var collection = element.GetParent();
         RequireEditable(collection, canonical[..canonical.LastIndexOf('[')]);

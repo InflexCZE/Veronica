@@ -49,7 +49,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PartialPrefabs.md](PartialPrefabs.md) | Editor tools: no partial copies or overrides of prefabs |
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
-| [SetFields.md](SetFields.md) | Editor tools: set fields cannot be read or edited, e.g. survival unlocks, inventory whitelists (owner decision) |
 | [ConditionalWritability.md](ConditionalWritability.md) | Editor tools: conditional read-only rules of the inspector are ignored |
 | [ProviderSelection.md](ProviderSelection.md) | Chat: OpenAI-compatible and Claude providers chosen by environment variables, no UI (owner decision) |
 | [ClaudeProviderGaps.md](ClaudeProviderGaps.md) | Chat: Claude provider review findings not yet fixed (one owner decision) |

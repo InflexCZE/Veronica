@@ -306,6 +306,19 @@ public static class Fields
         return null;
     }
 
+    public static Type? SetItemType(Type set)
+    {
+        foreach (var candidate in set.GetInterfaces().Prepend(set))
+        {
+            if (candidate.IsGenericType && (candidate.GetGenericTypeDefinition() == typeof(IReadOnlySet<>) || candidate.GetGenericTypeDefinition() == typeof(ISet<>)))
+                return candidate.GenericTypeArguments[0];
+        }
+        return null;
+    }
+
+    public static List<object?> SetItems(MemberReference set) =>
+        set.GetValue<object?>() is System.Collections.IEnumerable items ? items.Cast<object?>().ToList() : [];
+
     public static (Type Key, Type Value)? DictionaryTypes(Type dictionary)
     {
         foreach (var candidate in dictionary.GetInterfaces().Prepend(dictionary))

@@ -355,7 +355,7 @@ internal sealed class Block
         return Applied(component, reply);
     }
 
-    public string ElementAdd(string path, string? key, string? type)
+    public string ElementAdd(string path, string? key, string? type, string? value = null)
     {
         var (component, name, inner) = Locate(path);
         if (inner.Length > 0 && IsDefinition(inner, out _))
@@ -365,11 +365,12 @@ internal sealed class Block
         RequireWritable();
         if (IsTags(inner, out string? tagged))
         {
-            if (tagged != null || string.IsNullOrWhiteSpace(key))
+            string? tag = string.IsNullOrWhiteSpace(key) ? value : key;
+            if (tagged != null || string.IsNullOrWhiteSpace(tag))
                 throw new EditError($"Add a tag with element_add on {FieldPath.Member(ComponentNames.PathOf(name), TagsField)} and the tag as key.");
-            return Applied(component, AddTag(component, name, key.Trim()));
+            return Applied(component, AddTag(component, name, tag.Trim()));
         }
-        return Applied(component, Elements.Add(ObjectBuilder(component, name), inner, key, type, Links, ComponentNames.PathOf(name)));
+        return Applied(component, Elements.Add(ObjectBuilder(component, name), inner, key, type, Links, ComponentNames.PathOf(name), value));
     }
 
     public string ElementRemove(string path)

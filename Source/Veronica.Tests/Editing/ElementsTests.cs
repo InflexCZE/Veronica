@@ -107,7 +107,7 @@ public sealed class ElementsTests
     }
 
     [Fact]
-    public void Not_a_collection() => Assert.Contains("not a list or dictionary", Fails(() => Add("Power")));
+    public void Not_a_collection() => Assert.Contains("not a list, dictionary or set", Fails(() => Add("Power")));
 
     [Fact]
     public void Removes_a_list_element_and_says_the_rest_moved()
@@ -128,8 +128,8 @@ public sealed class ElementsTests
     [Fact]
     public void Remove_takes_only_elements()
     {
-        Assert.Contains("not a list or dictionary element", Fails(() => Remove("Dummies")));
-        Assert.Contains("not a list or dictionary element", Fails(() => Remove("Dummies[0].Name")));
+        Assert.Contains("not a list, dictionary or set element", Fails(() => Remove("Dummies")));
+        Assert.Contains("not a list, dictionary or set element", Fails(() => Remove("Dummies[0].Name")));
         Assert.Contains("has 1 element", Fails(() => Remove("Dummies[4]")));
     }
 }

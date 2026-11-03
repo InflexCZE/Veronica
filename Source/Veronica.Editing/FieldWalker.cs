@@ -28,7 +28,7 @@ public static class FieldWalker
                     break;
                 case MemberValueKind.Value:
                     if (segment.Bracketed)
-                        throw new EditError($"{Where(canonical)} is not a list or dictionary; remove the [{segment.Text}].");
+                        throw new EditError($"{Where(canonical)} is not a list, dictionary or set; remove the [{segment.Text}].");
                     // A reference holds the engine's runtime object, not the referenced file's data; walking it read
                     // placeholders and uninitialized arrays.
                     if (!member.IsRoot && Fields.GetReference(member) != null)
@@ -40,8 +40,11 @@ public static class FieldWalker
                     canonical = FieldPath.Member(canonical, member.Name);
                     member = Fields.Unwrap(member);
                     break;
+                case MemberValueKind.Set:
+                    (member, canonical) = StepIntoSet(member, canonical, segment, links);
+                    break;
                 default:
-                    throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; its items cannot be addressed, and the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.");
+                    throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; its items cannot be addressed.");
             }
         }
         return (member, canonical);
@@ -139,9 +142,27 @@ public static class FieldWalker
         return (dictionary.GetDictionaryItem(key), FieldPath.Element(path, Keys.Text(key, links)));
     }
 
-    public static string ListKeys(MemberReference dictionary, IContentLinks? links, int skip = 0)
+    private static (MemberReference, string) StepIntoSet(MemberReference set, string path, PathSegment segment, IContentLinks? links)
     {
-        var keys = dictionary.EnumerateDictionaryKeys().Skip(skip).Select(k => Keys.Text(k.GetValue<object?>(), links)).ToList();
+        if (!segment.Bracketed)
+            throw new EditError($"'{path}' is a set; address an element like '{path}[<element>]'.");
+        RequireValue(set, path);
+        Type itemType = Fields.SetItemType(set.CurrentMemberType)
+            ?? throw new EditError($"'{path}' has an element type that cannot be read.");
+
+        object element = Keys.FindInSet(set, segment.Text, itemType, links)
+            ?? throw new EditError($"'{path}' has no element '{segment.Text}'. Elements: {ListKeys(set, links)}.");
+        var item = set.EnumerateCollection().First(m => Equals(m.GetValue<object?>(), element));
+        return (item, FieldPath.Element(path, Keys.Text(element, links)));
+    }
+
+    // Dictionary keys or set elements, as paths address them.
+    public static string ListKeys(MemberReference collection, IContentLinks? links, int skip = 0)
+    {
+        var items = collection.MemberKind == MemberValueKind.Set
+            ? Fields.SetItems(collection)
+            : collection.EnumerateDictionaryKeys().Select(k => k.GetValue<object?>()).ToList();
+        var keys = items.Skip(skip).Select(k => Keys.Text(k, links)).ToList();
         if (keys.Count == 0)
             return "(none)";
         string shown = string.Join(", ", keys.Take(MaxKeysListed));

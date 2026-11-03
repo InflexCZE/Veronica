@@ -19,6 +19,12 @@ public static class FieldWriter
         return CreatingParents(root, path, (member, canonical) => WriteField(member, canonical, value, links, definitions), links, basePath);
     }
 
+    internal static string WriteMember(MemberReference member, string canonical, JsonElement value, IContentLinks links) =>
+        WriteField(member, canonical, value, links, null);
+
+    private static EditError SetEdit(string path) =>
+        new($"'{path}' is a set; add an element with element_add (the element as key) or remove one with element_remove(\"{path}[<element>]\").");
+
     // Null objects on the path are created for the edit and removed again if it fails.
     internal static string CreatingParents(MemberReference root, string path, Func<MemberReference, string, string> edit, IContentLinks? links, string basePath = "")
     {
@@ -41,6 +47,13 @@ public static class FieldWriter
     {
         if (member.IsRoot)
             throw new EditError("Give the path of a field, e.g. 'UIData.Name'.");
+        if (member.IsCollectionItem && member.GetParent().MemberKind == MemberValueKind.Set)
+        {
+            string set = canonical[..canonical.LastIndexOf('[')];
+            throw new EditError($"'{canonical}' is an element of the set '{set}' and cannot be changed; remove it with element_remove and add the new one with element_add.");
+        }
+        if (member.MemberKind == MemberValueKind.Set)
+            throw SetEdit(canonical);
         if (!Fields.IsWritable(member))
             throw new EditError($"'{canonical}' is read-only.");
 
@@ -50,8 +63,6 @@ public static class FieldWriter
             Clear(member, canonical);
         else if (Fields.GetReference(member) is { } reference)
             SetReference(member, canonical, reference, value, links);
-        else if (member.MemberKind is not (MemberValueKind.Value or MemberValueKind.List or MemberValueKind.Dictionary))
-            throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.");
         else if (member.MemberKind != MemberValueKind.Value)
             throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; write its elements like '{canonical}[0]', or add one with element_add.");
         else if (Fields.IsScalar(Fields.ValueType(member)))
@@ -84,8 +95,7 @@ public static class FieldWriter
             throw new EditError(member.MemberKind switch
             {
                 MemberValueKind.Value => $"'{path}' cannot be null; write its fields instead.",
-                MemberValueKind.List or MemberValueKind.Dictionary => $"'{path}' cannot be null; write its elements like '{path}[0]'.",
-                _ => $"'{path}' is a {member.MemberKind.ToString().ToLowerInvariant()}; the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.",
+                _ => $"'{path}' cannot be null; write its elements like '{path}[0]'.",
             });
         member.SetDefault();
     }

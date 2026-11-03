@@ -206,12 +206,22 @@ public sealed class FieldReader
                     Add($"{path}: ... (+{keys.Count - shown} more: {FieldWalker.ListKeys(member, _links, shown)}; read \"{path}[<key>]\")");
                 break;
             }
+            case MemberValueKind.Set:
+            {
+                string element = Fields.SetItemType(member.CurrentMemberType) is { } type ? Fields.TypeLabel(type) : "?";
+                Add(count == 0 ? $"{path}: empty set of {element}" : $"{path}: set of {count} {element}");
+                var items = Fields.SetItems(member);
+                foreach (var item in items.Where(i => Wanted(i)))
+                    _found.Add(FieldPath.Element(path, Keys.Text(item, _links)));
+                int shown = Math.Min(items.Count, _maxElements);
+                for (int i = 0; i < shown && !_truncated; i++)
+                    Add(FieldPath.Element(path, Keys.Text(items[i], _links)));
+                if (shown < items.Count)
+                    Add($"{path}: ... (+{items.Count - shown} more: {FieldWalker.ListKeys(member, _links, shown)})");
+                break;
+            }
             default:
-                // Elements of a set have no path of their own, so a reference among them names the set.
-                if (_targets != null && member.GetValue<object?>() is System.Collections.IEnumerable elements
-                    && elements.Cast<object?>().Any(e => Wanted(e)))
-                    _found.Add(path);
-                Add($"{path}: {member.MemberKind.ToString().ToLowerInvariant()} of {count} (not readable here; the tools cannot change its elements)");
+                Add($"{path}: {member.MemberKind.ToString().ToLowerInvariant()} of {count} (not readable here)");
                 break;
         }
     }

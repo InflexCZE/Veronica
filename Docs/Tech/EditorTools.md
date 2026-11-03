@@ -12,8 +12,8 @@ The first set of agent tools that act on the loaded project. The target is build
 | `read(target, path?)` | shows a definition, or one field or subtree of it |
 | `describe(subject, member?)` | explains a type from the game's own documentation: its members, relations and units |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
-| `element_add(target, path, key?, type?)` | adds a default element to a list or dictionary |
-| `element_remove(target, path)` | removes one list element or dictionary entry |
+| `element_add(target, path, key?, type?, value?)` | adds an element to a list, dictionary or set |
+| `element_remove(target, path)` | removes one list element, dictionary entry or set element |
 | `create_folder(folder_path)` | creates a folder and any missing parents |
 | `find_template(filter?)` | lists prefab templates |
 | `create_prefab(template, name, folder)` | generates a prefab's definition set from a template |
@@ -100,15 +100,17 @@ The first set of agent tools that act on the loaded project. The target is build
 
 ## element_add and element_remove
 
-- `element_add(target, path, key?, type?)` adds a default element and returns its path, for example `Dummies[2]` or `ThrustClasses[Water]`, followed by the element's fields. The model fills it with `write`.
+- `element_add(target, path, key?, type?, value?)` adds a default element and returns its path, for example `Dummies[2]` or `ThrustClasses[Water]`, followed by the element's fields. The model fills it with `write`.
   - A list gets the element at its end. A dictionary, or a keyed list, needs `key`; an existing key is an error that points at the entry to write instead.
   - A mergeable list (`MergeableList`, how definitions such as `Dummies` store their lists) keys its elements with new ids itself, as the inspector's add button relies on, so it takes no key; one that is given is ignored.
   - An `ImmutableMergeableList` field is read, written and grown through the list it wraps, as the inspector shows it: it looks like a plain list.
   - A null collection, and null objects on its path, are created first.
   - An element of a definition-reference collection starts empty (`none`); `write` points it at an item.
+  - `value` is written to the new list or dictionary element at once, so a single-value entry (a dictionary from item to definition) takes one call; a value that does not fit removes the element again.
+  - A set's element is the element itself: given as `key` or as `value`, whichever the model passes, and parsed like a dictionary key of the same type, so a definition is named by its path or name. Set elements are addressed like dictionary keys, `Blocks[<path>]`; `read` lists them, and an element already there is an error naming it. A set element cannot be written: it is removed and the new one added.
   - `type` matters only for a collection whose element type is abstract. Without `type`, the error lists the types the inspector's add button offers for it (at most 50). `type` matches by short name, or by full name when short names collide.
-- `element_remove(target, path)` removes the element at a path as read prints it: `Dummies[1]`, `ThrustClasses[Ion]` or `ThrustClasses.Ion`. The reply says that list elements after it moved up one index.
-- Both go through the engine's own collection operations, so on a `.partialdef` they are recorded as overrides like any write.
+- `element_remove(target, path)` removes the element at a path as read prints it: `Dummies[1]`, `ThrustClasses[Ion]`, `ThrustClasses.Ion` or a set's `Blocks[<path>]`. The reply says that list elements after it moved up one index.
+- Both go through the engine's own collection operations, so on a `.partialdef` they are recorded as overrides like any write. A set on a partial is stored as what was added and removed, so adding to an override's set keeps the base's elements.
 - A collection without a setter is still edited in place; one marked `[ReadOnlyInInspector]` is not.
 
 ## Prefab components
