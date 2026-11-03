@@ -39,7 +39,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 - Progress during a turn is read from the transcript file, not from the channel.
 - `/answer` runs the card's own code, so a run exercises the answer path a user takes. A Claude turn stays running while its card is open (`ClaudeProvider.md`); the wait returning on an open card gives the fork one rule for every provider.
 - Context used is the whole prompt of the last round plus its reply: llama.cpp reports cached and newly processed prompt tokens apart.
-- Validation is for grading only, never a tool for the model: valid mods carry many benign warnings that would mislead it. Any error fails a run; warnings pass. An error outside the mod, such as in vanilla, means the Editor loaded corrupted and the run is unreliable.
+- Validation is for grading only, never a tool for the model: valid mods carry many benign warnings that would mislead it. An error the run added fails it; warnings pass. Errors a fixture already has at load are the fixture's, recorded in a TODO, and do not count. An error outside the mod, such as in vanilla, means the Editor loaded corrupted and the run is unreliable.
 
 ## Transcript
 
