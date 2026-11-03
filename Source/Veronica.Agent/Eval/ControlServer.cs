@@ -18,11 +18,14 @@ public sealed class ControlServer : IDisposable
 
     private readonly TcpListener _listener;
     private readonly RunControl _run;
+    private readonly Func<TimeSpan, CancellationToken, Task<string>>? _validation;
     private readonly CancellationTokenSource _stop = new();
 
-    public ControlServer(int port, RunControl run)
+    // validation: the Editor's issues as JSON once processing has settled, waiting at most the given time.
+    public ControlServer(int port, RunControl run, Func<TimeSpan, CancellationToken, Task<string>>? validation = null)
     {
         _run = run;
+        _validation = validation;
         _listener = new TcpListener(IPAddress.Loopback, port);
         _listener.Start();
         _ = AcceptLoopAsync();
@@ -127,8 +130,18 @@ public sealed class ControlServer : IDisposable
                 return await _run.Chat.AnswerAsync(answers).ConfigureAwait(false) is { } notTaken
                     ? (409, Error(notTaken))
                     : (200, "{\"ok\":true}");
+            case "/validation":
+                if (request.Method != "GET")
+                    return (405, Error("Use GET."));
+                if (_validation == null)
+                    return (404, Error("No validation in this host."));
+                double settle = 120;
+                if (request.Query.TryGetValue("wait", out var limit)
+                    && (!double.TryParse(limit, NumberStyles.Float, CultureInfo.InvariantCulture, out settle) || !double.IsFinite(settle) || settle < 0))
+                    return (400, Error("wait must be a number of seconds."));
+                return (200, await _validation(TimeSpan.FromSeconds(Math.Min(settle, MaxWait.TotalSeconds)), _stop.Token).ConfigureAwait(false));
             default:
-                return (404, Error("Unknown path. Paths: GET /status[?wait=<s>], POST /send, POST /answer, POST /stop."));
+                return (404, Error("Unknown path. Paths: GET /status[?wait=<s>], POST /send, POST /answer, POST /stop, GET /validation[?wait=<s>]."));
         }
     }
 

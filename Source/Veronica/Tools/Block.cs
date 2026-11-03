@@ -515,6 +515,7 @@ internal sealed class Block
         foreach (var component in Root.Components.ToList())
             component.PopulateMissingDependencies();
         KeepOverriddenSides(sharedBefore);
+        var unmet = FillInterfaceDependencies();
 
         var added = Root.Components.First(c => c.Id == id);
         string? autoTag = null;
@@ -550,7 +551,89 @@ internal sealed class Block
             string path = ComponentNames.PathOf(names[c.Id]);
             lines.Add($"{path} needs a {DefinitionTypeOf(c)!.Name}; the block fails validation without it. Point it at one with write to {path}.Definition, or create one with create_definition first.");
         }
+        lines.AddRange(unmet);
         return string.Join("\n", lines);
+    }
+
+    private const string RenderParentTag = "IRenderParent";
+    private const string RenderParentAdapter = "ParentRenderAdapterComponent";
+
+    // The Editor's filler adds only dependencies declared as a component type; one declared as an interface has
+    // several providers and is left unfilled. A block is always a child entity, so its render parent is the adapter.
+    private List<string> FillInterfaceDependencies()
+    {
+        var unmet = new List<string>();
+        var addable = AddableTypes();
+        bool block = Root.Components.Any(c => IsOrDerives(c.ComponentType, "CubeBlockComponent"));
+        bool changed = false;
+        foreach (var (side, scope) in SidesWithScope())
+        {
+            foreach (var (tag, needers, candidates) in UnfilledInterfaceDependencies(side, addable))
+            {
+                var adapter = candidates.FirstOrDefault(t => t.Name == RenderParentAdapter);
+                if (block && tag == RenderParentTag && adapter != null)
+                {
+                    if (Root is BoundEntitiesNode bound)
+                        bound.AddComponent(adapter, scope);
+                    else
+                        Root.AddComponent(adapter);
+                    changed = true;
+                    continue;
+                }
+                string sideText = Root is BoundEntitiesNode ? $" on the {scope}" : "";
+                string offer = candidates.Count == 0 ? "no component offered here provides it"
+                    : $"add one of: {string.Join(", ", candidates.Select(t => t.Name))}";
+                unmet.Add($"{string.Join(", ", needers)} need{(needers.Count == 1 ? "s" : "")} a component tagged {tag}{sideText}, which was not added: {offer}.");
+            }
+        }
+        if (changed)
+            foreach (var component in Root.Components.ToList())
+                component.PopulateMissingDependencies();
+        return unmet;
+    }
+
+    private IEnumerable<(EntityPrefabNode Side, ComponentScope Scope)> SidesWithScope()
+    {
+        if (Root is BoundEntitiesNode bound)
+        {
+            if (bound.ClientEntity is EntityPrefabNode client)
+                yield return (client, ComponentScope.Client);
+            if (bound.ServerEntity is EntityPrefabNode server)
+                yield return (server, ComponentScope.Server);
+        }
+        else if (Root is EntityPrefabNode prefab)
+        {
+            yield return (prefab, _soleSide == "Server" ? ComponentScope.Server : ComponentScope.Client);
+        }
+    }
+
+    private static List<(string Tag, List<string> Needers, List<Type> Candidates)> UnfilledInterfaceDependencies(EntityPrefabNode side, IReadOnlyCollection<Type> addable)
+    {
+        var tags = side.ComponentsMap.Values.SelectMany(c => c.Tags).ToHashSet();
+        var found = new Dictionary<string, (List<string> Needers, List<Type> Candidates)>(StringComparer.Ordinal);
+        foreach (var component in side.ComponentsMap.Values)
+        {
+            foreach (var dependency in RuntimeComponentInfo.For(component.ComponentType).BuildDependencies)
+            {
+                var type = dependency.Field.FieldType;
+                if (dependency.Optional || RuntimeComponentInfo.IsComponent(type) || !type.IsInterface || tags.Contains(dependency.Tag))
+                    continue;
+                string tag = dependency.Tag.ToString();
+                if (!found.TryGetValue(tag, out var entry))
+                    found[tag] = entry = ([], addable.Where(type.IsAssignableFrom).OrderBy(t => t.Name, StringComparer.Ordinal).ToList());
+                if (!entry.Needers.Contains(component.ComponentType.Name))
+                    entry.Needers.Add(component.ComponentType.Name);
+            }
+        }
+        return found.Select(kv => (kv.Key, kv.Value.Needers, kv.Value.Candidates)).ToList();
+    }
+
+    private static bool IsOrDerives(Type? type, string name)
+    {
+        for (; type != null; type = type.BaseType)
+            if (type.Name == name)
+                return true;
+        return false;
     }
 
     // The Editor would move a default tag held by another component to the new one, leaving two components in one

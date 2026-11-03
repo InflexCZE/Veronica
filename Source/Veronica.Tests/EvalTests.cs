@@ -368,6 +368,24 @@ public sealed class EvalTests : IDisposable
     }
 
     [Fact]
+    public async Task ServerReportsValidationWithItsWait()
+    {
+        TimeSpan? asked = null;
+        using var server = new ControlServer(0, new RunControl(new FakeChat(), null), (wait, _) =>
+        {
+            asked = wait;
+            return Task.FromResult("{\"errors\":0}");
+        });
+        Assert.Equal((200, "{\"errors\":0}"), await Http(server.Port, "GET", "/validation?wait=5"));
+        Assert.Equal(TimeSpan.FromSeconds(5), asked);
+        Assert.Equal(400, (await Http(server.Port, "GET", "/validation?wait=x")).Status);
+        Assert.Equal(405, (await Http(server.Port, "POST", "/validation")).Status);
+
+        using var bare = new ControlServer(0, new RunControl(new FakeChat(), null));
+        Assert.Equal(404, (await Http(bare.Port, "GET", "/validation")).Status);
+    }
+
+    [Fact]
     public void ServerListensOnLoopbackOnly()
     {
         using var server = new ControlServer(0, new RunControl(new FakeChat(), null));

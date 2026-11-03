@@ -45,7 +45,7 @@ internal static class EvalHook
         }
         try
         {
-            _server = new ControlServer(number, run);
+            _server = new ControlServer(number, run, EvalValidation.JsonAsync);
             Log.Default.WriteLine($"[Veronica] Eval control channel on 127.0.0.1:{number}.");
         }
         catch (SocketException e)

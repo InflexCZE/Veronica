@@ -29,6 +29,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 | `POST /send` | the body, as plain text, is sent as a user message, as if typed in the panel; refused while a turn runs |
 | `POST /answer` | the body, a JSON array with one answer per open question (`null` skips it), answers the card as the panel's Answer does; refused when no card is open |
 | `POST /stop` | stops the running turn, as the panel's Stop does |
+| `GET /validation[?wait=<s>]` | the Editor's validation issues (severity, mod or not, project, item, field, message; infos left out) with error and warning counts, read once asset processing and content pushes have been idle a moment, or after `<s>` seconds (default 120) with `idle` false |
 
 - The channel starts listening when the Veronica panel is created, after the project has loaded. A refused connection means the Editor is not ready yet.
 - A raw loopback socket serves it rather than `HttpListener`, which needs a URL reservation for a non-admin user.
@@ -38,6 +39,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 - Progress during a turn is read from the transcript file, not from the channel.
 - `/answer` runs the card's own code, so a run exercises the answer path a user takes. A Claude turn stays running while its card is open (`ClaudeProvider.md`); the wait returning on an open card gives the fork one rule for every provider.
 - Context used is the whole prompt of the last round plus its reply: llama.cpp reports cached and newly processed prompt tokens apart.
+- Validation is for grading only, never a tool for the model: valid mods carry many benign warnings that would mislead it. Any error fails a run; warnings pass. An error outside the mod, such as in vanilla, means the Editor loaded corrupted and the run is unreliable.
 
 ## Transcript
 
@@ -67,6 +69,8 @@ Every run starts a fresh Editor on a clean dev mod. The Editor's load time is ac
 8. Prints the run folder, the port, the Editor's process id and the MCP port.
 
 `Eval/Wait-Ready.ps1 -RunDir <dir>` waits for the control channel to answer, at most `-Seconds` (default 540), and prints `Ready`, `NotReady` or `Exited`. The wait is bounded so a fork waits with blocking calls: a fork that leaves work running in the background notifies the master each time it pauses, flooding the master's context.
+
+`Eval/Get-Validation.ps1 -RunDir <dir> [-Label <name>]` saves `/validation` as `validation-<name>.json` in the run folder, prints a summary line and every error, and exits 0 (no errors), 1 (errors on the mod), 2 (errors outside the mod) or 3 (no answer).
 
 `Eval/Stop-Run.ps1 -RunDir <dir>` kills the Editor and copies its logs into the run folder.
 
@@ -99,7 +103,7 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 ## Outputs
 
 Not committed, under `.tmp/eval/`:
-- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, a file per subagent run (`wiki-<n>.jsonl`), `context.patch`, `logs/` (the Editor's), and the fork's `results.md`.
+- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, a file per subagent run (`wiki-<n>.jsonl`), `context.patch`, `validation-start.json` and `validation-end.json`, `logs/` (the Editor's), and the fork's `results.md`.
 - `findings.md`: the master's running log of failure patterns with run references, hypotheses tested and their outcome.
 
 Context changes reach the repo only after the owner approves them.
