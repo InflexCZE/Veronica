@@ -7,6 +7,7 @@ namespace Veronica.Agent;
 // session; the caller decides what of the answer the chat sees.
 // Once the prompt grows past the context window less ContextReserve, tool calls are not run but answered
 // with ContextFullOutput, so room for the answer is always left.
+// CallReminder, when set, is appended once to the result of its AfterCalls-th tool call.
 public sealed record SubAgentRequest(
     string Name,
     string Title,
@@ -15,7 +16,10 @@ public sealed record SubAgentRequest(
     IReadOnlyList<ITool> Tools,
     TurnLimits Limits,
     int ContextReserve,
-    string ContextFullOutput);
+    string ContextFullOutput,
+    CallReminder? CallReminder = null);
+
+public sealed record CallReminder(int AfterCalls, string Text);
 
 // Text is the last thing it wrote: its answer, or what it had when the rounds ran out. Null when it wrote nothing.
 public sealed record SubAgentResult(string? Text, bool RoundCap);
@@ -49,6 +53,7 @@ public static class SubAgent
         private readonly string _roundCapNotice = ClientToolLoop.RoundCapNotice(request.Limits.MaxRounds);
         private long _chars = request.SystemPrompt.Length + request.Brief.Length;
         private int? _reported;
+        private int _calls;
 
         public string? Text { get; private set; }
 
@@ -78,7 +83,10 @@ public static class SubAgent
                 return new ToolResult(request.ContextFullOutput);
             try
             {
-                return await tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+                var result = await tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
+                return ++_calls == request.CallReminder?.AfterCalls
+                    ? result with { Output = result.Output + "\n\n" + request.CallReminder.Text }
+                    : result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

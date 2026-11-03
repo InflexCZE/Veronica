@@ -84,6 +84,11 @@ public static class Prompts
     public const string ResearchContextFull =
         "Not run: your context is nearly full. Read nothing more, and answer now from what you have.";
 
+    public const int ResearchReminderCalls = 16;
+
+    public static readonly string ResearchReminder =
+        $"Reminder: you have made {ResearchReminderCalls} tool calls. If what you have read already answers Veronica's question, write your answer now in the three sections. If something the answer needs is still missing, read only that.";
+
     public const string ResearchLengthNudge =
         "Your reply was cut off: you spent it all thinking. Read the one source you need most, or answer now.";
 

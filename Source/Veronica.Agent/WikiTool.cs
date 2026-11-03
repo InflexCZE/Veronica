@@ -47,7 +47,8 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
             [new WikiPageTool(pages), new SkillTool(skills, new SkillPlan()), .. projectTools],
             Prompts.ResearcherLimits,
             AnswerReserve,
-            Prompts.ResearchContextFull);
+            Prompts.ResearchContextFull,
+            new CallReminder(Prompts.ResearchReminderCalls, Prompts.ResearchReminder));
         var result = await runner(request, cancellationToken).ConfigureAwait(false);
         if (result.Text == null)
             return new ToolResult("The research ended without an answer. Continue without it.");

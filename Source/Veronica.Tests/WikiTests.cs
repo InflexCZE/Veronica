@@ -142,6 +142,18 @@ public sealed class WikiTests
     }
 
     [Fact]
+    public async Task SubAgent_AppendsTheCallReminderOnceToItsCall()
+    {
+        var provider = new FakeProvider((null, "wiki_page"), (null, "wiki_page"), (null, "wiki_page"), ("Facts: z", null));
+
+        await SubAgent.RunAsync(provider, Request() with { CallReminder = new CallReminder(2, "REMIND") }, null, CancellationToken.None);
+
+        Assert.DoesNotContain("REMIND", provider.Requests[1].Messages[^1].Content);
+        Assert.EndsWith("\n\nREMIND", provider.Requests[2].Messages[^1].Content);
+        Assert.DoesNotContain("REMIND", provider.Requests[3].Messages[^1].Content);
+    }
+
+    [Fact]
     public async Task SubAgent_ReportsTheRoundCap()
     {
         var provider = new FakeProvider(("Partial.", "wiki_page"));
