@@ -24,7 +24,9 @@ public static class Elements
     private static string AddTo(MemberReference collection, string canonical, string? key, string? typeName, IContentLinks links)
     {
         if (collection.MemberKind is not (MemberValueKind.List or MemberValueKind.Dictionary))
-            throw new EditError($"'{canonical}' is not a list or dictionary.");
+            throw new EditError(collection.MemberKind == MemberValueKind.Value
+                ? $"'{canonical}' is not a list or dictionary."
+                : $"'{canonical}' is a {collection.MemberKind.ToString().ToLowerInvariant()}; the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.");
         RequireEditable(collection, canonical);
 
         bool dictionary = collection.MemberKind == MemberValueKind.Dictionary;

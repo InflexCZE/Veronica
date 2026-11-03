@@ -211,7 +211,7 @@ public sealed class FieldReader
                 if (_targets != null && member.GetValue<object?>() is System.Collections.IEnumerable elements
                     && elements.Cast<object?>().Any(e => Wanted(e)))
                     _found.Add(path);
-                Add($"{path}: {member.MemberKind.ToString().ToLowerInvariant()} of {count} (not readable here)");
+                Add($"{path}: {member.MemberKind.ToString().ToLowerInvariant()} of {count} (not readable here; the tools cannot change its elements)");
                 break;
         }
     }

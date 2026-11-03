@@ -41,7 +41,7 @@ public static class FieldWalker
                     member = Fields.Unwrap(member);
                     break;
                 default:
-                    throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; its items cannot be addressed.");
+                    throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; its items cannot be addressed, and the tools cannot change its elements. Tell the user it is left to do by hand in the Editor's inspector.");
             }
         }
         return (member, canonical);

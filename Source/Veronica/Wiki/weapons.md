@@ -1,7 +1,7 @@
 ---
 name: weapons
 title: Weapons: ammo, projectiles, damage, muzzle effects, turret target priority
-source: SE2 source AmmoDefinition, ProjectileDefinition, SimulatedProjectileDefinition, ExplosionDefinition, ProjectileWeaponEffectsDefinition, ProjectileWeaponEffectsComponent, AutoTargetingDefinition, PriorityTargetDefinition, PriorityTargetComponent; vanilla weapon blocks (Assets/Blocks/GatlingCannon, GatlingTurret, InteriorTurret, RocketLauncher, RocketTurret), Assets/System/Projectiles, Assets/Templates/Blocks/BaseDefinitions
+source: SE2 source ProjectileWeaponBaseComponent (reload), ProjectileWeaponDefinition (AmmoTypes, BarrelDummyType), AmmoDefinitionsConfiguration, AmmoDefinition, ProjectileDefinition, SimulatedProjectileDefinition, ExplosionDefinition, ProjectileWeaponEffectsDefinition, ProjectileWeaponEffectsComponent, AutoTargetingDefinition, PriorityTargetDefinition, PriorityTargetComponent; vanilla weapon blocks (Assets/Blocks/GatlingCannon, GatlingTurret, InteriorTurret, RocketLauncher, RocketTurret), Assets/System/Projectiles, Assets/Templates/Blocks/BaseDefinitions
 description: How a weapon block's shots are defined: weapon, ammo and projectile definitions, where damage, range, trail, impact and muzzle effects live, explosive rounds, and how a turret picks priority targets.
 ---
 Ammo and projectiles:
@@ -12,6 +12,12 @@ Ammo and projectiles:
   - Visuals: the trail and impact look.
   - DefaultDecal: the mark left where it hits.
 - Another trail or impact look needs a projectile definition of its own: a copy, which the ammo then points at.
+
+Which ammo a gun fires:
+- The weapon's ProjectileWeaponDefinition.AmmoTypes lists the ammo items it accepts, in priority order.
+- A reload takes an ammo item and looks up its AmmoDefinition in AmmoDefinitionsConfiguration.AmmoTypes (the configurations page). The ammo and projectile definitions in a vanilla gun's own folder are only its state before the first reload, then replaced. The damage a vanilla gun deals is in the projectile of the AmmoDefinition its ammo item maps to there.
+- A new ammo is its own item, AmmoDefinition and projectile (copies of vanilla's), an entry in the mod's override of AmmoDefinitionsConfiguration, and the item in the weapon's AmmoTypes. The gun's inventory must admit the item (the inventory-and-conveyors page).
+- Shots leave the gun at the dummies whose type the weapon definition's BarrelDummyType names; the block's model needs at least one in its Dummies, placed at the muzzle of that model.
 - Explosive rounds: a SimulatedProjectileDefinition with an ExplosionDefinition (optional; the blast when the round is destroyed). ExplosionCullingDistance skips the blast when no observer is that close, in metres; 0 turns this off.
 
 Muzzle effects: the muzzle flash and its offsets are on the weapon's ProjectileWeaponEffectsDefinition, apart from the projectile: OnFireParticle, BarrelOffset (position), BarrelOrientationOffset (rotation).
