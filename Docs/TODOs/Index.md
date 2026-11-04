@@ -56,5 +56,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |
 | [PrefabComponentEdits.md](PrefabComponentEdits.md) | Editor tools: prefab component edits refused per block, not per side; no rollback of a failed add |
 | [TimeSpanWrites.md](TimeSpanWrites.md) | Editor tools: a TimeSpan write error does not show the accepted form |
+| [EditorStartupHang.md](EditorStartupHang.md) | Eval: an Editor start sometimes hangs after load (startup push never finishes) |
 | [ReplaceBlockComponent.md](ReplaceBlockComponent.md) | Editor tools: a block's component cannot be replaced, e.g. made powerable (owner decision) |
 | [PrefabTagMove.md](PrefabTagMove.md) | Editor tools: a tag that dependents rely on cannot move to another component (owner decision) |
