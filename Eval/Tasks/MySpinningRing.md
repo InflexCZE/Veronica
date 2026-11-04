@@ -2,7 +2,7 @@
 
 ## Prompt
 
-My gyroscope block should have a ring that spins while it works. I imported the ring's model.
+My gyroscope block should have a ring that spins while it works. For the ring, reuse my MyThruster model.
 
 ## User
 
