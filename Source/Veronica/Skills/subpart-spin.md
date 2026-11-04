@@ -4,7 +4,7 @@ description: Use when a part of a block should spin continuously, such as a ring
 ---
 Needs:
 - the part: its subpart prefab
-- the axis it spins around, and how fast: the user's own, or as a vanilla part (e.g. a gyroscope's rings, Assets/Blocks/Gyroscopes; a thruster's fan, Assets/Blocks/Thrusters/Atmospheric)
+- the axis it spins around, and how fast: the user's own, or as a vanilla part (e.g. a gyroscope's rings, Assets/Blocks/Gyroscopes; a thruster's fan, Assets/Blocks/Thrusters/Atmospheric/<size>/Subparts)
 - what drives it: spinning while the block works, or speed following a thruster's thrust
 
 Plan:

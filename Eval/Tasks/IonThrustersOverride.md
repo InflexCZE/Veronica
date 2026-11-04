@@ -16,6 +16,6 @@ Make all ion thrusters twice as strong and give them a red flame.
 
 1. The dev mod holds an override of each vanilla ion thruster's `ThrusterDefinition` (Ion 100, 150, 500, 750), with `ThrustPower` twice the vanilla value within float rounding: 17900.612, 164985.76, 1712737.1, 11273974.
 2. `ResourcesRequiredToThrust` is unchanged on all four (40, 240, 1800, 8000).
-3. The ion flame is red: overrides of the flame effect's three emitters (`ParticleEmitter_Placeholder_ThrusterFlame_A`, `_B`, `_B_Dot`), with every key of `TimeLines.Color` red-dominant (R greater than G and B) and its alpha (W) unchanged. The light (`ParticleLightDefinition`) is optional; note it in the run note either way.
+3. The ion flame is red, by either route: overrides of the flame effect's three emitters (`ParticleEmitter_Placeholder_ThrusterFlame_A`, `_B`, `_B_Dot`), or copies of the effect and its emitters with each ion thruster's `ThrusterEffectsComponentDefinition` overridden to play the copy. Either way every key of `TimeLines.Color` on the emitters the ion flame plays is red-dominant (R greater than G and B) with its alpha (W) unchanged; note the route. The light (`ParticleLightDefinition`) is optional; note it in the run note either way.
 4. No other thruster class is changed.
 5. The model called `show` on a changed block or override, and nothing outside the dev mod was changed.
