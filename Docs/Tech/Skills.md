@@ -75,18 +75,21 @@ Small models drop steps: after a failed write, or after handing off to an append
 | tool | does |
 |---|---|
 | `skill(name)` | reads a skill's overview; the harness remembers it was read |
-| `activate_skill(name)` | makes the skill the active one and starts its plan; the result names the first item. A skill not read yet comes with its overview, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
+| `activate_skill(name)` | makes the skill the active one and starts its plan; the result names the first item. An open plan pauses under it. A skill not read yet comes with its overview, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
 | `mark_completed(proof)` | marks the current item completed, with one line on what was done; names the next |
 | `mark_skipped(reason)` | marks the current item skipped, with the reason it does not apply; names the next |
 | `wait_for_user()` | ends the turn to wait while the user does a step in the Editor that the reply described; questions go through `ask_user` (`Agent.md`, Questions to the user) |
 
-- One active skill at a time. Chained skills hand off through their last item, which names the skill to activate next: activating another skill replaces a plan whose only open item is its last. Only the last skill of a chain shows the result.
-- Activating another skill while an earlier item is still open is refused, naming the open items. A replace used to drop them without a word: in eval runs a failed write was followed by the next skill, and the plan's "Fill the models" item was lost. Each open item now has to be marked completed or skipped first, with its proof or reason.
+- One active skill at a time, on a stack of plans. Activating another skill pauses the open plan at its current item; when the new skill's plan is done, the paused plan resumes at that same item. An item that names the next skill is done by activating it, and the model closes it after the nested plan, with proof of work that happened. Closing an item before the activation it asks for made small models write proof of work not done yet, and a plan replaced on activation lost its remaining items.
+- The resume result tells the model to close the item if its work is done, not to redo it: the item text still asks for the work the nested skill just did. If it needs another skill (a block that does two things), the model activates that one from the same item.
+- Activating a skill that is already paused lower on the stack is refused, naming the active skill's current item and how to close it; the paused skill resumes on its own. A second copy of a plan would leave two lists of the same items.
+- The stack has no depth cap: chains are a few skills deep.
 - Strict order: marking takes no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so the strict order does not deadlock on an item that does not fit.
 - Marking an item completed needs proof: one line on what the model did. Ticking an item whose work never happened, or skipping one that applies, is a form of hallucination; small models did both, as if marking handed the work to the Editor. Stating what was done makes such a claim visible in the transcript, and the tool says that marking does none of the work.
 - The tools are named as marks in the past tense: they are called after the work, not to do it.
 - The next item is named only in the plan tools' results, not on every tool result: a reminder everywhere is noise the model learns to ignore. The two places a model loses its step also name it: the end gate below, and the length nudge, since a model cut off while thinking has lost track of where it was.
-- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it; `/clear` drops it with what was read.
+- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it; `/clear` drops it, the paused plans and what was read.
+- The current item named anywhere (end gate, length nudge, wiki research brief) is the active plan's only; paused plans are named when they pause and when they resume.
 - Rounds that call only the skill and plan tools are free, so bookkeeping does not eat the task's budget.
 - End gate: ending a turn with an item open sends the model back once (the loop's end nudge), naming the open item and the choices. The message is marked as coming from the Editor, and the system prompt says so: unmarked, a model takes it for the user turning down its question. A deliberate stop for the user is a call to `ask_user` or `wait_for_user`, which ends the turn without the reminder; the reminder names both. Small models act through tool calls: offered skipping and a reply marker side by side, the 9B skipped item after item to wait for an answer. The reminder says skipping is only for items that do not apply, never for waiting. Ending again is let through, so no model loops. The reminder re-arms only after a tool call outside the skill and plan tools.
 - `wait_for_user` in a reply with no text, and no `ask_user` call, does not end the turn: its result says the question belongs in the same reply. Only that reply's text counts, because models narrate their work in earlier rounds; a model once waited with nothing written, leaving the user nothing to answer.
@@ -96,5 +99,5 @@ Small models drop steps: after a failed write, or after handing off to an append
 
 ## Testing
 
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a skill without a plan, the proof and reason, the refused and the allowed replace, the read tracking, the free rounds, the end gate and the activation hint are covered too.
+- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a skill without a plan, the proof and reason, pausing and resuming nested plans, the refused activation of a paused skill, the read tracking, the free rounds, the end gate and the activation hint are covered too.
 - A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.

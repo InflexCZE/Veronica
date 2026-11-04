@@ -46,6 +46,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
 | [PlanChainFollowUps.md](PlanChainFollowUps.md) | Skills: optional follow-up skills (add-to-gscreen) are lost in a skill chain |
+| [PausedPlans.md](PausedPlans.md) | Skills: paused plans outlive a change of task; no drop tool, no depth cap (owner decision) |
+| [WeaponExtrasOutsidePlan.md](WeaponExtrasOutsidePlan.md) | Skills: block-weapon's optional extras have no plan item (owner decision) |
 | [PartialPrefabs.md](PartialPrefabs.md) | Editor tools: no partial copies or overrides of prefabs |
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |

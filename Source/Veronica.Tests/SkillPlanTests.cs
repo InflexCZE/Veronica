@@ -9,6 +9,7 @@ public sealed class SkillPlanTests
     private static readonly Skill Block = new("create-block", "d", "Plan:\n- Create the prefab\n\nBLOCK BODY", ["Create the prefab", "Fill block name", "Next skill"]);
     private static readonly Skill Thruster = new("block-thruster", "d", "THRUSTER BODY", ["Fill thrust", "Show the block"]);
     private static readonly Skill Reference = new("partial-definitions", "d", "REFERENCE BODY", []);
+    private static readonly Skill Spin = new("subpart-spin", "d", "SPIN BODY", ["Spin it"]);
 
     private sealed class Chat
     {
@@ -17,8 +18,8 @@ public sealed class SkillPlanTests
 
         public Chat() => Tools = new ToolSet(
         [
-            new SkillTool(() => [Block, Thruster, Reference], Plan),
-            new ActivateSkillTool(() => [Block, Thruster, Reference], Plan),
+            new SkillTool(() => [Block, Thruster, Reference, Spin], Plan),
+            new ActivateSkillTool(() => [Block, Thruster, Reference, Spin], Plan),
             new MarkCompletedTool(Plan),
             new MarkSkippedTool(Plan),
             new WaitForUserTool(),
@@ -143,6 +144,7 @@ public sealed class SkillPlanTests
         var output = chat.Call("activate_skill", """{"name":"create-block"}""");
 
         Assert.StartsWith("create-block is already active. Work on item 2 of 3", output);
+        Assert.EndsWith("or mark_skipped with a reason if it does not apply.", output);
         Assert.Equal(PlanItemState.Done, chat.Plan.Items[0].State);
     }
 
@@ -163,7 +165,7 @@ public sealed class SkillPlanTests
 
         var output = chat.Call("activate_skill", """{"name":"thruster"}""");
 
-        Assert.Equal("There is no skill named 'thruster'; the skills are: create-block, block-thruster, partial-definitions.", output);
+        Assert.Equal("There is no skill named 'thruster'; the skills are: create-block, block-thruster, partial-definitions, subpart-spin.", output);
         Assert.Equal("create-block", chat.Plan.ActiveSkill);
     }
 
@@ -195,7 +197,7 @@ public sealed class SkillPlanTests
     }
 
     [Fact]
-    public void Activate_is_refused_while_an_item_before_the_last_is_open()
+    public void Activate_pauses_the_open_plan_at_its_current_item()
     {
         var chat = new Chat();
         chat.Call("activate_skill", """{"name":"create-block"}""");
@@ -203,37 +205,90 @@ public sealed class SkillPlanTests
 
         var output = chat.Call("activate_skill", """{"name":"block-thruster"}""");
 
-        Assert.Equal("create-block still has open items: 2. Fill block name. Before activating another skill, call mark_completed with proof for each one you did, " +
-            "or mark_skipped with the reason it does not apply.", output);
-        Assert.Equal("create-block", chat.Plan.ActiveSkill);
-        Assert.Equal(PlanItemState.Open, chat.Plan.Items[1].State);
-    }
-
-    [Fact]
-    public void Activate_from_the_last_item_hands_off()
-    {
-        var chat = new Chat();
-        chat.Call("activate_skill", """{"name":"create-block"}""");
-        Done(chat);
-        Done(chat);
-
-        var output = chat.Call("activate_skill", """{"name":"block-thruster"}""");
-
-        Assert.StartsWith("Skill block-thruster is active. Work on item 1 of 2 now: Fill thrust.", output);
+        Assert.StartsWith("Skill block-thruster is active. create-block pauses at item 2 and resumes when block-thruster's plan is done. " +
+            "Work on item 1 of 2 now: Fill thrust.", output);
+        Assert.Equal("block-thruster", chat.Plan.ActiveSkill);
         Assert.Equal(["Fill thrust", "Show the block"], chat.Plan.Items.Select(i => i.Text));
     }
 
     [Fact]
-    public void Reset_drops_the_plan_and_what_was_read()
+    public void A_finished_nested_plan_resumes_the_paused_one_at_the_same_item()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        Done(chat);
+        Done(chat);
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        Done(chat);
+
+        var output = Done(chat);
+
+        Assert.Equal("Done: Show the block (did it). block-thruster's plan is done. Back to create-block, item 3 of 3: Next skill. " +
+            "If the work this item asks for is done, call mark_completed with proof; do not redo it. If it needs another skill, activate it.", output);
+        Assert.Equal("create-block", chat.Plan.ActiveSkill);
+        Assert.Equal([PlanItemState.Done, PlanItemState.Done, PlanItemState.Open], chat.Plan.Items.Select(i => i.State));
+        Assert.StartsWith("Done: Next skill (did it). The plan of create-block is through.", Done(chat));
+        Assert.Null(chat.Plan.ActiveSkill);
+    }
+
+    [Fact]
+    public void Nested_plans_resume_in_order()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        Done(chat);
+        chat.Call("activate_skill", """{"name":"subpart-spin"}""");
+
+        Assert.Contains("Back to block-thruster, item 2 of 2: Show the block.", Done(chat));
+        Assert.Contains("Back to create-block, item 1 of 3: Create the prefab.", Done(chat));
+        Assert.Equal("create-block", chat.Plan.ActiveSkill);
+    }
+
+    [Fact]
+    public void Activate_a_paused_skill_is_refused_with_the_active_item()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        Done(chat);
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        Done(chat);
+
+        var output = chat.Call("activate_skill", """{"name":"create-block"}""");
+
+        Assert.Equal("create-block is paused at item 2 under block-thruster. block-thruster is on item 2 of 2: Show the block. " +
+            "Work on it, then call mark_completed with proof, or mark_skipped with a reason if it does not apply; " +
+            "when block-thruster's plan is done, create-block resumes at item 2.", output);
+        Assert.Equal("block-thruster", chat.Plan.ActiveSkill);
+    }
+
+    [Fact]
+    public void Current_item_and_end_nudge_name_only_the_active_plan()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+
+        Assert.Equal("item 1 of 2 of block-thruster: Fill thrust", chat.Plan.CurrentItem());
+        Assert.DoesNotContain("create-block", chat.Plan.EndNudge());
+    }
+
+    [Fact]
+    public void Reset_drops_the_plans_and_what_was_read()
     {
         var chat = new Chat();
         chat.Call("skill", """{"name":"create-block"}""");
         chat.Call("activate_skill", """{"name":"create-block"}""");
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
 
         chat.Plan.Reset();
 
         Assert.Null(chat.Plan.ActiveSkill);
         Assert.Contains("BLOCK BODY", chat.Call("activate_skill", """{"name":"create-block"}"""));
+        Done(chat);
+        Done(chat);
+        Assert.StartsWith("Done: Next skill (did it). The plan of create-block is through.", Done(chat));
+        Assert.Null(chat.Plan.ActiveSkill);
     }
 
     [Fact]
