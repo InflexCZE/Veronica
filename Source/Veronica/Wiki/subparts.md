@@ -23,6 +23,7 @@ What the subpart prefab needs:
 Animations:
 - Rigid only, each a component and definition on the subpart prefab: RotationAnimation and TranslationAnimation move to a target and back on toggle; InfiniteRotationAnimation and InfiniteTranslationAnimation run continuously.
 - No scale, bone or keyframe animation exists for blocks.
+- InfiniteRotationAnimationDefinition: RotationAxis in the part's own axes, AngularSpeed in degrees per second, AngularSpeedup and AngularSlowdown in degrees per second gained or lost each second. The part speeds up from rest, so with AngularSpeedup 0 it never turns, with no error.
 - FunctionalBlockAnimationControllerComponent (no definition values) on the block starts and stops the subparts' animations with the block's Working state, so they stop without power. Without it an infinite animation keeps running.
 - Speed from thrust: ThrusterAnimationOverrideComponent (no definition values) on a thruster block feeds the thrust fraction to its subparts. InfiniteRotationAnimationDefinition.VariableAngularInterpolatedSpeed is then the speed at full thrust; speed goes from AngularSpeed at no thrust to it. Left null, the speed is always AngularSpeed.
 

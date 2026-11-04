@@ -1,0 +1,36 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "11d52c9a-0a76-4426-8c2b-baded6461f8e",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "03aVuRycllOo0Lnk2dIuFw=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 1,
+          "Identifier": "P_PARTIAL_DEF"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "Rr6DA9xJxlwR9L+ZcHxSrQ==",
+            "FileName": "MyGyro_Server.def"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [],
+        "AssetHash": "03aVuRycllOo0Lnk2dIuFw==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      }
+    ]
+  }
+}

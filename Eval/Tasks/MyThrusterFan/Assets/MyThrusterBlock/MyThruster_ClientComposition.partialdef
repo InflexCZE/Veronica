@@ -1,0 +1,78 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "c8a8e29f-e2aa-471f-a9ff-ac64074acd0e",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "c70a9fbb-4d29-4790-ba03-70acfb166c83",
+      "Components": {
+        "$DeltaEncoded": true,
+        "Keys": [
+          "b7bf405c-71aa-46a1-a5ec-4c690f2ab7e3",
+          "e58b8f69-45da-40d4-82b0-f1a82564a53a",
+          "a1687822-b4c2-4bcb-961e-3e44fae3221d",
+          "d358358e-30b3-484a-b8b8-2e5568c7298b",
+          "bc5652a0-1296-4040-adc3-a2b9c35d5afc",
+          "4f2bc5f9-6a6d-4347-a1eb-5937cbce6727",
+          "4e49ffa8-efc3-4043-9adc-04f5f1408d61",
+          "72e2ef60-d699-48a2-9959-4e246eecdacc",
+          "24f8dfe2-6b3f-4764-a9db-6e4383dcae5d",
+          "30a7eb7b-1873-479a-b7d8-fe5db6a0567e",
+          "b6076adf-7eaf-428d-af4f-d7cc87969340"
+        ],
+        "Changed": [
+          {
+            "Kind": "Update",
+            "Index": 3,
+            "Value": {
+              "Definition": "4390ec40-660d-42b1-afe8-011c0a86cdf8"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 4,
+            "Value": {
+              "Definition": "154bb765-25f0-4bc6-8d65-69dbae62555a"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 5,
+            "Value": {
+              "Definition": "5345ee18-fac9-4876-bace-a27b6bab5e48"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 6,
+            "Value": {
+              "Definition": "f9504474-5bca-4ac7-8362-f8f8159efe2e"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 7,
+            "Value": {
+              "Definition": "c71388c1-527f-4a71-ac45-2856639968b1"
+            }
+          },
+          {
+            "Kind": "Update",
+            "Index": 10,
+            "Value": {
+              "Definition": "abc9d671-2bde-4cbb-b5a7-ec67709d4b93"
+            }
+          }
+        ],
+        "Removed": []
+      }
+    },
+    "DefinitionType": "VRage:Keen.VRage.DCS.Definitions.EntityCompositeDefinition",
+    "PriorityOverride": false
+  }
+}

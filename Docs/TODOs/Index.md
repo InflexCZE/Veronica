@@ -20,6 +20,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [BoardStaleAfterReload.md](BoardStaleAfterReload.md) | Board: tiles of the previous project after a reload (owner decision) |
 | [BoardLayoutGaps.md](BoardLayoutGaps.md) | Board: back edges, late size changes, unconnected nodes, cancelled drags |
 | [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
+| [SubpartToggleMotion.md](SubpartToggleMotion.md) | Skills: subparts that move to a target and back on a toggle |
 | [SkippedBlockKinds.md](SkippedBlockKinds.md) | Skills: block kinds and parts left out of the wide block run (owner decision) |
 | [RespawnPreviewCrash.md](RespawnPreviewCrash.md) | Editor: show of a block with a respawn point crashes the Editor; medical room kind held (owner decision) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
@@ -54,5 +55,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [OpenAiServerQuirks.md](OpenAiServerQuirks.md) | Chat: OpenAI-compatible server behaviours not handled (one owner decision) |
 | [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |
 | [PrefabComponentEdits.md](PrefabComponentEdits.md) | Editor tools: prefab component edits refused per block, not per side; no rollback of a failed add |
+| [TimeSpanWrites.md](TimeSpanWrites.md) | Editor tools: a TimeSpan write error does not show the accepted form |
 | [ReplaceBlockComponent.md](ReplaceBlockComponent.md) | Editor tools: a block's component cannot be replaced, e.g. made powerable (owner decision) |
 | [PrefabTagMove.md](PrefabTagMove.md) | Editor tools: a tag that dependents rely on cannot move to another component (owner decision) |

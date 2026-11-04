@@ -1,0 +1,17 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "06cab287-3d4e-4650-871a-93fa17591a31",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "c71388c1-527f-4a71-ac45-2856639968b1"
+    },
+    "DefinitionType": "Game2:Keen.Game2.Client.WorldObjects.CubeBlocks.Effects.BlockEffectsComponentDefinition",
+    "PriorityOverride": false
+  }
+}

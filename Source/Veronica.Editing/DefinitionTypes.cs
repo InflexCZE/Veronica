@@ -17,6 +17,10 @@ public static class DefinitionTypes
         var exact = choices.Where(t => Same(t.Name, wanted) || Same(t.Name, wanted + suffix) || Same(t.FullName, wanted)).ToList();
         if (exact.Count == 1)
             return exact[0];
+        // Internal types sharing a public type's name are migration leftovers the game no longer builds.
+        var visible = exact.Where(t => t.IsVisible).ToList();
+        if (visible.Count == 1)
+            return visible[0];
         if (exact.Count > 1)
             throw new EditError($"'{wanted}' is ambiguous; use one of: {string.Join(", ", exact.Select(t => t.FullName).Order(StringComparer.OrdinalIgnoreCase))}.");
 

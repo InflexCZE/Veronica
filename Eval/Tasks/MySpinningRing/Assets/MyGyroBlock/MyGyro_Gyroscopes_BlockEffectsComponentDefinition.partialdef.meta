@@ -1,0 +1,36 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "00ad9c7e-0400-49ae-9ea7-fe2d2d9b02a1",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "EjRrksdMHug+8xX/6wQSmQ=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 1,
+          "Identifier": "P_PARTIAL_DEF"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "tX++K+mL6YmclOXCj5Irvg==",
+            "FileName": "MyGyro_Gyroscopes_BlockEffectsComponentDefinition.def"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [],
+        "AssetHash": "EjRrksdMHug+8xX/6wQSmQ==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      }
+    ]
+  }
+}

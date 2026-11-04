@@ -1,0 +1,36 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "c7ec5de3-568e-4d10-bb15-d4acdd1bfce6",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "V4f/rja5AjME6Ig9Oe9TYQ=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 1,
+          "Identifier": "P_PARTIAL_DEF"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "4FzlRfrOqKyz75VV8gLppw==",
+            "FileName": "MyThruster_Server.def"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [],
+        "AssetHash": "V4f/rja5AjME6Ig9Oe9TYQ==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      }
+    ]
+  }
+}

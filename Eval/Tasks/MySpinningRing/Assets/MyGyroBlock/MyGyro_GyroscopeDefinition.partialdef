@@ -1,0 +1,18 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "3a7afb96-a6ed-4a8a-bf1b-ceb43edc4cca",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "3ace7acf-98f3-4948-984e-8b626ce59ff3",
+      "MaxTorque": 217980
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.Movement.GyroscopeDefinition",
+    "PriorityOverride": false
+  }
+}

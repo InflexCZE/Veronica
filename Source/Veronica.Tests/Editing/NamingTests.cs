@@ -217,6 +217,21 @@ public sealed class NamingTests
         Assert.Contains("types containing its words: VoxelMaterialDefinition, VoxelRenderMaterialDefinition.", e.Message);
     }
 
+    public static class PublicTypes
+    {
+        public sealed class SpinComponent;
+    }
+
+    private static class InternalTypes
+    {
+        public sealed class SpinComponent;
+    }
+
+    [Fact]
+    public void Same_name_prefers_the_only_public_type() =>
+        Assert.Equal(typeof(PublicTypes.SpinComponent),
+            DefinitionTypes.Pick([typeof(InternalTypes.SpinComponent), typeof(PublicTypes.SpinComponent)], "Spin", "Component", "component type", "X"));
+
     [Fact]
     public void Definition_type_without_candidates_says_so()
     {

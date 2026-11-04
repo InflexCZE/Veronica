@@ -1,0 +1,36 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Metafiles.MetaData",
+  "$Value": {
+    "AssetID": "cd2660c4-5dbb-48a9-9961-2516825cb3ef",
+    "InternalItems": [
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Structure.FileInfoMetaDataItem",
+        "FileHash": "T7cDokJZnQw0ihsD3EOznw=="
+      },
+      {
+        "$Type": "VRage:Keen.VRage.ContentPipeline.Project.Features.AssetProcessing.AssetProcessingMetaDataItem",
+        "ProcessorInfo": {
+          "Version": 1,
+          "Identifier": "P_PARTIAL_DEF"
+        },
+        "ContentFiles": {
+          "MainOutput": {
+            "FileHash": "byWkiGHVeYXhXkS0SHu46g==",
+            "FileName": "MyGyro_BreakableBlockDefinition.def"
+          },
+          "AdditionalOutputs": []
+        },
+        "Problems": [],
+        "DependenciesHashes": [],
+        "AssetHash": "T7cDokJZnQw0ihsD3EOznw==",
+        "OverrideDetachedState": false,
+        "IgnoredErrors": "None"
+      }
+    ]
+  }
+}

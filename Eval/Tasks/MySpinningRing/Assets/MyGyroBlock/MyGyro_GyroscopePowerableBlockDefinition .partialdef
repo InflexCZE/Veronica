@@ -1,0 +1,23 @@
+{
+  "$Bundles": {
+    "Game2": "4.0.0.3161",
+    "System.Runtime": "1.0.0.0",
+    "VRage": "4.0.0.3161"
+  },
+  "$Type": "VRage:Keen.VRage.ContentPipeline.Definitions.PartialDefinitionDiff",
+  "$Value": {
+    "BaseDefinition": "f480988f-3239-4736-a8fd-81c13f009c8c",
+    "PartialDefinitionKind": "Copy",
+    "Manipulator": {
+      "Guid": "8f0f1e73-0015-4657-843b-f269194b48ae",
+      "UIData": {
+        "Name": "My Gyro"
+      },
+      "ConsumedResource": {
+        "Amount": 5
+      }
+    },
+    "DefinitionType": "Game2:Keen.Game2.Simulation.WorldObjects.CubeBlocks.PowerableBlockDefinition",
+    "PriorityOverride": false
+  }
+}
