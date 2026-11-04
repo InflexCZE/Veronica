@@ -22,13 +22,17 @@ public sealed class FieldReader
     private readonly IReadOnlySet<Guid>? _targets;
     private readonly List<string> _found = [];
 
-    private FieldReader(IContentLinks links, int maxLines, int maxElements = MaxElements, int maxDepth = MaxDepth, IReadOnlySet<Guid>? targets = null)
+    private readonly List<FieldEntry>? _entries;
+
+    private FieldReader(IContentLinks links, int maxLines, int maxElements = MaxElements, int maxDepth = MaxDepth, IReadOnlySet<Guid>? targets = null,
+        List<FieldEntry>? entries = null)
     {
         _links = links;
         _maxLines = maxLines;
         _maxElements = maxElements;
         _maxDepth = maxDepth;
         _targets = targets;
+        _entries = entries;
     }
 
     public static string Read(MemberReference root, string path, IContentLinks links, int maxLines = MaxLines, string basePath = "")
@@ -56,6 +60,16 @@ public sealed class FieldReader
         var reader = new FieldReader(links, int.MaxValue, int.MaxValue, FindDepth, targets);
         reader.DumpRequested(member, basePath);
         return reader._found;
+    }
+
+    // Every value under path as read would print it, without read's cuts: scalars, the fields of inline structs,
+    // set elements and dictionary keys, each with the item it points at when it is a reference.
+    public static List<FieldEntry> Entries(MemberReference root, string path, IContentLinks links, string basePath = "")
+    {
+        var (member, canonical) = path.Trim().Length == 0 ? (root, basePath) : FieldWalker.Walk(root, path, basePath, links);
+        var reader = new FieldReader(links, int.MaxValue, int.MaxValue, FindDepth, entries: []);
+        reader.DumpRequested(member, canonical);
+        return reader._entries!;
     }
 
     // One line for a field, as write reports it: the value, or the struct inline, or the collection size.
@@ -145,12 +159,20 @@ public sealed class FieldReader
 
             if (Fields.TryGetTransform(member, out var position, out var orientation))
             {
-                Add($"{path} = {Transforms.Render(position, orientation, _links)} ({label})");
+                string transform = Transforms.Render(position, orientation, _links);
+                _entries?.Add(new FieldEntry(path, transform, $"{path} = {transform}", null));
+                Add($"{path} = {transform} ({label})");
                 return;
             }
 
             if (Fields.TryGetInlineFields(member, out var fields))
             {
+                if (_entries != null)
+                {
+                    foreach (var field in fields)
+                        ScalarLine(field, FieldPath.Member(path, field.Name));
+                    return;
+                }
                 Add($"{path} = {RenderInline(fields, _links)} ({label})");
                 return;
             }
@@ -198,8 +220,10 @@ public sealed class FieldReader
                 int shown = Math.Min(keys.Count, _maxElements);
                 for (int i = 0; i < shown && !_truncated; i++)
                 {
+                    string entry = FieldPath.Element(path, Keys.Text(keys[i], _links));
                     if (Wanted(keys[i]))
-                        _found.Add(FieldPath.Element(path, Keys.Text(keys[i], _links)));
+                        _found.Add(entry);
+                    _entries?.Add(new FieldEntry(entry, Keys.Text(keys[i], _links), entry, Values.LinkId(keys[i])));
                     DumpField(member.GetDictionaryItem(keys[i]!), FieldPath.Element(path, Keys.Text(keys[i], _links)), depth + 1);
                 }
                 if (shown < keys.Count)
@@ -213,6 +237,15 @@ public sealed class FieldReader
                 var items = Fields.SetItems(member);
                 foreach (var item in items.Where(i => Wanted(i)))
                     _found.Add(FieldPath.Element(path, Keys.Text(item, _links)));
+                if (_entries != null)
+                {
+                    foreach (var item in items)
+                    {
+                        string text = Keys.Text(item, _links);
+                        string itemPath = FieldPath.Element(path, text);
+                        _entries.Add(new FieldEntry(itemPath, text, itemPath, Values.LinkId(item)));
+                    }
+                }
                 int shown = Math.Min(items.Count, _maxElements);
                 for (int i = 0; i < shown && !_truncated; i++)
                     Add(FieldPath.Element(path, Keys.Text(items[i], _links)));
@@ -232,6 +265,20 @@ public sealed class FieldReader
         {
             if (Fields.GetReference(member) is { } reference && Wanted(member.GetValue<object?>(), reference.Kind == ReferenceKind.AssetGuid))
                 _found.Add(path);
+            return;
+        }
+
+        if (_entries != null)
+        {
+            try
+            {
+                var link = Fields.GetReference(member);
+                string text = RenderScalar(member, _links);
+                _entries.Add(new FieldEntry(path, text, $"{path} = {text}", Values.LinkId(member.GetValue<object?>(), link?.Kind == ReferenceKind.AssetGuid)));
+            }
+            catch (Exception e) when (e is not EditError)
+            {
+            }
             return;
         }
 
@@ -274,7 +321,7 @@ public sealed class FieldReader
 
     private void Add(string line)
     {
-        if (_truncated || _targets != null)
+        if (_truncated || _targets != null || _entries != null)
             return;
         if (_lines.Count == _maxLines)
         {
@@ -293,3 +340,6 @@ public sealed class FieldReader
         return string.Join("\n", _lines);
     }
 }
+
+// A value contains can match: Text as read prints it, Line the match as contains lists it, Link the item a reference points at.
+public sealed record FieldEntry(string Path, string Text, string Line, Guid? Link);

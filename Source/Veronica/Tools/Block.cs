@@ -331,6 +331,38 @@ internal sealed class Block
         return found;
     }
 
+    public List<FieldEntry> SearchEntries(string path)
+    {
+        var names = ComponentNames.Assign(Entries());
+        if (path.Trim().Length == 0 || ComponentNames.IsCollection(path))
+            return Root.Components.OrderBy(c => names[c.Id], StringComparer.OrdinalIgnoreCase)
+                .SelectMany(c => ComponentEntries(c, names[c.Id], "")).ToList();
+
+        var (component, name, inner) = Locate(path);
+        if (inner.Length > 0 && IsDefinition(inner, out _))
+            return DefinitionEntries(component, name).ToList();
+        if (inner.Length > 0 && IsTags(inner, out _))
+            return [];
+        return ComponentEntries(component, name, inner).ToList();
+    }
+
+    private IEnumerable<FieldEntry> ComponentEntries(IComponentNode component, string name, string inner)
+    {
+        var entries = inner.Length == 0 ? DefinitionEntries(component, name).ToList() : [];
+        if (RuntimeComponentInfo.For(component.ComponentType).ObjectBuilder != null)
+            entries.AddRange(FieldReader.Entries(component.ObjectBuilder, inner, Links, ComponentNames.PathOf(name)));
+        return entries;
+    }
+
+    private IEnumerable<FieldEntry> DefinitionEntries(IComponentNode component, string name)
+    {
+        if (DefinitionId(component) is not { } id)
+            yield break;
+        string path = FieldPath.Member(ComponentNames.PathOf(name), DefinitionField);
+        string value = Links.PathOf(id) ?? "(missing item)";
+        yield return new FieldEntry(path, value, $"{path} = {value}", id);
+    }
+
     public string Write(string path, JsonElement value)
     {
         var (component, name, inner) = Locate(path);

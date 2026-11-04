@@ -95,7 +95,7 @@ public sealed class EditorShell
     private static readonly SkillPlan Plan = new();
 
     private static readonly WikiTool Wiki = new(() => Skills.Pages, () => Skills.Current,
-        [new FindContentTool(), new FindReferencesTool(), new ListFolderTool(), new FindTemplateTool(), new ReadTool(), new DescribeTool()], Plan);
+        [new FindContentTool(), new FindReferencesTool(), new ListFolderTool(), new FindTemplateTool(), new ReadTool(), new ContainsTool(), new DescribeTool()], Plan);
 
     private static readonly ITool[] Tools =
     [
@@ -109,6 +109,7 @@ public sealed class EditorShell
         new FindReferencesTool(),
         new ListFolderTool(),
         new ReadTool(),
+        new ContainsTool(),
         new DescribeTool(),
         new PlanHintedTool(new WriteTool(), Plan),
         new PlanHintedTool(new ElementAddTool(), Plan),

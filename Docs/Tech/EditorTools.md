@@ -10,6 +10,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | `find_references(target)` | lists the content items that point at an item, with the field that holds each reference |
 | `list_folder(folder_path)` | lists a folder's direct children |
 | `read(target, path?)` | shows a definition, or one field or subtree of it |
+| `contains(target, value, path?)` | lists where a definition holds a value, without reading its long lists, sets and dictionaries |
 | `describe(subject, member?)` | explains a type from the game's own documentation: its members, relations and units |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
 | `element_add(target, path, key?, type?, value?)` | adds an element to a list, dictionary or set |
@@ -167,6 +168,18 @@ Lists what points at one item, one step: "which effects use this emitter", "whic
 - Output as find_content's: grouped by project, the mod first, each row `path (DefinitionType): fields`. The header counts every row; the first 50 are shown.
 - Read-only, so the researcher has it too.
 
+## contains
+
+Whether one definition holds a value: the survival unlock configuration's Blocks set holds dozens of prefabs, and read shows a set's first 5 elements and names at most 30 more, so a model reading it to look for one block reads far past what it needs, or stops early.
+
+- Walks the definition, or the subtree at `path`, as find_references walks a referrer: without read's cuts on elements, depth and lines. A `.partialdef` is searched merged, as read shows it. Without `path`, the whole definition.
+- Candidates are list and set elements, dictionary keys and values, and the fields of elements, inline structs' fields included. Each match prints as read prints it, `Classes[Hydrogen].Speed = 2` or a set's `Blocks[<path>]`, so a match is a path write and element_remove take.
+- A value that names content items, by exact path or name as a target is resolved, matches every reference to them. A block matches through all its files: the binding, both prefabs and their compositions. The reply lists only what is there; the skill that uses it says which file counts, since survival unlocks take the server prefab only.
+- Text matches whole values ignoring case; a reference also by its file name, with or without extension. With no whole match, the values that contain the text are listed under `No exact match; similar:`. A model that half-remembers a name (`GatlingCannon` for `GatlingCannonBlockKind`) gets it in one call instead of a not-found.
+- Nothing found says what was searched and how many values, so an empty answer reads as a search that ran, not one that failed.
+- A result is never cut without a word. At most 20 matches are listed; the reply then counts the rest and tells the model to narrow the search with a path or a more exact value. A value naming more than 10 items is matched as text only, and the reply says so and asks for the item's path or full file name: a vague name would otherwise match every reference in the definition.
+- Read-only, so the researcher has it too.
+
 ## describe
 
 What a field or type means, from the game's own documentation, from the two sources the Property Inspector uses:
@@ -267,7 +280,7 @@ Explains how content items relate by drawing them, in the user's own visual lang
 
 | assembly | holds | tested by |
 |---|---|---|
-| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming, graph argument validation and layout, describe's type walk, listings and doc text | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
+| `Veronica.Editing.dll` | path parsing, field walking, visibility, dump, value search, value coercion, write, list-add, template tier matching, content name matching, definition type matching, component naming, graph argument validation and layout, describe's type walk, listings and doc text | `Veronica.Tests`, on engine types such as `ModelDummy` and on test types |
 | `Veronica.dll` | the project layer (target and reference resolution over the project, read-only checks, saving, folder and prefab creation, blocks through the Editor's prefab layer), the type catalog behind describe (type names, component relations), the `ITool` wrappers and the Board | by hand in the Editor: a full thruster build on the dev mod, adding, editing and removing a component on its block, reverted afterwards, and a graph on the Board |
 
 - `Veronica.Editing.dll` references only `VRage.Library` and `VRage.UI.Shared` from the Editor folder, and runs without the Editor. The prefab visibility rule therefore recognises the prefab root by its type name. The project side of references (names to items, definition placeholders) comes in through an interface that `Veronica.dll` implements.

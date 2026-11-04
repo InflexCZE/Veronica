@@ -18,7 +18,7 @@ The wiki holds what and why: how the game and the Editor work (`Skills.md`, The 
 |---|---|
 | system prompt | that it researches for Veronica and does not work on the task or talk to the user; its sources; how to research; the answer's form; the page index and the skill index |
 | brief, its only user message | the chat's transcript rendered as plain text, the current plan item, the question |
-| tools | `wiki_page(name)`, `skill(name)`, and the read-only project tools `find_content`, `find_references`, `list_folder`, `find_template`, `read`, `describe` |
+| tools | `wiki_page(name)`, `skill(name)`, and the read-only project tools `find_content`, `find_references`, `list_folder`, `find_template`, `read`, `contains`, `describe` |
 
 - The transcript is rendered as plain text inside one message: `[user]`, `[assistant]`, `[assistant used <tool>] <args>`, `[result of <tool>]`. Replayed as chat turns in the model's own tool-call format, a transcript reads to a small model as a session still in progress, and it carries on with the chat's task. Reasoning is left out. Tool results are cut to 1000 characters, since the researcher can read a file again; earlier wiki answers stay whole, so research is not repeated. The plan is harness state, not transcript, so its current item is added.
 - The researcher reads skills to foresee what the task will need, but cannot activate them: its `skill` tool has a plan of its own that nothing reads.
