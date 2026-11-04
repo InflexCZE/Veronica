@@ -20,6 +20,6 @@ Parts:
 
 Vanilla reactors: Assets/Blocks/Reactor/Reactor/<size>. Each has its own converter, fuel inventory and stockpile definition; they do not all burn the same fuel.
 
-The Reactors template: a block made from it gets its own ItemToResourceConverterDefinition (no fuel, next to no power), its own fuel InventoryDefinition, its own InventoryStockpileDefinition (pulls nothing) and its own PowerableBlockDefinition in the vanilla reactors' block menu family. Its explosion is the template's shared one. It has no dummies, so no conveyor ports.
+The Reactors template: a block made from it gets its own ItemToResourceConverterDefinition (no fuel, next to no power), its own fuel InventoryDefinition, its own InventoryStockpileDefinition (pulls nothing) and its own PowerableBlockDefinition in the vanilla reactors' block menu family. Its own explosion definition has a vanilla reactor's Explosion. It has no dummies, so no conveyor ports.
 
 Looks only, not needed to make power: the spinning core subparts, the effects, the terminal and button dummies of the vanilla model.

@@ -42,10 +42,17 @@ public sealed class CreateDefinitionTool : ITool
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new EditError($"'{name}' cannot be part of a file name.");
         var type = DefinitionTypes.Pick(CreatableTypes(), typeQuery);
-
         var (folder, _) = Folders.Ensure(project, folderPath, assetsOnly: true);
-        Content.RequireWritable(folder);
+        string fileName = CreateFile(type, folder, name);
+        return $"Created {(folder.GetItemByName(fileName) is { } item ? Content.Describe(item) : fileName)}";
+    }
 
+    public static string CreateFile(string typeName, ExplorerFolder folder, string name) =>
+        CreateFile(DefinitionTypes.Pick(CreatableTypes(), typeName), folder, name);
+
+    private static string CreateFile(Type type, ExplorerFolder folder, string name)
+    {
+        Content.RequireWritable(folder);
         string fileName = name + FileExtensions.DEFINITION_DOT;
         if (FileStem.Taken(folder, name) is { } taken)
             throw new EditError($"{taken.ProjectRelativePath} already exists; pick another name or folder.");
@@ -57,8 +64,7 @@ public sealed class CreateDefinitionTool : ITool
             builder.Guid);
         if (!handle.IsValid())
             throw new EditError($"The Editor could not write {fileName} (see its log).");
-
-        return $"Created {(folder.GetItemByName(fileName) is { } item ? Content.Describe(item) : fileName)}";
+        return fileName;
     }
 
     // As the Editor's Create Definition does: some types fill in useful defaults themselves.

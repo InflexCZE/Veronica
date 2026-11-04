@@ -12,7 +12,7 @@ Plan:
 - Read the block: its ResourceContainerDefinition, its explosion definition, its BlockKind and its model definition's dummies
 - Get from the user what this needs: the gas, the capacity and fill rates, how many conveyor ports and where, and for a new model that they will place them
 - Set the tank: the gas, capacity and rates on its ResourceContainerDefinition
-- Set what happens when it breaks full: the explosion of a vanilla tank of the same gas
+- Set what happens when it breaks full: for oxygen, the explosion of a vanilla oxygen tank
 - Set up the conveyor ports: UseConveyor dummies, placed by copying or by the user; read them back
 - Show the block
 
@@ -23,7 +23,7 @@ Steps:
    write(def, "ResourceType", <Assets/System/ResourceTypes/Hydrogen.def or Oxygen.def>).
    MaxCapacity is in litres, the rates in litres per second. The filling rate must stay below the emptying rate, so write MaxDischargeRate first, then MaxChargingRate.
 4. When the template left BlockKind none, the block has no block menu place: ask where it goes, for a tank usually the family of the vanilla tanks of its gas (write that block's BlockKind).
-5. Breaking: a tank destroyed with gas inside explodes with the Explosion of its explosion definition, scaled by how full it is. The template leaves Explosion none, which the game rejects. write(explosion definition, "Explosion", <the ExplosionDefinition a vanilla tank of the same gas uses>).
+5. Breaking: a tank destroyed with gas inside explodes with the Explosion of its explosion definition, scaled by how full it is. A block made from the template has a vanilla hydrogen tank's Explosion. For an oxygen tank: write(explosion definition, "Explosion", <the ExplosionDefinition a vanilla oxygen tank uses>).
 6. Conveyor ports: gas reaches the tank only through the conveyor network, and the network connects only at UseConveyor dummies; a block made from the template has none. element_add(BlockModelComponentDefinition, "Dummies") once per port, then write its Name and Type (Assets/System/DummyTypes/UseConveyor.def).
    Positions: for a model another block uses, copy the Transform and Scale of that block's UseConveyor dummies; for a new model, the user places them: never compute positions. Then show(the block), ask the user to check or move them (name the paths, e.g. Dummies[0].Transform) with wait_for_user, read(def, "Dummies") again and mark the item with the positions read back.
 

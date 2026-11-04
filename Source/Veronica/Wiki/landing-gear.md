@@ -27,6 +27,6 @@ Locking:
 
 Vanilla landing gears: Assets/Blocks/LandingGear/LandingGear/<size> (100, 500).
 
-The Landing Gear template: a block made from it gets its own copies of the lock detector, magnetic and alignment definitions and its PowerableBlockDefinition, in the vanilla landing gears' G-Screen family; the release detector and the cooldown keep the template's shared definitions, which hold no values a block varies. Its dummies list is empty: no lock box and no release box until they are added.
+The Landing Gear template: a block made from it gets its own copies of the lock detector, release detector, cooldown, magnetic and alignment definitions and its PowerableBlockDefinition, in the vanilla landing gears' G-Screen family. Its dummies list is empty: no lock box and no release box until they are added.
 
 Looks only, not needed to lock: the lock state indicator (MagneticBlockIndicatorDefinition swaps IndicatorMeshParts materials per lock state; copy a vanilla gear's), the effects, the damage particles (on a Particles dummy in vanilla) and the construction particles.

@@ -37,6 +37,17 @@ internal sealed class Block
     {
         ["Keen.Game2.Simulation.WorldObjects.Items.InventoryComponent"] = ComponentScope.Server,
         ["Keen.Game2.Simulation.WorldObjects.Items.ItemRequesterComponent"] = ComponentScope.Server,
+        [PermissionsType] = ComponentScope.Server,
+    };
+
+    private const string PermissionsType = "Keen.Game2.Simulation.WorldObjects.CubeBlocks.BlockPermissionsComponent";
+
+    // Required on a block with the type by game validation only, so dependency filling never adds them. Without
+    // permissions the server also refuses every inventory or seat action players take on the block.
+    private static readonly Dictionary<string, string> Companions = new()
+    {
+        ["Keen.Game2.Simulation.WorldObjects.Items.InventoryComponent"] = PermissionsType,
+        ["Keen.Game2.Simulation.WorldObjects.CubeBlocks.Pilotable.SeatComponent"] = PermissionsType,
     };
 
     private readonly LoadedProject _project;
@@ -548,6 +559,7 @@ internal sealed class Block
             component.PopulateMissingDependencies();
         KeepOverriddenSides(sharedBefore);
         var unmet = FillInterfaceDependencies();
+        AddCompanions(choices);
 
         var added = Root.Components.First(c => c.Id == id);
         string? autoTag = null;
@@ -666,6 +678,38 @@ internal sealed class Block
             if (type.Name == name)
                 return true;
         return false;
+    }
+
+    private void AddCompanions(IReadOnlyCollection<Type> addable)
+    {
+        if (!Root.Components.Any(c => IsOrDerives(c.ComponentType, "CubeBlockComponent")) || _soleSide == "Client")
+            return;
+        foreach (var (owner, companion) in Companions)
+        {
+            if (!Root.Components.Any(c => DerivesFrom(c.ComponentType, owner)) || Root.Components.Any(c => DerivesFrom(c.ComponentType, companion)))
+                continue;
+            if (addable.FirstOrDefault(t => t.FullName == companion) is not { } type)
+                continue;
+            if (Root is BoundEntitiesNode bound)
+                bound.AddComponent(type, SideOf(type));
+            else
+                Root.AddComponent(type);
+        }
+    }
+
+    private static bool DerivesFrom(Type? type, string fullName)
+    {
+        for (; type != null; type = type.BaseType)
+            if (type.FullName == fullName)
+                return true;
+        return false;
+    }
+
+    // Each component's name as the tools take it, with the definition it points at.
+    public List<(string Name, Guid Definition)> ComponentDefinitions()
+    {
+        var names = ComponentNames.Assign(Entries());
+        return Root.Components.Where(c => DefinitionId(c) != null).Select(c => (names[c.Id], DefinitionId(c)!.Value)).ToList();
     }
 
     // The Editor would move a default tag held by another component to the new one, leaving two components in one

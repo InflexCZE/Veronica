@@ -29,10 +29,19 @@ public sealed class CreatePrefabTool : ITool
         string template = Args.Text(arguments, "template");
         string name = Args.Text(arguments, "name");
         string folderPath = Args.Text(arguments, "folder");
-        return new ToolResult(await EditorProject.RunAsync(project => CreateAsync(project, template, name, folderPath), cancellationToken));
+        var prefab = await EditorProject.RunAsync(project => CreateAsync(project, template, name, folderPath), cancellationToken);
+        await TemplateRepairs.ApplyAsync(prefab, cancellationToken);
+        return new ToolResult(await EditorProject.RunAsync(_ => Reply(prefab), cancellationToken));
     }
 
-    private static async Task<string> CreateAsync(LoadedProject project, string template, string name, string folderPath)
+    private static string Reply(GeneratedPrefab prefab)
+    {
+        var lines = new List<string> { $"Created from {prefab.Template}:" };
+        lines.AddRange(prefab.Files.Select(n => prefab.Folder.GetItemByName(n) is { } item ? Content.Describe(item) : n));
+        return string.Join("\n", lines);
+    }
+
+    private static async Task<GeneratedPrefab> CreateAsync(LoadedProject project, string template, string name, string folderPath)
     {
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             throw new EditError($"'{name}' cannot be part of a file name.");
@@ -66,10 +75,7 @@ public sealed class CreatePrefabTool : ITool
 
         ReprocessFailed(folder.Project, written);
         output.AfterFilesCreated?.Invoke();
-
-        var lines = new List<string> { $"Created from {templatePath}:" };
-        lines.AddRange(names.Select(n => folder.GetItemByName(n) is { } item ? Content.Describe(item) : n));
-        return string.Join("\n", lines);
+        return new GeneratedPrefab(templatePath, folder, name, names);
     }
 
     // Templates that never ask for a name get it anyway: their shared file name prefix becomes the name.

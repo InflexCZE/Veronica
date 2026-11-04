@@ -46,8 +46,18 @@ public sealed class CreatePartialTool : ITool
 
         var asset = Content.Resolve(project, source);
         var option = Option(project, asset, kind);
-
         var (folder, _) = Folders.Ensure(project, folderPath, assetsOnly: true);
+        string fileName = await CreateFileAsync(option, folder, name);
+
+        var item = folder.GetItemByName(fileName);
+        return $"Created {(kind == Override ? "an override" : "a copy")} of {asset.ProjectRelativePath}: {(item != null ? Content.Describe(item) : fileName)}";
+    }
+
+    public static Task<string> CreateCopyAsync(LoadedProject project, ExplorerAssetFile source, ExplorerFolder folder, string name) =>
+        CreateFileAsync(Option(project, source, Copy), folder, name);
+
+    private static async Task<string> CreateFileAsync(AssetGeneratorOption option, ExplorerFolder folder, string? name)
+    {
         Content.RequireWritable(folder);
 
         var output = await option.GetGeneratorOutputAsync(new AssetCreationArguments(folder, new NameAnswer(name)));
@@ -64,9 +74,7 @@ public sealed class CreatePartialTool : ITool
         if (!handle.IsValid())
             throw new EditError($"The Editor could not write {file.FileName} (see its log).");
         output.AfterFilesCreated?.Invoke();
-
-        var item = folder.GetItemByName(file.FileName);
-        return $"Created {(kind == Override ? "an override" : "a copy")} of {asset.ProjectRelativePath}: {(item != null ? Content.Describe(item) : file.FileName)}";
+        return file.FileName;
     }
 
     // The Editor's own menu option, so its rules (override only of read-only definitions, one override each,

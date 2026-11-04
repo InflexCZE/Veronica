@@ -11,7 +11,7 @@ Needs:
 Plan:
 - Read the block: its drill, detector, damage, inventory and stockpile definitions, and its model definition's dummies
 - Get from the user what this needs: how it digs, how much ore it holds, how many conveyor ports and where, and for a new model that they will place the drill head spots and the ports
-- Make it dig: brush shapes and drilling speed, the reach that starts drilling, what it damages in front, and the effects definition
+- Make it dig: brush shapes and drilling speed, the reach that starts drilling, and what it damages in front
 - Make it hold and pass on ore: ore storage, and pushing ore out to the conveyors
 - Set up the dummies: PrimaryDrill, SecondaryDrill, DrillDamage and the UseConveyor ports, placed by copying or by the user; read them back
 - Show the block
@@ -24,7 +24,6 @@ Steps:
    - SphereShapeEntityDetectorDefinition QueryRadius: metres around the PrimaryDrill spot within which terrain starts the drilling.
    - ToolDamageDefinition DamageAdapterPrefab and BoxShapeEntityDetectorDefinition QueryHalfExtents: what it damages in front of it, in a box of that half size in metres around the DrillDamage spot.
    Write the values into the block's own definitions: a vanilla drill's where the user wants it as vanilla (its brush shapes and damage prefab are referenced as they are), the user's own otherwise. Setting a component on a vanilla definition instead leaves the block's own copy empty, and that copy still fails the game's validation.
-   The template's DrillToolEffectsComponent points at an abstract base definition, which the game's validation rejects: write(block, "Components[DrillToolEffectsComponent].Definition", <a vanilla drill's DrillToolEffectDefinition>).
 4. Ore. Primary drilling puts ore into the block's inventory; when it is full the rest drops on the ground.
    - InventoryDefinition: MaxMass, in kg, is how much ore it holds; WhitelistedTypes Ore keeps other items out. PreventStockpilingFromAddingItems keeps other blocks from pushing their items into the drill; PreventStockpilingFromRemovingItems would stop the ship's other blocks from taking the ore out, so it stays false on a drill.
    - InventoryStockpileDefinition FillRatioPush: the stockpile pushes ore out to the conveyors while the inventory is fuller than this ratio (0 pushes everything out). None, as the template has it, never pushes.

@@ -16,4 +16,4 @@ Parts:
 
 Vanilla tanks: Assets/Blocks/Tanks/Hydrogen/<size> and Assets/Blocks/Tanks/Oxygen/<size>. Each has its own ResourceContainerDefinition, explosion and block menu family (hydrogen tanks and oxygen tanks are separate families).
 
-The Tanks template: a block made from it gets its own ResourceContainerDefinition (hydrogen, with a capacity and rates next to nothing), its own explosion definition with no Explosion (the game reports it as invalid), its own FunctionalBlockDefinition with no BlockKind (no block menu place), an InteractionStatModifierDefinition with no Stats (no suit refill) and no dummies.
+The Tanks template: a block made from it gets its own ResourceContainerDefinition (hydrogen, with a capacity and rates next to nothing), its own explosion definition with a vanilla hydrogen tank's Explosion, its own FunctionalBlockDefinition with no BlockKind (no block menu place), an InteractionStatModifierDefinition with no Stats (no suit refill) and no dummies.
