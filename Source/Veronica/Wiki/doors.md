@@ -5,7 +5,7 @@ source: SE2 source DoorServerComponent, DoorServerDefinition, DoorSegmentTransfo
 description: How a door block is built and works: the frame model and its dummies, the door leaves as subpart prefabs and how a leaf moves between its closed and open spots, the opening time, the doorway obstacle box that stops it closing, the UseDoor spots players open it from, why an open door can or cannot be walked through (frame and leaf colliders), and what its glow follows.
 ---
 Parts:
-- A door block is a base model (the frame, the block's ModelDefinition) plus door leaves; each leaf is a subpart prefab. Vanilla example: Assets/Blocks/Doors/SlideDoorNarrow/250; its files show every part a door needs.
+- A door block is a base model (the frame, the block's ModelDefinition) plus door leaves; each leaf is a subpart prefab, bound like a block (a binding with a client and a server prefab), unlike a spinning part made from the single-prefab Subpart template. Vanilla example: Assets/Blocks/Doors/SlideDoorNarrow/250; its files show every part a door needs.
 - The frame shows its leaves through ConditionalSubParts: a ConditionalSubPartsDefinition on the client whose SubParts map a closed-position dummy type on the frame's model to a leaf prefab.
 - A ConditionalSubPartsDoorPartsProviderDefinition points at that ConditionalSubPartsDefinition; DoorBlockColliderDefinition.SubPartsProvider points at the provider, its ModelDefinition at the frame's model.
 - The frame also carries DoorServerComponent, the doorway detector (below), DoorBlockColliderComponent and a PowerableBlockDefinition.

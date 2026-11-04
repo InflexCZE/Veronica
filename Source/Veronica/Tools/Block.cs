@@ -748,8 +748,9 @@ internal sealed class Block
     {
         if (candidate.IsAbstract || candidate.ContainsGenericParameters || !RuntimeComponentInfo.IsComponent(candidate))
             return false;
-        // Hierarchy holds child entities, which the inspector offers in developer mode only.
-        if (candidate == typeof(HierarchyComponent) || !CreateDefinitionTool.GameVisible(candidate))
+        // The inspector offers HierarchyComponent in developer mode only, yet vanilla subparts, door leaves and
+        // blocks with subparts carry it, so it stays addable by name.
+        if (candidate != typeof(HierarchyComponent) && !CreateDefinitionTool.GameVisible(candidate))
             return false;
         var own = SideOf(candidate);
         if (scope == ComponentScope.Client && (own & ComponentScope.Client) == 0)

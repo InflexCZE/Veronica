@@ -50,9 +50,9 @@ public sealed class CreatePrefabTool : ITool
 
         var files = output.FilesToGenerate;
         var names = FileNames(files.Select(f => f.FileName).ToList(), answer.Asked ? null : name);
-        var taken = names.Where(n => folder.GetItemByName(n) != null).ToList();
+        var taken = names.Select(n => FileStem.Taken(folder, Path.GetFileNameWithoutExtension(n))?.Name).OfType<string>().Distinct().ToList();
         if (taken.Count > 0)
-            throw new EditError($"{string.Join(", ", taken)} already exist in {Content.Shown(folder)}; pick another name or folder.");
+            throw new EditError($"{string.Join(", ", taken)} already {(taken.Count == 1 ? "exists" : "exist")} in {Content.Shown(folder)} under the names this prefab's files would get; reuse that prefab, or pick another name or folder.");
 
         var written = new List<ResourceHandle>();
         for (int i = 0; i < files.Length; i++)
