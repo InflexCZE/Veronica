@@ -70,7 +70,7 @@ Every run starts a fresh Editor on a clean dev mod. The Editor's load time is ac
 
 `Eval/Wait-Ready.ps1 -RunDir <dir>` waits for the control channel to answer, at most `-Seconds` (default 540), and prints `Ready`, `NotReady` or `Exited`. The wait is bounded so a fork waits with blocking calls: a fork that leaves work running in the background notifies the master each time it pauses, flooding the master's context.
 
-`Eval/Get-Validation.ps1 -RunDir <dir> [-Label <name>]` saves `/validation` as `validation-<name>.json` in the run folder, prints a summary line and every error, and exits 0 (no errors), 1 (errors on the mod), 2 (errors outside the mod) or 3 (no answer).
+`Eval/Get-Validation.ps1 -RunDir <dir> [-Label <name>]` saves `/validation` as `validation-<name>.json` in the run folder, prints a summary line and every error, and exits 0 (no errors), 1 (errors on the mod), 2 (errors outside the mod), 3 (no answer) or 4 (processing never settled after a few waits; the errors are stale).
 
 `Eval/Stop-Run.ps1 -RunDir <dir>` kills the Editor and copies its logs into the run folder.
 

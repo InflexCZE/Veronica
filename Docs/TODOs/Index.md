@@ -58,5 +58,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [TimeSpanWrites.md](TimeSpanWrites.md) | Editor tools: a TimeSpan write error does not show the accepted form |
 | [EditorStartupHang.md](EditorStartupHang.md) | Eval: an Editor start sometimes hangs after load (startup push never finishes) |
 | [SyntheticTemplates.md](SyntheticTemplates.md) | Editor tools: no template for a bound child model such as a door leaf (owner decision) |
+| [TemplateDefects.md](TemplateDefects.md) | Editor tools: vanilla templates that fail validation as they are, e.g. Sensor (owner decision) |
 | [ReplaceBlockComponent.md](ReplaceBlockComponent.md) | Editor tools: a block's component cannot be replaced, e.g. made powerable (owner decision) |
 | [PrefabTagMove.md](PrefabTagMove.md) | Editor tools: a tag that dependents rely on cannot move to another component (owner decision) |
