@@ -4,7 +4,7 @@ description: Use when a part of a block should spin continuously, such as a ring
 ---
 Needs:
 - the part: its subpart prefab
-- the axis it spins around, and how fast: the user's own, or as a vanilla part (e.g. a gyroscope's rings, Assets/Blocks/Gyroscopes)
+- the axis it spins around, and how fast: the user's own, or as a vanilla part (e.g. a gyroscope's rings, Assets/Blocks/Gyroscopes; a thruster's fan, Assets/Blocks/Thrusters/Atmospheric)
 - what drives it: spinning while the block works, or speed following a thruster's thrust
 
 Plan:
@@ -16,9 +16,9 @@ Plan:
 
 Steps:
 1. read(part) and read(block).
-2. Ask the user, with ask_user, the axis, the speed and what drives it; offer a vanilla part's values as a suggestion.
+2. Ask the user, with ask_user, the axis, the speed, how quickly it spins up and slows down, and what drives it; offer a vanilla part's values as a suggestion.
 3. create_definition("InfiniteRotationAnimationDefinition", ...) and write RotationAxis (a unit vector in the part's own axes), AngularSpeed (degrees per second), AngularSpeedup and AngularSlowdown (degrees per second, each second). With AngularSpeedup 0 the part never starts turning. component_add(part, "InfiniteRotationAnimationComponent", <it>).
-4. On the block: spinning while it works: component_add(block, "FunctionalBlockAnimationControllerComponent"). Speed following thrust, on a thruster: component_add(block, "ThrusterAnimationOverrideComponent") and write the definition's VariableAngularInterpolatedSpeed, the speed at full thrust; AngularSpeed is then the speed with no thrust.
+4. On the block: spinning while it works: component_add(block, "FunctionalBlockAnimationControllerComponent"). Speed following thrust, on a thruster: component_add(block, "ThrusterAnimationOverrideComponent") (it takes no definition) and write the definition's VariableAngularInterpolatedSpeed, the speed at full thrust; AngularSpeed is then the speed with no thrust.
 
 Show:
 show(the block). Spinning is seen in game, on a working block.
