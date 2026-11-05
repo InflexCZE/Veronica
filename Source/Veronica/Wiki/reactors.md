@@ -11,7 +11,7 @@ Parts:
   - ResourceProduced: what it makes, Electricity for a reactor.
   - MaxResourceProduction: the most power it makes, in kW.
   - ResourcesPerItem: the energy one unit of fuel gives, in kW*s (kJ). At full power the block burns MaxResourceProduction / ResourcesPerItem units of fuel a second. An ore's unit is 1 kg (its ItemDefinition's MassPerUnit).
-  - The Multiple Resources fields (ResourcesProduced, MaxItemsPerSecondConsumed) are for a block making several resources at once, such as gas from ice; vanilla reactors use the single resource fields above.
+  - The Multiple Resources fields (ResourcesProduced, MaxItemsPerSecondConsumed) are for a block making several resources at once, such as gas from ice; vanilla reactors use the single resource fields above. With ResourcesProduced empty, MaxItemsPerSecondConsumed is not read at all: it never limits a reactor's burn rate or power, and is left as it is.
 - InventoryComponent on the server, tagged InventoryInput: the fuel inventory. Its InventoryDefinition's MaxMass is how much it holds, in kg; WhitelistedItems and WhitelistedTypes decide what goes in, and the fuel must be allowed.
 - InventoryStockpileComponent: keeps the inventory stocked from the conveyor network. While the inventory is filled below FillRatioPull (a share, 0 to 1), it pulls the definition's Items. With FillRatioPull null or no Items, the block takes no fuel by itself: it has to be pushed in or loaded by hand.
 - ConveyorComponent: fuel reaches the block through the conveyor network, which connects only at UseConveyor dummies; a player also opens the fuel inventory at them (the inventory-and-conveyors and dummies pages).
