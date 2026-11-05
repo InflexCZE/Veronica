@@ -69,6 +69,7 @@ public static class ClientToolLoop
             var text = new StringBuilder();
             var reasoning = new StringBuilder();
             string? finishReason = null;
+            bool contextFull = false;
             host.OnRoundStart();
             var messages = new List<ChatMessage>(transcript.Count + 1) { new(ChatRole.System, request.SystemPrompt) };
             messages.AddRange(transcript);
@@ -98,6 +99,7 @@ public static class ClientToolLoop
                             break;
                         case DoneDelta d:
                             finishReason = d.FinishReason;
+                            contextFull = d.ContextFull;
                             break;
                     }
                 }, cancellationToken).ConfigureAwait(false);
@@ -106,6 +108,8 @@ public static class ClientToolLoop
             {
                 return null;
             }
+            if (contextFull && !cancellationToken.IsCancellationRequested)
+                throw new ContextFullException(ContextFullPhase.Reply, ContextFullException.ReplyMessage);
             var toolCalls = calls.Values.Select(c => new ToolCall(c.Id, c.Name.ToString(), c.Arguments.ToString())).ToList();
             ToolCall? cutCall = null;
             // A call cut mid-arguments must not reach the history as it is: servers refuse

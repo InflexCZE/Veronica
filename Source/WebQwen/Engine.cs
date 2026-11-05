@@ -67,7 +67,17 @@ public sealed record ChatResult(
 
 public sealed record TokenScores(int Argmax, int VocabSize, IReadOnlyList<(int Id, double Logprob)> Top);
 
-public sealed class EngineException(string message) : Exception(message);
+public sealed class EngineException(string message) : Exception(message)
+{
+    // The prompt did not fit in the context window.
+    public bool ContextFull { get; init; }
+
+    // A failed chat's error text is the JS error's stack, which starts with web-llm's error class name.
+    public static EngineException FromChat(string? error) => new(error ?? "chat failed")
+    {
+        ContextFull = error?.StartsWith("ContextWindowSizeExceededError", StringComparison.Ordinal) ?? false,
+    };
+}
 
 // Serves the resources the engine fetches, keyed by URL. Called on the
 // engine thread.
@@ -242,7 +252,7 @@ public sealed unsafe class Engine : IChatEngine, IDisposable
             }
             else
             {
-                var e = new EngineException(error ?? "chat failed");
+                var e = EngineException.FromChat(error);
                 Deltas.Writer.TryComplete(e);
                 _tcs.TrySetException(e);
             }

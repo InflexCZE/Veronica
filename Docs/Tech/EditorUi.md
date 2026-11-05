@@ -39,6 +39,7 @@ The panel that shows `present_graph` (`EditorTools.md`).
 - `/clear` starts a new chat; a running turn is stopped first.
 - A status line under the input shows the model's state and the last round's speed.
 - Notices (round budget) and errors appear in the chat as plain lines.
+- A turn that ended at a full context it could not compact past (`Compaction.md`) shows a card in the chat: the error, then option rows in the question card's style, Compact (when compacting again is allowed) and Clear. The rows go once one is picked or another turn starts.
 - The view follows a streaming reply unless the user has scrolled up.
 
 ## Question card

@@ -51,7 +51,7 @@ public sealed class WebQwenConnection
         var wireMessages = messages.Select(ToWire).ToList();
         await Ready.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-        var pending = new Pending(Interlocked.Increment(ref _nextId), onDelta);
+        var pending = new Pending(Interlocked.Increment(ref _nextId), onDelta, maxTokens);
         lock (_gate)
         {
             if (_closed.Task.IsCompleted)
@@ -174,11 +174,13 @@ public sealed class WebQwenConnection
                 break;
             case DoneEvent d when Current(d.Id) is { } pending:
                 pending.OnDelta(new StatsDelta(new RoundStats(d.PromptTokens, d.CompletionTokens, d.PrefillTokensPerS, d.DecodeTokensPerS)));
-                pending.OnDelta(new DoneDelta(d.FinishReason));
+                pending.OnDelta(new DoneDelta(d.FinishReason, ContextFullException.IsReplyWall(d.FinishReason, d.CompletionTokens, pending.MaxTokens)));
                 pending.Done.TrySetResult();
                 break;
             case ErrorEvent { Id: { } id } error when Current(id) is { } pending:
-                pending.Done.TrySetException(new WebQwenException(error.Message));
+                pending.Done.TrySetException(error.Code == ErrorCodes.ContextFull
+                    ? new ContextFullException(ContextFullPhase.Prompt, error.Message)
+                    : new WebQwenException(error.Message));
                 break;
             default:
                 _log($"Ignored WebQwen event: {Wire.Encode(e)}");
@@ -205,10 +207,11 @@ public sealed class WebQwenConnection
         pending?.Done.TrySetException(new WebQwenClosedException(reason));
     }
 
-    private sealed class Pending(long id, Action<StreamDelta> onDelta)
+    private sealed class Pending(long id, Action<StreamDelta> onDelta, int maxTokens)
     {
         public long Id { get; } = id;
         public Action<StreamDelta> OnDelta { get; } = onDelta;
+        public int MaxTokens { get; } = maxTokens;
         public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Read-loop thread only.

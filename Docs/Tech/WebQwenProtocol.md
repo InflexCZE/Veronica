@@ -40,6 +40,7 @@ Events:
 {"type":"toolCall","id":7,"call":{"id":"0","name":"add","arguments":"{\"a\":2,\"b\":3}"}}
 {"type":"done","id":7,"finishReason":"stop","promptTokens":812,"completionTokens":95,"prefillTokensPerS":450.1,"decodeTokensPerS":39.8}
 {"type":"error","id":7,"message":".."}
+{"type":"error","id":7,"message":"..","code":"context_full"}
 {"type":"error","message":".."}
 ```
 
@@ -47,6 +48,7 @@ Events:
 
 - `progress` events report the model load. `ready` follows a successful load.
 - A failed load sends an `error` without an id, and WebQwen.exe exits with code 1. An `error` without an id is always fatal.
+- A chat's `error` has the `code` `context_full` when its prompt does not fit in the context window: web-llm threw its `ContextWindowSizeExceededError`, whose class name starts the error text wq.dll passes on. Other errors have no code. A reply that runs into the window's end is not an error: it ends with `done` and `finishReason` `length`, short of `maxTokens` (`Compaction.md`).
 - `chat` carries the whole conversation each time. The engine reuses its KV cache for the prefix the conversation shares with the previous request, so only new messages are prefilled.
 - An assistant message carries its reasoning (`reasoning`, the engine's `reasoning_content`), byte-identical to what the engine streamed. Without it the prefix stops matching at that message.
 - A `chat` sent before `ready` waits for the load.

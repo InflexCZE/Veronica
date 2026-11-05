@@ -292,6 +292,56 @@ public sealed class SkillPlanTests
     }
 
     [Fact]
+    public void A_resumed_skill_already_in_context_comes_without_its_overview()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        Done(chat);
+
+        var output = Done(chat);
+
+        Assert.Contains("Back to create-block, item 1 of 3: Create the prefab.", output);
+        Assert.DoesNotContain("BLOCK BODY", output);
+    }
+
+    [Fact]
+    public void A_resumed_skill_no_longer_in_context_comes_with_its_overview_once()
+    {
+        var chat = new Chat();
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        chat.Plan.ForgetReads("block-thruster");
+        Done(chat);
+
+        var output = Done(chat);
+
+        Assert.Contains("Back to create-block, item 1 of 3: Create the prefab.", output);
+        Assert.EndsWith("\n\nThe skill:\nBLOCK BODY", output);
+        chat.Call("activate_skill", """{"name":"subpart-spin"}""");
+        Assert.DoesNotContain("BLOCK BODY", Done(chat));
+    }
+
+    [Fact]
+    public void Open_plans_list_every_level_from_its_current_item_outermost_first()
+    {
+        var chat = new Chat();
+        Assert.Null(chat.Plan.OpenPlans());
+        chat.Call("activate_skill", """{"name":"create-block"}""");
+        Done(chat);
+        chat.Call("activate_skill", """{"name":"block-thruster"}""");
+        Done(chat);
+
+        Assert.Equal(
+            "create-block (paused until the plans below it are done):\n" +
+            "  2. [current] Fill block name\n" +
+            "  3. Next skill\n" +
+            "block-thruster (active):\n" +
+            "  2. [current] Show the block",
+            chat.Plan.OpenPlans());
+    }
+
+    [Fact]
     public void End_nudge_names_the_open_item_unless_the_reply_ends_on_purpose()
     {
         var chat = new Chat();

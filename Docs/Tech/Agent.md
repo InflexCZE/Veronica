@@ -28,6 +28,7 @@
 - Nudges count against the round budget.
 - **Stop:** a stopped round keeps what it generated. Its tool calls are not run: each gets a "stopped by the user" result, so the transcript never carries dangling calls. A tool that returns null (stopped while it ran) also ends the turn this way, for every call left in the round.
 - A failed round appends nothing and fails the turn. There are no retries.
+- **Context wall:** a round whose reply ran into the end of the context window, reported by the provider, fails the turn with a `ContextFullException` before any nudge or cut-call handling: it is not a token-cap cut. A prompt the server refuses as too long fails the same way. The conversation compacts on it (`Compaction.md`).
 
 ## Tools
 
@@ -61,6 +62,7 @@
 - `Conversation` holds the transcript and the session. It sends one turn at a time: the user message is appended, then the turn's messages as the loop reports them.
 - The transcript lives in memory only and is lost when the Editor exits. Eval runs also record every session to a file (`Eval.md`).
 - `/clear` empties it and resets the session.
+- A turn that hits the end of the context window is compacted: the transcript is replaced by a summary and the turn goes on (`Compaction.md`).
 - Assistant messages keep their reasoning. Thinking models need their own earlier reasoning: their chat template otherwise renders an empty think block, and the model stops closing `</think>`. WebQwen also reuses its KV cache only when every earlier reply comes back exactly as it was generated.
 
 ## Chat settings
@@ -81,7 +83,7 @@
 
 - WebQwen.exe starts with the first round of the first turn and stays up. See `WebQwenProtocol.md`.
 - Stop while WebQwen.exe is starting or loading the model ends the turn, and the load continues. The user's message stays in the transcript.
-- When WebQwen.exe exits or breaks the protocol, the running round fails, the turn shows the error, and the next round starts a new process. A failed request (an `error` event with an id) fails the round but keeps the process.
+- When WebQwen.exe exits or breaks the protocol, the running round fails, the turn shows the error, and the next round starts a new process. A failed request (an `error` event with an id) fails the round but keeps the process. One with the code `context_full`, and a reply that ended as `length` short of its `max_tokens`, are reported as the context wall (`Compaction.md`).
 - The status line shows the start, the load progress, ready, and each round's prompt and decode speed.
 - The provider holds the Editor's VRAM (`IGpuShare`, `VramSharing.md`) for each whole turn and for each model load until it completes. `GpuShare` counts the holds: the first one frees the Editor's VRAM, the last one gives it back. A hold that cannot free the VRAM fails the turn.
 
@@ -98,8 +100,9 @@
 | `VERONICA_OPENAI_API_KEY` | optional bearer token |
 | `VERONICA_OPENAI_EFFORT` | optional reasoning effort, sent as the chat template's `reasoning_effort`; unset leaves the template's default |
 
-- The request body is plain chat completions plus `max_tokens`, which llama.cpp takes and OpenAI's own reasoning models reject. Thinking stays at the server's default, which is on for thinking models.
+- The request body is plain chat completions plus `max_tokens`, which llama.cpp takes and OpenAI's own reasoning models reject. Thinking stays at the server's default, which is on for thinking models, unless the request turns it off (the summarizer, `Compaction.md`): then `chat_template_kwargs` carries `enable_thinking: false` and no effort.
 - The effort goes in `chat_template_kwargs`, so it reaches models whose template reads it (the Qwen 27B templates default to `xhigh`) and is ignored by others. It is the one generation setting the client sends: it is compared per run in evals, which would otherwise need a server restart per value.
+- A prompt refused as too long for the context, and a reply that ended as `length` short of the `max_tokens` it was sent, are reported as the context wall (`Compaction.md`).
 - Reasoning is read from `reasoning_content` or `reasoning`. Each assistant message sends its reasoning back as `reasoning_content` (see Conversation).
 - Round stats come from llama.cpp's `timings`; other servers show none.
 - Any server certificate is accepted: locally hosted servers are typically self-signed.

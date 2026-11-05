@@ -128,6 +128,22 @@ public sealed class EvalTests : IDisposable
     }
 
     [Fact]
+    public async Task ACompactedTurnRecordsItsSummaryAndTheSessionThatWroteIt()
+    {
+        var provider = Recording((_, _) => Task.CompletedTask);
+        using (var compaction = provider.OpenSession(Compaction.SessionName))
+            await compaction.RunTurnAsync(Request("BRIEF"), new NullHost(), CancellationToken.None);
+        using (var session = provider.OpenSession(IProvider.ChatSession))
+            await session.RunTurnAsync(Request("SUMMARY") with { Compacted = true }, new NullHost(), CancellationToken.None);
+
+        var lines = Lines();
+        Assert.Equal(["setup", "compacted", "turn_end"], lines.Select(l => l.GetProperty("type").GetString()));
+        Assert.Equal("SUMMARY", lines[1].GetProperty("text").GetString());
+        Assert.Equal("compaction-1.jsonl", lines[1].GetProperty("session").GetString());
+        Assert.Equal("BRIEF", Lines("compaction-1.jsonl")[1].GetProperty("text").GetString());
+    }
+
+    [Fact]
     public async Task SetupIsWrittenAgainOnlyWhenTheSystemPromptChanges()
     {
         var provider = Recording((_, _) => Task.CompletedTask);

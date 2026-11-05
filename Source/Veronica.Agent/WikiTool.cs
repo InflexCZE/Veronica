@@ -11,6 +11,12 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
     // Room left for the answer once the researcher's prompt has grown past the reading limit.
     public const int AnswerReserve = 10_000;
 
+    public const string UnavailableOutput = "The wiki is not available with this model provider.";
+
+    public const string NoQuestionOutput = "wiki needs a question.";
+
+    public const string NoAnswerOutput = "The research ended without an answer. Continue without it.";
+
     private SubAgentRunner? _runner;
     private Func<IReadOnlyList<ChatMessage>> _transcript = () => [];
 
@@ -34,10 +40,10 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         if (_runner is not { } runner)
-            return new ToolResult("The wiki is not available with this model provider.");
+            return new ToolResult(UnavailableOutput);
         var question = ToolArgs.Text(arguments, "question");
         if (question.Length == 0)
-            return new ToolResult("wiki needs a question.");
+            return new ToolResult(NoQuestionOutput);
 
         var request = new SubAgentRequest(
             ToolName,
@@ -51,7 +57,7 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
             new CallReminder(Prompts.ResearchReminderCalls, Prompts.ResearchReminder));
         var result = await runner(request, cancellationToken).ConfigureAwait(false);
         if (result.Text == null)
-            return new ToolResult("The research ended without an answer. Continue without it.");
+            return new ToolResult(NoAnswerOutput);
         return new ToolResult(result.RoundCap ? result.Text + "\n\n(The research ran out of rounds; this may be incomplete.)" : result.Text);
     }
 }

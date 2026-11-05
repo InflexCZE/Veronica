@@ -77,7 +77,33 @@ public sealed record TurnRequest(
     string SystemPrompt,
     IReadOnlyList<ChatMessage> Transcript,
     IReadOnlyList<ToolDefinition> Tools,
-    TurnLimits Limits);
+    TurnLimits Limits)
+{
+    // The transcript is a compacted one: its only message is the summary the turn goes on from.
+    public bool Compacted { get; init; }
+}
+
+public enum ContextFullPhase
+{
+    // The request was refused before the model wrote anything.
+    Prompt,
+
+    // The model ran into the end of the window while it wrote.
+    Reply,
+}
+
+// The conversation no longer fits the model's context window. A reply cut there appends nothing.
+public sealed class ContextFullException(ContextFullPhase phase, string message) : Exception(message)
+{
+    public ContextFullPhase Phase { get; } = phase;
+
+    public const string ReplyMessage = "The reply ran into the end of the model's context window.";
+
+    // Servers end such a reply as "length", like one that used its token cap; only a reply that
+    // stopped short of the cap it was sent ran out of window.
+    public static bool IsReplyWall(string? finishReason, int? completionTokens, int? maxTokensSent) =>
+        finishReason == "length" && completionTokens is { } completion && maxTokensSent is > 0 and var cap && completion < cap;
+}
 
 // Calls arrive in model order, on any thread.
 public interface ITurnHost
@@ -142,7 +168,8 @@ public sealed record ToolCallDelta(int Index, string? Id, string? Name, string? 
 
 public sealed record StatsDelta(RoundStats Stats) : StreamDelta;
 
-public sealed record DoneDelta(string? FinishReason) : StreamDelta;
+// ContextFull: the reply ran into the end of the context window (ContextFullException.IsReplyWall).
+public sealed record DoneDelta(string? FinishReason, bool ContextFull = false) : StreamDelta;
 
 // Cancellation stops generation; the round then completes normally with what was generated so far.
 public delegate Task StreamRound(RoundRequest request, Action<StreamDelta> onDelta, CancellationToken cancellationToken);

@@ -158,6 +158,21 @@
               <SelectableTextBlock Classes="message reasoning" Text="{Binding Text}" />
             </Border>
           </DataTemplate>
+          <DataTemplate DataType="ui:ContextFullItem">
+            <Border Classes="card">
+              <StackPanel>
+                <Border Classes="message notice error" Margin="8,6">
+                  <SelectableTextBlock Classes="message" Text="{Binding Text}" />
+                </Border>
+                <Button Classes="option" Command="{Binding CompactCommand}" IsVisible="{Binding ShowCompact}">
+                  <TextBlock Classes="model" Text="Compact: summarize the conversation and go on" />
+                </Button>
+                <Button Classes="option" Command="{Binding ClearCommand}" IsVisible="{Binding Open}">
+                  <TextBlock Classes="model" Text="Clear: start a new chat" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
         </ItemsControl.DataTemplates>
       </ItemsControl>
       <ContentControl Content="{Binding Card}" IsVisible="{Binding Card, Converter={x:Static ObjectConverters.IsNotNull}}">

@@ -8,7 +8,7 @@ public sealed class ClientToolLoopTests
     private const string Nudge = "Pick one and go.";
     private const string Poke = "Step 2 is still open.";
 
-    private sealed record Round(string FinishReason, string? Reasoning = null, string? Text = null, string? Call = null, bool Reward = false, string? Call2 = null);
+    private sealed record Round(string FinishReason, string? Reasoning = null, string? Text = null, string? Call = null, bool Reward = false, string? Call2 = null, bool ContextFull = false);
 
     private sealed class Run : ITurnHost
     {
@@ -41,7 +41,7 @@ public sealed class ClientToolLoopTests
             if (round.Text != null) onDelta(new TextDelta(round.Text));
             if (round.Call != null) onDelta(new ToolCallDelta(0, "c1", round.Call, round.Reward ? "{\"reward\":true}" : "{}"));
             if (round.Call2 != null) onDelta(new ToolCallDelta(1, "c2", round.Call2, "{}"));
-            onDelta(new DoneDelta(round.FinishReason));
+            onDelta(new DoneDelta(round.FinishReason, round.ContextFull));
             return Task.CompletedTask;
         }
 
@@ -71,6 +71,19 @@ public sealed class ClientToolLoopTests
     };
 
     private const ChatRole A = ChatRole.Assistant, U = ChatRole.User, T = ChatRole.Tool;
+
+    [Fact]
+    public async Task Reply_that_ran_into_the_context_window_fails_the_turn_without_a_nudge_and_appends_nothing()
+    {
+        var run = new Run([new Round("tool_calls", Call: "lookup"), new Round("length", Reasoning: "hm", Call: "lookup", ContextFull: true), new Round("stop", Text: "never")]);
+
+        var e = await Assert.ThrowsAsync<ContextFullException>(() => run.Go(Nudging));
+
+        Assert.Equal(ContextFullPhase.Reply, e.Phase);
+        Assert.Equal([A, T], run.Roles);
+        Assert.Equal(["lookup"], run.ToolsRun);
+        Assert.Equal(1, run.Remaining);
+    }
 
     [Fact]
     public async Task Turn_ending_tool_runs_the_rounds_calls_then_ends_the_turn_without_a_reminder()

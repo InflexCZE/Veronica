@@ -14,7 +14,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 
 - One run at a time: the Editor and the model share one machine.
 - The fork plays the user. It answers fairly, as a modder who knows what they want, but does not hand out answers the model should find itself. Answers vary between runs on purpose: varied users reveal more failures.
-- The fork decides when a run ends: the task is done, the run is hopeless, or the model hit the end of its context or another error. Stopping a hopeless run early saves time; running into the context limit is an accepted end.
+- The fork decides when a run ends: the task is done, the run is hopeless, or the model hit the end of its context or another error. Stopping a hopeless run early saves time. A full context is compacted and the turn goes on (`Compaction.md`); a wall compaction cannot get past is an accepted end.
 - When the round budget runs out ("send continue"), the fork continues a productive run and ends a stuck one.
 - The fork's report is free-form: whatever fits the task or the failure mode under investigation.
 
@@ -35,7 +35,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 - A raw loopback socket serves it rather than `HttpListener`, which needs a URL reservation for a non-admin user.
 - The channel drives the same `Conversation` the panel shows, so the run is visible in the Editor.
 - A turn counts as running from the moment `/send` accepts it, so `/status` never reports idle for a message just sent.
-- Every turn ends: a context overflow or a server error fails the turn, and `/status` reports it. A run never waits on a turn that cannot finish.
+- Every turn ends: a context overflow compaction cannot get past or a server error fails the turn, and `/status` reports it. The Compact choice of the panel's card is not on the channel, so the turn stays failed. A run never waits on a turn that cannot finish.
 - Progress during a turn is read from the transcript file, not from the channel.
 - `/answer` runs the card's own code, so a run exercises the answer path a user takes. A Claude turn stays running while its card is open (`ClaudeProvider.md`); the wait returning on an open card gives the fork one rule for every provider.
 - Context used is the whole prompt of the last round plus its reply: llama.cpp reports cached and newly processed prompt tokens apart.
@@ -45,7 +45,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 
 When `VERONICA_RUN_DIR` is set, the plugin records every provider session to a file of its own in that folder as it happens, so a hung, crashed or killed Editor loses nothing. The recording wraps the provider, so whatever opens a session is recorded the same way.
 
-- The chat's session goes to `transcript.jsonl`, a subagent's to `<name>-<n>.jsonl` (`wiki-1.jsonl`, ...). The chat's file stays exactly what the chat model saw.
+- The chat's session goes to `transcript.jsonl`, a subagent's to `<name>-<n>.jsonl` (`wiki-1.jsonl`, `compaction-1.jsonl`, ...). The chat's file stays exactly what the chat model saw.
 - A session opened during a tool call is linked both ways: its `setup` line names the parent file and call id (`parent`), and the call's `tool` line names the files it opened (`sessions`).
 - One JSON object per line, strings with escaped line breaks.
 - Every line carries its index `i`, seconds since the session's file was opened `t`, and its `type`.
@@ -53,6 +53,12 @@ When `VERONICA_RUN_DIR` is set, the plugin records every provider session to a f
 - Then one line per user message (`user`: the turn's new message, or a subagent's brief), assistant message (`assistant`: round, text, reasoning, tool calls with parsed arguments, round stats including context used), tool result (`tool`, with its duration), automatic user message from the tool loop (`nudge`), notice such as the round budget (`notice`) and turn end (`turn_end`: answered, stopped or error, the error text, context used).
 - A failed round appends nothing to the conversation, so its partial reply is not recorded; the turn end carries the error.
 - Lines are written whole when their message completes, not per streamed token.
+
+Reading a run across a compaction (`Compaction.md`):
+- The session's turn that hit the wall ends with a `turn_end` line, outcome `error`, whose error is the server's refusal or that the reply ran into the end of the window.
+- The summarizer's session is `compaction-<n>.jsonl`: its brief is the transcript as it was rendered, its assistant line the summary.
+- When the summary worked, a `compacted` line follows in `transcript.jsonl`, in place of a `user` line: `text` is the message the turn goes on from, which is now the whole conversation the chat model sees, and `session` names the summarizer's file. The turn's rounds follow it, up to the turn's real end.
+- No `compacted` line after the `turn_end` means the turn ended there: the allowance was spent or the summary failed (its file says which).
 
 ## Run lifecycle
 
@@ -103,7 +109,7 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 ## Outputs
 
 Not committed, under `.tmp/eval/`:
-- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, a file per subagent run (`wiki-<n>.jsonl`), `context.patch`, `validation-start.json` and `validation-end.json`, `logs/` (the Editor's), and the fork's `results.md`.
+- `runs/<yyyyMMdd-HHmmss>-<task>/`: `run.json`, `transcript.jsonl`, a file per subagent run (`wiki-<n>.jsonl`, `compaction-<n>.jsonl`), `context.patch`, `validation-start.json` and `validation-end.json`, `logs/` (the Editor's), and the fork's `results.md`.
 - `findings.md`: the master's running log of failure patterns with run references, hypotheses tested and their outcome.
 
 Context changes reach the repo only after the owner approves them.

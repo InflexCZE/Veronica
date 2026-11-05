@@ -9,7 +9,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ModelDownloads.md](ModelDownloads.md) | WebQwen: C# downloads of manifest, library and weights |
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run the model, including free VRAM |
 | [InstallStrategy.md](InstallStrategy.md) | Where Veronica finds WebQwen.exe and the model (owner decision) |
-| [ContextFull.md](ContextFull.md) | Chat: full context window (owner decision) |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [StalledStream.md](StalledStream.md) | Chat: a reply stream that stops without closing waits until Stop (owner decision) |
@@ -42,7 +41,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
 | [ContentQuery.md](ContentQuery.md) | Editor tools: no way to query a field across many items (owner decision) |
 | [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |
-| [ContextWindow.md](ContextWindow.md) | Chat: providers assume a 45K context window |
+| [ContextWindow.md](ContextWindow.md) | Chat: providers assume a 45K context window (owner decision) |
+| [ResearcherContext.md](ResearcherContext.md) | Wiki: the researcher inherits the chat's whole transcript and does not compact (owner decision) |
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
 | [PlanChainFollowUps.md](PlanChainFollowUps.md) | Skills: optional follow-up skills (add-to-gscreen) are lost in a skill chain |

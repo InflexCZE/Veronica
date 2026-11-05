@@ -25,7 +25,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     // Answers given before the turn that asked had wound down: sent when it has.
     private string? _queuedAnswers;
 
-    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, QuestionBoard questions)
+    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, Compaction compaction, QuestionBoard questions)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -37,9 +37,12 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         _plan = plan;
         Questions = questions;
         questions.Changed += () => Dispatcher.UIThread.Post(RefreshCard);
-        _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), systemPrompt, Prompts.ChatLimits(plan), tools.Definitions);
+        _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), systemPrompt, Prompts.ChatLimits(plan), tools.Definitions, compaction);
         if (provider.RunsSubagents)
+        {
             wiki.Attach(RunSubAgentAsync, () => _conversation.Transcript.ToList());
+            compaction.Attach(RunSubAgentAsync);
+        }
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
     }
@@ -184,7 +187,17 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             Questions.Close();
         _queuedAnswers = null;
         Messages.Add(new UserItem(text));
-        _turnTask = RunTurnAsync(text);
+        _turnTask = RunTurnAsync((host, token) => _conversation.SendAsync(text, host, token));
+    }
+
+    // The Compact choice of a turn that ended at a full context.
+    private void StartCompact()
+    {
+        if (_clearing || _turn != null)
+            return;
+        Questions.Close();
+        _queuedAnswers = null;
+        _turnTask = RunTurnAsync(_conversation.CompactAsync);
     }
 
     private void RefreshCard()
@@ -198,8 +211,10 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             Card.Update(questions);
     }
 
-    private async Task RunTurnAsync(string text)
+    private async Task RunTurnAsync(Func<ITurnHost, CancellationToken, Task> send)
     {
+        foreach (var full in Messages.OfType<ContextFullItem>())
+            full.Close();
         var turn = _turn = new CancellationTokenSource();
         BusyChanged();
         var run = Run;
@@ -209,7 +224,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         {
             run?.TurnStarted();
             ITurnHost host = new UiHost(this);
-            await _conversation.SendAsync(text, run?.Wrap(host) ?? host, turn.Token);
+            await send(run?.Wrap(host) ?? host, turn.Token);
             if (turn.IsCancellationRequested)
                 outcome = TurnOutcome.Stopped;
         }
@@ -217,7 +232,10 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         {
             outcome = turn.IsCancellationRequested ? TurnOutcome.Stopped : TurnOutcome.Failed;
             error = e.Message;
-            Messages.Add(new NoticeItem(e.Message, true));
+            if (e is ContextFullTurnException full && !turn.IsCancellationRequested)
+                Messages.Add(new ContextFullItem(full.Message, full.CanCompact ? StartCompact : null, () => _ = ClearAsync()));
+            else
+                Messages.Add(new NoticeItem(e.Message, true));
         }
         finally
         {

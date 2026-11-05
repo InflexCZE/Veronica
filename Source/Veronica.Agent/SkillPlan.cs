@@ -21,11 +21,13 @@ public sealed class SkillPlan
     private readonly object _lock = new();
     private readonly HashSet<string> _read = new(StringComparer.OrdinalIgnoreCase);
     private string? _skill;
+    private string _overview = "";
     private List<PlanItem> _items = [];
     private readonly Stack<Paused> _paused = new();
     private int _unplannedEdits;
+    private int _closedItems;
 
-    private sealed record Paused(string Skill, List<PlanItem> Items);
+    private sealed record Paused(string Skill, string Overview, List<PlanItem> Items);
 
     public const string ActivationHint =
         "No skill is active. If a skill fits this work, activate it with " + ActivateSkillTool.ToolName + " so its plan keeps track of what is left.";
@@ -45,10 +47,27 @@ public sealed class SkillPlan
         get { lock (_lock) return _items.ToList(); }
     }
 
+    // Items completed or skipped since the plan was created, across plans and resets.
+    public int ClosedItems
+    {
+        get { lock (_lock) return _closedItems; }
+    }
+
     public void MarkRead(string skill)
     {
         lock (_lock)
             _read.Add(skill);
+    }
+
+    // After a compaction only the skill carried in the compacted message is in context again.
+    public void ForgetReads(string? keep)
+    {
+        lock (_lock)
+        {
+            _read.Clear();
+            if (keep != null)
+                _read.Add(keep);
+        }
     }
 
     public void Reset()
@@ -57,6 +76,7 @@ public sealed class SkillPlan
         {
             _read.Clear();
             _skill = null;
+            _overview = "";
             _items = [];
             _paused.Clear();
             _unplannedEdits = 0;
@@ -95,10 +115,11 @@ public sealed class SkillPlan
             var result = new StringBuilder($"Skill {skill.Name} is active. ");
             if (current >= 0)
             {
-                _paused.Push(new Paused(_skill!, _items));
+                _paused.Push(new Paused(_skill!, _overview, _items));
                 result.Append($"{_skill} pauses at item {current + 1} and resumes when {skill.Name}'s plan is done. ");
             }
             _skill = skill.Name;
+            _overview = skill.Overview;
             _unplannedEdits = 0;
             _items = skill.Plan.Select(i => new PlanItem(i, PlanItemState.Open)).ToList();
             result.Append(WorkOn(0));
@@ -139,6 +160,29 @@ public sealed class SkillPlan
         }
     }
 
+    // Every plan on the stack, outermost first, from its current item on. Null while no plan is open.
+    public string? OpenPlans()
+    {
+        lock (_lock)
+        {
+            if (Current() < 0)
+                return null;
+            var text = new StringBuilder();
+            foreach (var paused in _paused.Reverse())
+                AppendOpen(text, paused.Skill, "paused until the plans below it are done", paused.Items);
+            AppendOpen(text, _skill!, "active", _items);
+            return text.ToString().TrimEnd();
+        }
+    }
+
+    private static void AppendOpen(StringBuilder text, string skill, string state, List<PlanItem> items)
+    {
+        int current = Current(items);
+        text.Append($"{skill} ({state}):\n");
+        for (int i = current; i < items.Count; i++)
+            text.Append($"  {i + 1}. ").Append(i == current ? "[current] " : "").Append(items[i].Text).Append('\n');
+    }
+
     private string Close(PlanItemState state, string note)
     {
         lock (_lock)
@@ -151,6 +195,7 @@ public sealed class SkillPlan
                     ? $"{MarkCompletedTool.ToolName} needs proof: one line on what you did for the item."
                     : $"{MarkSkippedTool.ToolName} needs a reason.";
             var item = _items[current] = _items[current] with { State = state, Note = note };
+            _closedItems++;
             var closed = state == PlanItemState.Done ? $"Done: {item.Text} ({note})." : $"Skipped: {item.Text} ({note}).";
             int next = Current();
             if (next >= 0)
@@ -159,12 +204,15 @@ public sealed class SkillPlan
             if (_paused.TryPop(out var parent))
             {
                 _skill = parent.Skill;
+                _overview = parent.Overview;
                 _items = parent.Items;
                 int resumed = Current();
-                return $"{closed} {finished}'s plan is done. Back to {_skill}, item {resumed + 1} of {_items.Count}: {_items[resumed].Text}. " +
+                var back = $"{closed} {finished}'s plan is done. Back to {_skill}, item {resumed + 1} of {_items.Count}: {_items[resumed].Text}. " +
                     $"If the work this item asks for is done, call {MarkCompletedTool.ToolName} with proof; do not redo it. If it needs another skill, activate it.";
+                return _read.Add(_skill) ? back + "\n\nThe skill:\n" + _overview : back;
             }
             _skill = null;
+            _overview = "";
             _items = [];
             // A follow-up to finished work is often a few edits; the hint then waits for the tenth instead of the first.
             _unplannedEdits = 1;

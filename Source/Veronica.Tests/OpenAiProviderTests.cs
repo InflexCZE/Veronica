@@ -100,7 +100,74 @@ public sealed class OpenAiProviderTests
         await provider.StreamRoundAsync(Request with { Thinking = thinking }, _ => { }, CancellationToken.None);
 
         var json = JsonDocument.Parse(Assert.Single(server.Requests).Body).RootElement;
-        Assert.Equal(sent, json.TryGetProperty("chat_template_kwargs", out var kwargs) ? kwargs.GetProperty("reasoning_effort").GetString() : null);
+        Assert.Equal(sent, json.TryGetProperty("chat_template_kwargs", out var kwargs) && kwargs.TryGetProperty("reasoning_effort", out var e) ? e.GetString() : null);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, null)]
+    [InlineData(null, null)]
+    public async Task TurnsTheTemplatesThinkingOffWhenAskedTo(bool? thinking, bool? sent)
+    {
+        var server = new Server((_, _) => Sse("{\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}"));
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null, "high"), server);
+
+        await provider.StreamRoundAsync(Request with { Thinking = thinking }, _ => { }, CancellationToken.None);
+
+        var json = JsonDocument.Parse(Assert.Single(server.Requests).Body).RootElement;
+        Assert.Equal(sent, json.TryGetProperty("chat_template_kwargs", out var kwargs) && kwargs.TryGetProperty("enable_thinking", out var e) ? e.GetBoolean() : null);
+    }
+
+    [Theory]
+    [InlineData("{\"error\":{\"code\":400,\"message\":\"request (56139 tokens) exceeds the available context size (56064 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":56139,\"n_ctx\":56064}}")]
+    [InlineData("{\"error\":{\"code\":400,\"message\":\"request (56139 tokens) exceeds the available context size (56064 tokens), try increasing it\",\"type\":\"invalid_request_error\"}}")]
+    [InlineData("{\"error\":{\"message\":\"too long\",\"code\":\"context_length_exceeded\"}}")]
+    public async Task TypesAPromptThatDoesNotFit(string body)
+    {
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null), new Server((_, _) => Json(body, HttpStatusCode.BadRequest)));
+
+        var e = await Assert.ThrowsAsync<ContextFullException>(() => Stream(provider));
+
+        Assert.Equal(ContextFullPhase.Prompt, e.Phase);
+        Assert.StartsWith("400 Bad Request: ", e.Message);
+    }
+
+    [Fact]
+    public async Task OtherBadRequestsStayServerErrors()
+    {
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null),
+            new Server((_, _) => Json("{\"error\":{\"code\":400,\"message\":\"bad tool schema\",\"type\":\"invalid_request_error\"}}", HttpStatusCode.BadRequest)));
+
+        await Assert.ThrowsAsync<OpenAiException>(() => Stream(provider));
+    }
+
+    [Theory]
+    [InlineData("length", 40, true)]
+    [InlineData("length", 4000, false)]
+    [InlineData("stop", 40, false)]
+    public async Task MarksAReplyCutShortOfItsCapAsTheContextWall(string finish, int generated, bool wall)
+    {
+        var server = new Server((_, _) => Sse(
+            "{\"choices\":[{\"delta\":{\"reasoning_content\":\"hm\"}}]}",
+            $"{{\"choices\":[{{\"delta\":{{}},\"finish_reason\":\"{finish}\"}}],\"timings\":{{\"cache_n\":20000,\"prompt_n\":10,\"prompt_ms\":5,\"predicted_n\":{generated},\"predicted_ms\":1000}}}}"));
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null), server);
+
+        var deltas = await Stream(provider);
+
+        Assert.Equal(new DoneDelta(finish, wall), deltas[^1]);
+    }
+
+    [Fact]
+    public async Task CountsTheThinkingBudgetIntoTheCapOfAReply()
+    {
+        var server = new Server((_, _) => Sse(
+            "{\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}],\"timings\":{\"prompt_n\":10,\"prompt_ms\":5,\"predicted_n\":4500,\"predicted_ms\":1000}}"));
+        using var provider = new OpenAiProvider(new OpenAiSettings("http://host/v1", "m", null), server);
+        var deltas = new List<StreamDelta>();
+
+        await provider.StreamRoundAsync(Request with { ThinkingBudget = 4000 }, deltas.Add, CancellationToken.None);
+
+        Assert.Equal(new DoneDelta("length", true), deltas[^1]);
     }
 
     [Fact]

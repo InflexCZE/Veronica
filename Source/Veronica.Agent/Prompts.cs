@@ -92,6 +92,58 @@ public static class Prompts
     public const string ResearchLengthNudge =
         "Your reply was cut off: you spent it all thinking. Read the one source you need most, or answer now.";
 
+    public const string Compactor =
+        "You are compacting a session between a user and Veronica, a modding assistant inside the Space Engineers 2 Editor. The session ran out of context. " +
+        "Veronica will continue from your summary alone. Your job is to hand over everything the open work will still need, so Veronica finishes the task " +
+        "without redoing work or repeating mistakes.\n\n" +
+        "The open work is the whole current task: every item on the plan stack, the paused plans included, and the items still to come. " +
+        "Earlier work that open items build on is part of it: keep the names, values and paths it produced, where a value came from and why it was chosen, " +
+        "and what was learned on the way. One line on how something was found, or why an approach failed, can save Veronica from getting it wrong again. " +
+        "Finished steps that nothing open depends on can be left out, and the course of the session needs no retelling.\n\n" +
+        "Veronica has the same tools and reads the project itself, so do not copy file contents; do keep the values and reasons it would not know to look for.\n\n" +
+        "Write exactly these five sections:\n" +
+        "Current task: what the user asked for, including any later change of direction.\n" +
+        "State: what is created or changed in the project, with paths and the values the open work relies on, and what is still open.\n" +
+        "Learned: what Veronica cannot get back by reading the project: how the game or the Editor behaved, names and values it looked up and where they came from, " +
+        "approaches that failed and why. Be specific; this is the part that is lost otherwise. \"none\" if nothing.\n" +
+        "Next steps: the steps that take the open work to the end of the task, through every open plan item, in order.\n" +
+        "User decisions: the choices the user made that the remaining work still needs, such as names, texts, folders and values, or \"none\".\n\n" +
+        "The last wiki answer, the active skill and the current plan item are carried over separately and verbatim: do not repeat them.";
+
+    public static string CompactionBrief(string transcript, string? openPlans) =>
+        "The session transcript follows. You are not part of that session: do not continue its work and do not call tools.\n\n" +
+        "<transcript>\n" + transcript + "\n</transcript>\n\n" +
+        (openPlans == null ? "" :
+            "The plans still open, outermost first. Each paused plan resumes at its current item when the plans below it are done:\n" +
+            "<plans>\n" + openPlans + "\n</plans>\n\n") +
+        "Now write the summary of the transcript above, with exactly these five sections: Current task, State, Learned, Next steps, User decisions. " +
+        "Keep what the open work still needs. Do not continue the work and do not call tools.";
+
+    public static string Compacted(string summary, string? wikiAnswer, Skill? activeSkill, string? planItem) =>
+        "<harness>The conversation ran out of context, so it was summarized. The user has not seen this message.\n\n" +
+        summary + "\n\n" +
+        (wikiAnswer == null ? "" : "Your last wiki answer, kept verbatim:\n" + wikiAnswer + "\n\n") +
+        (activeSkill == null ? "" : $"The active skill, {activeSkill.Name}, kept verbatim:\n" + activeSkill.Overview + "\n\n") +
+        (planItem == null ? "" : $"You are on {planItem}.\n\n") +
+        "You are continuing a compacted session. Continue with Next steps to lead the Current task to completion.</harness>";
+
+    public const string CompactionTitle = "Summarizing conversation";
+
+    public const string CompactedNotice = "The context was full, so the conversation was summarized; the turn goes on from the summary.";
+
+    public const string ContextFullAgain =
+        "The conversation no longer fits the model's context window, even after it was summarized. Compact it again or clear the chat.";
+
+    public static string CompactionFailed(string reason) =>
+        $"The conversation no longer fits the model's context window, and summarizing it failed: {reason}. Clear the chat to continue.";
+
+    public static TurnLimits CompactorLimits { get; } = new()
+    {
+        MaxRounds = 1,
+        MaxTokens = 4000,
+        Thinking = false,
+    };
+
     public static TurnLimits ResearcherLimits { get; } = new()
     {
         MaxRounds = 50,

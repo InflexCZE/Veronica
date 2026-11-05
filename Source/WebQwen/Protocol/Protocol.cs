@@ -63,7 +63,14 @@ internal sealed record DoneEvent(
     double DecodeTokensPerS) : Event;
 
 // Without an id the error is fatal and WebQwen.exe exits after sending it.
-internal sealed record ErrorEvent(long? Id, string Message) : Event;
+// Code, when set, is one of ErrorCodes.
+internal sealed record ErrorEvent(long? Id, string Message, string? Code = null) : Event;
+
+internal static class ErrorCodes
+{
+    // The chat's prompt does not fit in the context window.
+    public const string ContextFull = "context_full";
+}
 
 internal static class Channels
 {

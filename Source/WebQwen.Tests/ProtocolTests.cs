@@ -211,6 +211,44 @@ public sealed class ProtocolTests : IDisposable
     }
 
     [Fact]
+    public async Task A_prompt_that_does_not_fit_fails_as_a_full_context_and_keeps_the_connection()
+    {
+        int calls = 0;
+        _engine.SetResult(new FakeEngine((_, _, _) =>
+            Interlocked.Increment(ref calls) == 1
+                ? throw EngineException.FromChat("ContextWindowSizeExceededError: Prompt tokens exceed context window size\n    at prefill")
+                : Task.FromResult(new ChatResult(1, 1, 1, 1, "stop"))));
+
+        var error = await Assert.ThrowsAsync<ContextFullException>(() => _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout));
+        Assert.Equal(ContextFullPhase.Prompt, error.Phase);
+        Assert.Contains("Prompt tokens exceed", error.Message);
+
+        await _connection.ChatAsync(Hello, [], 0, true, _ => { }, CancellationToken.None).WaitAsync(Timeout);
+    }
+
+    [Theory]
+    [InlineData("Error: boom", false)]
+    [InlineData("ContextWindowSizeExceededError: Prompt tokens exceed", true)]
+    [InlineData(null, false)]
+    public void A_chat_error_is_a_full_context_only_for_webllms_own_error(string? error, bool contextFull) =>
+        Assert.Equal(contextFull, EngineException.FromChat(error).ContextFull);
+
+    [Theory]
+    [InlineData("length", 40, 4000, true)]
+    [InlineData("length", 4000, 4000, false)]
+    [InlineData("length", 40, 0, false)]
+    [InlineData("stop", 40, 4000, false)]
+    public async Task A_reply_cut_short_of_its_cap_is_marked_as_the_context_wall(string finish, int generated, int maxTokens, bool wall)
+    {
+        _engine.SetResult(new FakeEngine((_, _, _) => Task.FromResult(new ChatResult(10, generated, 1, 1, finish))));
+        var deltas = Deltas(out var onDelta);
+
+        await _connection.ChatAsync(Hello, [], maxTokens, true, onDelta, CancellationToken.None).WaitAsync(Timeout);
+
+        Assert.Equal(new DoneDelta(finish, wall), deltas[^1]);
+    }
+
+    [Fact]
     public async Task A_failed_load_is_fatal()
     {
         _engine.SetException(new EngineException("no adapter"));

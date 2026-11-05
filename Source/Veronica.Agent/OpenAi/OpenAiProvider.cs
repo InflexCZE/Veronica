@@ -50,11 +50,14 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         post.Content = new StringContent(Body(model, request, _settings.ReasoningEffort), Encoding.UTF8, "application/json");
         using var response = await _http.SendAsync(post, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
-            throw new OpenAiException(await ErrorMessageAsync(response, cancellationToken).ConfigureAwait(false));
+        {
+            var (message, contextFull) = await ErrorAsync(response, cancellationToken).ConfigureAwait(false);
+            throw contextFull ? new ContextFullException(ContextFullPhase.Prompt, message) : new OpenAiException(message);
+        }
         try
         {
             var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            await ReadStreamAsync(stream, onDelta, cancellationToken).ConfigureAwait(false);
+            await ReadStreamAsync(stream, MaxTokensSent(request), onDelta, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (cancellationToken.IsCancellationRequested && e is OperationCanceledException or IOException)
         {
@@ -74,7 +77,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             using var get = NewRequest(HttpMethod.Get, "models");
             using var response = await _http.SendAsync(get, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                throw new OpenAiException($"Listing the server's models failed: {await ErrorMessageAsync(response, cancellationToken).ConfigureAwait(false)}");
+                throw new OpenAiException($"Listing the server's models failed: {(await ErrorAsync(response, cancellationToken).ConfigureAwait(false)).Message}");
             using var list = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
             string? id = list.RootElement.ValueKind == JsonValueKind.Object
                 && list.RootElement.TryGetProperty("data", out var data)
@@ -112,13 +115,14 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             ["messages"] = new JsonArray(request.Messages.Select(m => (JsonNode?)ToWire(m)).ToArray()),
             ["stream"] = true,
         };
-        if (request.Thinking != false && !string.IsNullOrWhiteSpace(reasoningEffort))
+        if (request.Thinking == false)
+            body["chat_template_kwargs"] = new JsonObject { ["enable_thinking"] = false };
+        else if (!string.IsNullOrWhiteSpace(reasoningEffort))
             body["chat_template_kwargs"] = new JsonObject { ["reasoning_effort"] = reasoningEffort.Trim() };
-        int budget = request.Thinking != false && request.ThinkingBudget is > 0 and var b ? b : 0;
-        if (budget > 0)
+        if (ThinkingBudget(request) is > 0 and var budget)
             body["thinking_budget_tokens"] = budget;
-        if (request.MaxTokens is > 0 and var maxTokens)
-            body["max_tokens"] = maxTokens + budget;
+        if (MaxTokensSent(request) is { } maxTokens)
+            body["max_tokens"] = maxTokens;
         if (request.Tools.Count > 0)
             body["tools"] = new JsonArray(request.Tools.Select(t => (JsonNode?)new JsonObject
             {
@@ -132,6 +136,12 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             }).ToArray());
         return body.ToJsonString();
     }
+
+    private static int ThinkingBudget(RoundRequest request) =>
+        request.Thinking != false && request.ThinkingBudget is > 0 and var budget ? budget : 0;
+
+    private static int? MaxTokensSent(RoundRequest request) =>
+        request.MaxTokens is > 0 and var maxTokens ? maxTokens + ThinkingBudget(request) : null;
 
     private static JsonObject ToWire(ChatMessage message)
     {
@@ -158,7 +168,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         return wire;
     }
 
-    private static async Task ReadStreamAsync(Stream stream, Action<StreamDelta> onDelta, CancellationToken cancellationToken)
+    private static async Task ReadStreamAsync(Stream stream, int? maxTokensSent, Action<StreamDelta> onDelta, CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8);
         RoundStats? stats = null;
@@ -194,7 +204,10 @@ public sealed class OpenAiProvider : IProvider, IDisposable
                 continue;
             // Some servers report a failure mid-stream as an error member on a 200 response.
             if (root.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
-                throw new OpenAiException(ErrorText(error) ?? "The server reported an error.");
+            {
+                string message = ErrorText(error) ?? "The server reported an error.";
+                throw IsContextFull(error) ? new ContextFullException(ContextFullPhase.Prompt, message) : new OpenAiException(message);
+            }
             // llama.cpp's running totals; only the last chunk's count.
             if (root.TryGetProperty("timings", out var timings) && Stats(timings) is { } s)
                 stats = s;
@@ -236,7 +249,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         }
         if (stats != null)
             onDelta(new StatsDelta(stats));
-        onDelta(new DoneDelta(finishReason));
+        onDelta(new DoneDelta(finishReason, ContextFullException.IsReplyWall(finishReason, stats?.CompletionTokens, maxTokensSent)));
     }
 
     private static RoundStats? Stats(JsonElement timings)
@@ -257,7 +270,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         };
     }
 
-    private static async Task<string> ErrorMessageAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private static async Task<(string Message, bool ContextFull)> ErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         string status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
         string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -267,13 +280,23 @@ public sealed class OpenAiProvider : IProvider, IDisposable
             if (json.RootElement.ValueKind == JsonValueKind.Object
                 && json.RootElement.TryGetProperty("error", out var error)
                 && ErrorText(error) is { } text)
-                return $"{status}: {text}";
+                return ($"{status}: {text}", IsContextFull(error));
         }
         catch (JsonException)
         {
         }
         body = body.Trim();
-        return body.Length == 0 ? status : $"{status}: {Excerpt(body)}";
+        return (body.Length == 0 ? status : $"{status}: {Excerpt(body)}", false);
+    }
+
+    // llama.cpp types the error; older builds only word it so. OpenAI's own API names it by code.
+    private static bool IsContextFull(JsonElement error)
+    {
+        if (error.ValueKind != JsonValueKind.Object)
+            return false;
+        return String(error, "type") == "exceed_context_size_error"
+            || String(error, "code") == "context_length_exceeded"
+            || (String(error, "message")?.Contains("exceeds the available context size", StringComparison.Ordinal) ?? false);
     }
 
     private static string Excerpt(string text) => text.Length > 300 ? text[..300] + "..." : text;

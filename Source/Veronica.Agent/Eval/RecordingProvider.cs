@@ -14,6 +14,7 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
     private readonly object _gate = new();
     private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
     private string? _writeError;
+    private string? _lastCompaction;
 
     public int ContextWindow => inner.ContextWindow;
 
@@ -32,6 +33,8 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
         {
             int count = _counts[name] = _counts.GetValueOrDefault(name) + 1;
             fileName = name == IProvider.ChatSession ? RunTranscript.FileName : $"{name}-{count}.jsonl";
+            if (name == Compaction.SessionName)
+                _lastCompaction = fileName;
         }
         var parent = RunningCall.Value;
         RunTranscript? transcript = null;
@@ -45,7 +48,13 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
             Failed(e.Message);
         }
         var session = inner.OpenSession(name);
-        return transcript == null ? session : new Session(session, transcript, description);
+        return transcript == null ? session : new Session(session, transcript, description, LastCompaction);
+    }
+
+    private string? LastCompaction()
+    {
+        lock (_gate)
+            return _lastCompaction;
     }
 
     private void Failed(string error)
@@ -59,7 +68,7 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
         public List<string> Children { get; } = [];
     }
 
-    private sealed class Session(IProviderSession inner, RunTranscript transcript, string description) : IProviderSession
+    private sealed class Session(IProviderSession inner, RunTranscript transcript, string description, Func<string?> lastCompaction) : IProviderSession
     {
         private string? _system;
         private IReadOnlyList<ToolDefinition>? _tools;
@@ -72,7 +81,9 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
                 _tools = request.Tools;
                 transcript.WriteSetup(description, request.SystemPrompt, request.Tools);
             }
-            if (request.Transcript.Count > 0 && request.Transcript[^1].Role == ChatRole.User)
+            if (request.Compacted && request.Transcript.Count > 0)
+                transcript.WriteCompacted(request.Transcript[^1].Content, lastCompaction());
+            else if (request.Transcript.Count > 0 && request.Transcript[^1].Role == ChatRole.User)
                 transcript.WriteUser(request.Transcript[^1].Content);
 
             var recorded = transcript.Wrap(host);
@@ -157,6 +168,13 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
         public void WriteUser(string text) => Write("user", w => w.WriteString("text", text));
 
         public void WriteClear() => Write("clear", _ => { });
+
+        public void WriteCompacted(string text, string? session) => Write("compacted", w =>
+        {
+            w.WriteString("text", text);
+            if (session != null)
+                w.WriteString("session", session);
+        });
 
         public void WriteTurnEnd(TurnOutcome outcome, string? error, int? contextTokens) => Write("turn_end", w =>
         {

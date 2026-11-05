@@ -117,7 +117,7 @@ public sealed class Server(TextReader input, TextWriter output, Action<string>? 
         }
         catch (Exception e)
         {
-            end = new ErrorEvent(chat.Id, e.Message);
+            end = new ErrorEvent(chat.Id, e.Message, e is EngineException { ContextFull: true } ? ErrorCodes.ContextFull : null);
         }
         // The plugin may send its next chat as soon as it reads the end event, so the
         // chat must stop counting as running before that event goes out.
