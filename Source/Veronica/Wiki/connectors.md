@@ -27,6 +27,6 @@ Spots (dummies of the BlockModelComponentDefinition):
 
 Vanilla connectors: Assets/Blocks/Connectors/<size> (50, 150), each with its own ConnectorSize; vanilla's ConnectionGroups add Ship to the template's.
 
-The Connectors template: a block made from it gets its own copies of the ConnectorDefinition (ConnectorSize none, Physical and Terminal only), the ItemEjectorComponentDefinition (no ejector dummy type, no batch mass, no speed), the InventoryDefinition and the PowerableBlockDefinition, in the vanilla connectors' G-Screen family. The detection and alignment keep the template's shared definitions. Its dummies list is empty.
+The Connectors template: a block made from it gets its own copies of the ConnectorDefinition (ConnectorSize none, Physical and Terminal only), the ItemEjectorComponentDefinition (no ejector dummy type, no batch mass, no speed), the InventoryDefinition and the PowerableBlockDefinition, in the vanilla connectors' G-Screen family. The detection and alignment keep the template's shared definitions. Its dummies list holds only the Pivot, at the origin.
 
 Looks only, not needed to dock: the lock state indicator, effects and sounds, the damage particles (on a Particles dummy in vanilla) and the construction particles.

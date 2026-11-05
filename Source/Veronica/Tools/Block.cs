@@ -705,6 +705,14 @@ internal sealed class Block
         return false;
     }
 
+    public bool HasComponent(string typeName) => Root.Components.Any(c =>
+    {
+        for (var type = c.ComponentType; type != null; type = type.BaseType)
+            if (type.Name == typeName)
+                return true;
+        return false;
+    });
+
     // Each component's name as the tools take it, with the definition it points at.
     public List<(string Name, Guid Definition)> ComponentDefinitions()
     {

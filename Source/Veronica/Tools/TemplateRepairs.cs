@@ -19,6 +19,7 @@ internal static class TemplateRepairs
     private static readonly Guid HydrogenTank500Explosion = new("bc97dd7e-d81c-4642-ac68-79ea0088d7e0");
     private static readonly Guid Drill350Effects = new("b34b2c70-f868-4379-81f3-b6ed6f4b2da9");
     private static readonly Guid DoorClientBase = new("51b06007-072f-43da-82ae-ac7c1f0a4e03");
+    private static readonly Guid Pivot = new("b80cb7d1-126f-406e-a1c7-6410109f3c1d");
 
     // Run before the abstract rule, so an abstract reference with a better vanilla value keeps that value.
     private static readonly Dictionary<string, Func<Repair, Task>> ByTemplate = new(StringComparer.OrdinalIgnoreCase)
@@ -37,7 +38,34 @@ internal static class TemplateRepairs
         if (ByTemplate.TryGetValue(prefab.Template, out var specific))
             await specific(repair);
         await CopyAbstractDefinitions(repair);
+        await AddMissingPivot(repair);
     }
+
+    // The mechanical templates (connectors, hinges, pistons, rotors and their heads) bring no dummies. The game's
+    // check for a mechanical block's Pivot raises an assert dialog instead of an error, which holds validation until
+    // someone answers it.
+    private static Task AddMissingPivot(Repair r) => r.Run(project =>
+    {
+        if (r.OpenBlock(project)?.HasComponent("MechanicalBlockComponent") != true
+            || r.Generated("BlockModelComponentDefinition")(project) is not { } model
+            || project.GetItemByGuid(Pivot)?.ProjectRelativePath is not { } pivot)
+            return 0;
+        var asset = Content.Resolve(project, model);
+        Content.RequireWritable(asset);
+        var root = Content.Definition(asset).Fields.Root;
+        var links = new ProjectLinks(project, asset);
+        var (dummies, _) = FieldWalker.Walk(root, "Dummies", links: links);
+        int count = dummies.GetValue<object?>() is null ? 0 : Fields.CollectionCount(Fields.Unwrap(dummies));
+        for (int i = 0; i < count; i++)
+        {
+            if (FieldWalker.Walk(root, $"Dummies[{i}].Type", links: links).Member.GetValue<Definition?>()?.Guid == Pivot)
+                return 0;
+        }
+        Elements.Add(root, "Dummies", null, null, links);
+        FieldWriter.Write(root, $"Dummies[{count}].Type", JsonSerializer.SerializeToElement(pivot), links);
+        Content.Save(asset);
+        return 0;
+    });
 
     // SlidingDoorNarrow250's values.
     private static async Task Door(Repair r)
