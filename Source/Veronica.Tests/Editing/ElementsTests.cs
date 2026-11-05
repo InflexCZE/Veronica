@@ -28,6 +28,15 @@ public sealed class ElementsTests
     }
 
     [Fact]
+    public void A_value_that_does_not_fit_adds_nothing_and_says_so()
+    {
+        string message = Assert.Throws<EditError>(() => Elements.Add(Root, "Dummies", null, null, _links, value: "Nozzle")).Message;
+        Assert.StartsWith("Nothing was added to 'Dummies': the value does not fit Dummies[1].", message);
+        Assert.Contains("Dummies[1].Name", message);
+        Assert.Single(_sample.Dummies);
+    }
+
+    [Fact]
     public void Creates_a_null_list_first()
     {
         _sample.Numbers = null!;

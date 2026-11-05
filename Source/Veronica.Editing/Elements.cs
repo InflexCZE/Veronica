@@ -39,6 +39,11 @@ public static class Elements
         {
             return $"Added {element.Path}; {FieldWriter.WriteMember(element.Member, element.Path, JsonSerializer.SerializeToElement(value), links)}";
         }
+        catch (EditError e)
+        {
+            element.Member.RemoveCollectionItem();
+            throw new EditError($"Nothing was added to '{canonical}': the value does not fit {element.Path}. {e.Message} Add the element without a value first.");
+        }
         catch (Exception)
         {
             element.Member.RemoveCollectionItem();
