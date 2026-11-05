@@ -25,7 +25,7 @@ internal static class TemplateRepairs
     {
         // Vanilla sensors remove it: it needs an input adapter no block has.
         ["Blocks/Breakable/Sensor"] = r => r.RemoveComponent("BlockToolbarControllerComponent"),
-        ["Blocks/Breakable/Reactors"] = r => r.Write(r.Generated("BlockDestructionExplosionDefinition"), "Explosion", r.PathOf(Reactor250Explosion)),
+        ["Blocks/Breakable/Reactors"] = Reactor,
         ["Blocks/Breakable/Tanks"] = r => r.Write(r.Generated("BlockDestructionExplosionDefinition"), "Explosion", r.PathOf(HydrogenTank500Explosion)),
         ["Blocks/Breakable/Drills"] = r => r.PointComponent("DrillToolEffectsComponent", r.PathOf(Drill350Effects)),
         ["Blocks/Breakable/Doors"] = Door,
@@ -55,21 +55,37 @@ internal static class TemplateRepairs
         await r.Write(r.Generated("DoorBlockColliderDefinition"), "ModelDefinition", r.Generated("BlockModelComponentDefinition"));
     }
 
+    // The template's reactor explosion component points at a definition shared by every block made from it;
+    // vanilla reactors have their own copy, with the reactor's blast.
+    private static async Task Reactor(Repair r)
+    {
+        await r.Write(r.Generated("BlockDestructionExplosionDefinition"), "Explosion", r.PathOf(Reactor250Explosion));
+        foreach (var copy in await CopyDefinitions(r, (_, component, _) => component == "FunctionalBlockDestructionExplosionComponent"))
+            await r.Write(copy, "Explosion", r.PathOf(Reactor250Explosion));
+    }
+
     // Vanilla blocks of these templates use a copy of the abstract base; the template points at the base itself.
-    private static async Task CopyAbstractDefinitions(Repair r)
+    private static Task CopyAbstractDefinitions(Repair r) =>
+        CopyDefinitions(r, (project, _, id) => project.GetAssetFileByGuid(id) is ExplorerAssetFile asset
+            && ProjectDefinitionUtility.GetDefinitionFlags(asset).HasFlag(DefinitionFlags.Abstract));
+
+    // Copies each definition the chosen components point at into the prefab's folder and points them at the copy.
+    private static async Task<List<ItemOf>> CopyDefinitions(Repair r, Func<LoadedProject, string, Guid, bool> chosen)
     {
         var bases = await r.Run(project => r.OpenBlock(project)?.ComponentDefinitions()
-            .Where(d => project.GetAssetFileByGuid(d.Definition) is ExplorerAssetFile asset
-                && ProjectDefinitionUtility.GetDefinitionFlags(asset).HasFlag(DefinitionFlags.Abstract))
+            .Where(d => chosen(project, d.Name, d.Definition) && project.GetAssetFileByGuid(d.Definition) != null)
             .GroupBy(d => d.Definition)
             .Select(g => (Id: g.Key, Stem: Path.GetFileNameWithoutExtension(project.GetAssetFileByGuid(g.Key)!.Name), Components: g.Select(d => d.Name).ToList()))
             .ToList() ?? []);
+        var copies = new List<ItemOf>();
         foreach (var (id, stem, components) in bases)
         {
             var copy = Repair.Item(await r.Copy(id, $"{r.Prefab.Name}_{stem}"));
             foreach (string component in components)
                 await r.PointComponent(component, copy);
+            copies.Add(copy);
         }
+        return copies;
     }
 
     // A content item named when the step runs, so a step can name a file an earlier step made; null skips the step.
