@@ -29,7 +29,7 @@ The aim is collecting failures to spot patterns, not deterministic scoring. Runs
 | `POST /send` | the body, as plain text, is sent as a user message, as if typed in the panel; refused while a turn runs |
 | `POST /answer` | the body, a JSON array with one answer per open question (`null` skips it), answers the card as the panel's Answer does; refused when no card is open |
 | `POST /stop` | stops the running turn, as the panel's Stop does |
-| `GET /validation[?wait=<s>]` | the Editor's validation issues (severity, mod or not, project, item, field, message; infos left out) with error and warning counts, read once asset processing and content pushes have been idle a moment, or after `<s>` seconds (default 120) with `idle` false |
+| `GET /validation[?wait=<s>]` | the Editor's validation issues (severity, mod or not, project, item, field, message; infos left out) with error and warning counts, read once asset processing and content pushes have been idle a moment, or after `<s>` seconds (default 300) with `idle` false and `busy` naming, per project, the processings in progress and the active and pending content pushes |
 
 - The channel starts listening when the Veronica panel is created, after the project has loaded. A refused connection means the Editor is not ready yet.
 - A raw loopback socket serves it rather than `HttpListener`, which needs a URL reservation for a non-admin user.
@@ -70,7 +70,7 @@ Every run starts a fresh Editor on a clean dev mod. The Editor's load time is ac
 
 `Eval/Wait-Ready.ps1 -RunDir <dir>` waits for the control channel to answer, at most `-Seconds` (default 540), and prints `Ready`, `NotReady` or `Exited`. The wait is bounded so a fork waits with blocking calls: a fork that leaves work running in the background notifies the master each time it pauses, flooding the master's context.
 
-`Eval/Get-Validation.ps1 -RunDir <dir> [-Label <name>]` saves `/validation` as `validation-<name>.json` in the run folder, prints a summary line and every error, and exits 0 (no errors), 1 (errors on the mod), 2 (errors outside the mod), 3 (no answer) or 4 (processing never settled after a few waits; the errors are stale).
+`Eval/Get-Validation.ps1 -RunDir <dir> [-Label <name>]` makes one `/validation` request, which waits for processing itself, saves it as `validation-<name>.json` in the run folder, prints a summary line and every error, and exits 0 (no errors), 1 (errors on the mod), 2 (errors outside the mod), 3 (no answer) or 4 (processing never settled within the wait; the errors are stale and what was busy is printed).
 
 `Eval/Stop-Run.ps1 -RunDir <dir>` kills the Editor and copies its logs into the run folder.
 

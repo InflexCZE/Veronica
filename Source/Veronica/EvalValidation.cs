@@ -42,9 +42,11 @@ internal static class EvalValidation
             await Task.Delay(Poll, cancellationToken).ConfigureAwait(false);
         }
         var issues = await EditorProject.RunAsync(Collect, cancellationToken).ConfigureAwait(false);
+        List<string> busy = idle ? new() : await EditorProject.RunAsync(Busy, cancellationToken).ConfigureAwait(false);
         return JsonSerializer.Serialize(new
         {
             idle,
+            busy,
             errors = issues.Count(i => i.severity == "Error"),
             warnings = issues.Count(i => i.severity == "Warning"),
             mod_errors = issues.Count(i => i.severity == "Error" && i.mod),
@@ -68,6 +70,21 @@ internal static class EvalValidation
                 return false;
         }
         return true;
+    }
+
+    private static List<string> Busy(LoadedProject root)
+    {
+        var busy = new List<string>();
+        foreach (var project in root.EnumerateProjectDAG())
+        {
+            if (!project.TryGetProjectFeature<AssetsProcessingFeature>(out var feature))
+                continue;
+            int inProgress = feature.ProcessingQueue.AssetProcessingsInProgress;
+            var push = feature.ContentManager.ContentPushStatus.Value;
+            if (inProgress > 0 || push.ActivePush != null || push.PendingPushes.Count > 0)
+                busy.Add($"{project.Name}: processing {inProgress}, active push {push.ActivePush ?? (object)"none"}, pending pushes {push.PendingPushes.Count}");
+        }
+        return busy;
     }
 
     private static List<Issue> Collect(LoadedProject root)

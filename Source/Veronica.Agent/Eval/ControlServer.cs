@@ -135,7 +135,7 @@ public sealed class ControlServer : IDisposable
                     return (405, Error("Use GET."));
                 if (_validation == null)
                     return (404, Error("No validation in this host."));
-                double settle = 120;
+                double settle = 300;
                 if (request.Query.TryGetValue("wait", out var limit)
                     && (!double.TryParse(limit, NumberStyles.Float, CultureInfo.InvariantCulture, out settle) || !double.IsFinite(settle) || settle < 0))
                     return (400, Error("wait must be a number of seconds."));
