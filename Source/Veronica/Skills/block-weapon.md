@@ -15,6 +15,7 @@ Plan:
 - Add the weapon: its definition with the ammo, and the inventory it reloads from
 - Connect it to the conveyors
 - Add the barrel and port dummies; the user places them
+- When the user wants them: the muzzle flash, firing sound and aiming of the vanilla gun
 - Show the block
 
 Steps:
