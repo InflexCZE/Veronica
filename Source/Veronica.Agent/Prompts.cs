@@ -101,6 +101,9 @@ public static class Prompts
         "and what was learned on the way. One line on how something was found, or why an approach failed, can save Veronica from getting it wrong again. " +
         "Finished steps that nothing open depends on can be left out, and the course of the session needs no retelling.\n\n" +
         "Veronica has the same tools and reads the project itself, so do not copy file contents; do keep the values and reasons it would not know to look for.\n\n" +
+        "Write down only what happened in the session. Do not add actions, values, decisions or guesses of your own: " +
+        "the active skill tells Veronica how to do each step, so the next steps name what to do, not how. " +
+        "A user decision is what the user said, not what Veronica chose for them.\n\n" +
         "Write exactly these five sections:\n" +
         "Current task: what the user asked for, including any later change of direction.\n" +
         "State: what is created or changed in the project, with paths and the values the open work relies on, and what is still open.\n" +
