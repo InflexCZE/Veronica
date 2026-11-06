@@ -61,7 +61,7 @@ Rules for everything the model reads: skills, the system prompt, tool descriptio
 - The system prompt ends with the skill index, one line per skill, so the model knows which skills exist without paying for their bodies.
 - `skill(name)` returns a skill's overview: everything but its Plan section, so what it needs and its steps. Rounds that call only `skill` or the plan tools are free: loading guidance must not cost the task its budget.
 - A broken skill file is skipped and logged, so one bad edit does not take the other skills down.
-- Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. During development they are read straight from `Source/Veronica/Skills`; where an installed Veronica keeps them is open (`Docs/TODOs/SkillSources.md`).
+- Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. During development they are read straight from `Source/Veronica/Skills`; an installed Veronica keeps them in the install folder's `Skills` (`Distribution.md`).
 
 ## Plan
 

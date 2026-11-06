@@ -1,5 +1,8 @@
-# WebQwen release folder
+# Release publish
 
-**Exists:** `Docs/Tech/WebQwen.md` lists the release as one folder: `WebQwen.exe` (.NET 9, framework-dependent), `wq.dll`, `webgpu_dawn.dll`; `dxcompiler.dll` / `dxil.dll` are copied in by Veronica from the Editor. The dev build puts the C# output in `Source/WebQwen/bin/...` with the native DLLs and the pinned DXC copied next to it.
+**Exists:** `Docs/Tech/Distribution.md` decides the release: `Veronica.exe` and `Veronica.zip` (`Runtime`, `Skills`, `Wiki`) on GitHub releases of this repo. The dev build puts the C# output in `Source/WebQwen/bin/...` with the native DLLs and the pinned DXC copied next to it.
 
-**Missing:** a publish step that produces exactly the release folder (no DXC, no test files, the manifest only if the product still needs one locally), and its place in the GitHub release of this repo.
+**Missing:**
+- A publish step producing `Veronica.zip`: the plugin and its private DLLs, `WebQwen.exe` as a framework-dependent single file with `wq.dll`, `webgpu_dawn.dll` and `manifest.json` (no DXC, no pdb, no test files), and the shipped skills and wiki.
+- The self-contained single-file publish of `Veronica.exe`.
+- Creating the GitHub release with both assets.

@@ -32,9 +32,9 @@ Local model runtime provider. Runs the WebQwen inference engine outside the brow
 ### I/O and models
 
 - C# does all I/O: downloading, caching, file access. Script I/O goes through callbacks into C#.
-- Model artifacts come from one fixed Hugging Face repo: the weights, the model library `.wasm` (under a fixed file name) and a manifest describing the model. Veronica downloads the latest.
-- Veronica downloads the manifest first and asks WebQwen.exe whether this machine meets the model's requirements (GPU features, limits, VRAM). Only then does it download the weights.
-- C# owns the model files: it downloads and stores them, and the engine reads them through the trampolines. The engine's own browser cache is a pass-through, so the weights exist on disk once: every cache scope is a view of the resources C# serves by URL.
+- The manifest ships beside `WebQwen.exe` and describes every model: its requirements and its weights and model library `.wasm` on Hugging Face at pinned revisions.
+- Setup asks WebQwen.exe whether this machine meets each model's requirements (GPU features, limits, VRAM) before it downloads the weights (`Distribution.md`).
+- C# owns the model files: setup downloads them, WebQwen.exe serves them from the models folder, and the engine reads them through the trampolines. The engine's own browser cache is a pass-through, so the weights exist on disk once: every cache scope is a view of the resources C# serves by URL.
 - C# stores Dawn's compiled shader cache, so pipelines compile once per machine rather than on every start.
 
 ## Binaries
@@ -43,10 +43,11 @@ One folder, side by side:
 
 | file | what |
 |---|---|
-| `WebQwen.exe` | C#, .NET 9, framework-dependent (the Editor requires .NET 9 already). All I/O; loads `wq.dll` in-process. |
+| `WebQwen.exe` | C#, .NET 9, framework-dependent single file (the Editor requires .NET 9 already). All I/O; loads `wq.dll` in-process. |
+| `manifest.json` | The models WebQwen can run, see I/O and models. |
 | `wq.dll` | V8, the script host and the WebGPU functions; the C API `WebQwen.exe` calls. |
 | `webgpu_dawn.dll` | Dawn's `webgpu.h` C API, plus the residency of large buffers (`wq_dawn.h`, see `VramSharing.md`). |
-| `dxcompiler.dll`, `dxil.dll` | DirectX Shader Compiler, required by Dawn's D3D12 backend. Not part of the WebQwen release: Veronica copies them from the Editor's binaries folder when it installs or updates WebQwen. |
+| `dxcompiler.dll`, `dxil.dll` | DirectX Shader Compiler, required by Dawn's D3D12 backend. Not part of the release: `Veronica.dll` copies them from the Editor's binaries folder before it starts WebQwen.exe, when they are missing or older. |
 
 ## Build
 

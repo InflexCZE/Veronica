@@ -6,9 +6,10 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 |---|---|
 | [ShaderCache.md](ShaderCache.md) | WebQwen: persist Dawn's compiled pipelines |
 | [EngineLoopPolling.md](EngineLoopPolling.md) | WebQwen: engine thread busy-polls while the GPU works (owner decision) |
-| [ModelDownloads.md](ModelDownloads.md) | WebQwen: C# downloads of manifest, library and weights |
-| [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run the model, including free VRAM |
-| [InstallStrategy.md](InstallStrategy.md) | Where Veronica finds WebQwen.exe and the model (owner decision) |
+| [Setup.md](Setup.md) | Distribution: `Veronica.exe` not built |
+| [InstalledPlugin.md](InstalledPlugin.md) | Distribution: the plugin still finds everything through build-time paths |
+| [ModelDownloads.md](ModelDownloads.md) | Distribution: setup's model downloads |
+| [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [StalledStream.md](StalledStream.md) | Chat: a reply stream that stops without closing waits until Stop (owner decision) |
@@ -26,7 +27,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
-| [ReleaseLayout.md](ReleaseLayout.md) | WebQwen: release folder and publish |
+| [ReleaseLayout.md](ReleaseLayout.md) | Distribution: publish of `Veronica.zip` and setup, the GitHub release |
 | [SplitLoad.md](SplitLoad.md) | Split model load: Editor live during shader compile (owner decision) |
 | [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict around a turn, edge cases not yet tested live |
 | [ReloadDuringTurn.md](ReloadDuringTurn.md) | Editor: a project reload during a turn, untested with the commit job disabled |
@@ -37,7 +38,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |
 | [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps, and the model cannot take back its own (owner decision) |
 | [WriteValueChecks.md](WriteValueChecks.md) | Editor tools: write hints only on the written field's own validation (owner decision) |
-| [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
+| [SkillSources.md](SkillSources.md) | Skills: a community skill repository (owner decision) |
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
 | [ContentQuery.md](ContentQuery.md) | Editor tools: no way to query a field across many items (owner decision) |
 | [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |

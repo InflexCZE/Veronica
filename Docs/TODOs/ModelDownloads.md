@@ -1,9 +1,8 @@
-# Model downloads in C#
+# Model downloads in setup
 
-**Exists:** `Docs/Tech/WebQwen.md` decides that C# downloads and stores the manifest, model library and weights from one fixed Hugging Face repo, manifest first. Today `WebQwen.exe` only serves files already on disk (`ModelFiles` in `Source/WebQwen/ModelFiles.cs`), placed there by `Build/FetchModel.ps1`. The Cache API trampoline (`Source/WebQwen.Native/js/runtime.js`) rejects `cache.add` for anything the host lacks, and ignores abort signals.
+**Exists:** `Docs/Tech/Distribution.md` decides that setup downloads the models the WebQwen manifest pins, through `Downloads` into `Models\<model id>`, before WebQwen ever loads one. Today the files are placed by `Build/FetchModel.ps1`, which already verifies against the Hugging Face hashes. `WebQwen.exe` serves them (`Source/WebQwen/ModelFiles.cs`). The Cache API trampoline (`Source/WebQwen.Native/js/runtime.js`) rejects `cache.add` for anything the host lacks, and ignores abort signals.
 
 **Missing:**
-- Downloader: manifest, then (after the requirements check) library and weights from the record's pinned revisions; verification against Hugging Face hashes (as `FetchModel.ps1` does) and the manifest's library sha256; resume; progress.
-- Where it hooks in: either C# fetches everything before `LoadModelAsync`, or `cache.add` becomes an async host call that downloads on demand. Pick one; the first keeps the engine offline.
-- Storage location and cleanup of old revisions.
+- The downloader in setup: weights and library at the pinned revisions, resume after an interruption, progress, verification against the Hugging Face hashes and the library sha256, move into `Models` only when verified.
+- Replacing an installed model whose pinned revision changed, deleting the old revision after the new one is verified.
 - Cancellation of a load (web-llm's reload abort expects a `DOMException` named `AbortError`).

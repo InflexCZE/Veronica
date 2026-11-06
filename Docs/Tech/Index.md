@@ -4,6 +4,7 @@
 |---|---|
 | [WebQwen.md](WebQwen.md) | `WebQwen.exe`, the local model runtime provider |
 | [VramSharing.md](VramSharing.md) | Editor and WebQwen taking turns on one GPU's VRAM |
+| [Distribution.md](Distribution.md) | Release, setup tool, install folder, hooking into a mod, model download, updates |
 | [EditorPlugin.md](EditorPlugin.md) | `Veronica.dll` as an Editor plugin: loading, build, dev mod |
 | [EditorUi.md](EditorUi.md) | Veronica's panel, the Board, menu, fonts and theme inside the Editor |
 | [Agent.md](Agent.md) | `Veronica.Agent.dll`: providers, tool loop, conversation |
