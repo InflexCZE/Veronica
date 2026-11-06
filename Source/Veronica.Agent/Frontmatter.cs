@@ -5,6 +5,11 @@ public static class Frontmatter
 {
     public const string Extension = ".md";
 
+    public const string PendingUpdateExtension = ".new.md";
+
+    // An update's new version of a file the user changed waits beside it until they pick one (Docs/Tech/Distribution.md).
+    public static bool IsPendingUpdate(string path) => path.EndsWith(PendingUpdateExtension, StringComparison.OrdinalIgnoreCase);
+
     // Frontmatter is flat 'key: value' lines between '---' lines; an indented line continues the previous value.
     public static (IReadOnlyDictionary<string, string> Fields, string Body) Parse(string text, params string[] required)
     {
@@ -60,7 +65,9 @@ public static class Frontmatter
         List<string> paths;
         try
         {
-            paths = Directory.EnumerateFiles(directory, "*" + Extension).Order(StringComparer.OrdinalIgnoreCase).ToList();
+            paths = Directory.EnumerateFiles(directory, "*" + Extension)
+                .Where(p => !IsPendingUpdate(p))
+                .Order(StringComparer.OrdinalIgnoreCase).ToList();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

@@ -102,8 +102,23 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto,Auto" Margin="6">
-    <ScrollViewer x:Name="MessagesScroll" Grid.Row="0">
+  <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="6">
+    <Border Grid.Row="0"
+            IsVisible="{Binding HasUpdate}"
+            Classes="message"
+            Margin="0,0,0,6">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding UpdateNotice}"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource PrimaryTextColor}" />
+        <Button Grid.Column="1"
+                Content="Update"
+                Margin="6,0,0,0"
+                Command="{Binding UpdateCommand}" />
+      </Grid>
+    </Border>
+    <ScrollViewer x:Name="MessagesScroll" Grid.Row="1">
       <StackPanel>
       <ItemsControl ItemsSource="{Binding Messages}">
         <ItemsControl.DataTemplates>
@@ -215,7 +230,7 @@
       </StackPanel>
     </ScrollViewer>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
       <TextBox Grid.Column="0"
                Text="{Binding Draft}"
                Watermark="Ask Veronica... (/clear starts a new chat)"
@@ -232,7 +247,7 @@
               Command="{Binding SendCommand}" />
     </Grid>
 
-    <TextBlock Grid.Row="2"
+    <TextBlock Grid.Row="3"
                Text="{Binding Status}"
                Margin="2,4,0,0"
                FontSize="{DynamicResource SmallFontSize}"

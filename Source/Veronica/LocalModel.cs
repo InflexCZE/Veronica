@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
@@ -7,17 +6,27 @@ using Veronica.Residency;
 
 namespace Veronica;
 
-// Development wiring: WebQwen.exe from this repo's build output, the model from its .deps folder.
+// WebQwen.exe and the active model: from the install folder, or in development from this repo's
+// build output and .deps folder.
 internal static class LocalModel
 {
-    private const string ModelId = "Ternary-Bonsai-2-27B-MLC";
+    private const string DevelopmentModelId = "Ternary-Bonsai-2-27B-MLC";
 
-    public static WebQwenProvider CreateProvider()
+    // Null when an installed Veronica has no model chosen; the message says what to do.
+    public static WebQwenProvider? CreateProvider(out string? unavailable)
     {
-        var exe = typeof(LocalModel).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-            .Single(a => a.Key == "WebQwenExe").Value!;
+        string? chosen = Install.Settings.GetTrimmed(Settings.VERONICA_MODEL);
+        unavailable = null;
+        if (chosen == null && Install.IsInstalled)
+        {
+            unavailable = "No local model is chosen. Choose one in Veronica.exe, then restart the Editor.";
+            return null;
+        }
+        Install.CopyShaderCompiler();
+        string modelId = chosen ?? DevelopmentModelId;
+        var launch = new WebQwenLaunch(Install.WebQwenExe, modelId, Install.ModelsDir);
         var gpu = new GpuShare(EditorResidency.FreeAsync, EditorResidency.RestoreAsync, line => Log.Default.WriteLine($"[Veronica] {line}"));
-        var provider = new WebQwenProvider(new WebQwenLaunch(exe, ModelId), line => Log.Default.WriteLine($"[WebQwen] {AsciiOnly(line)}"), gpu);
+        var provider = new WebQwenProvider(launch, line => Log.Default.WriteLine($"[WebQwen] {AsciiOnly(line)}"), gpu);
         EditorResidency.DropUnusedTextures();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => provider.Dispose();
         return provider;

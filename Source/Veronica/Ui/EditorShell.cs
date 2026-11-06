@@ -137,6 +137,7 @@ public sealed class EditorShell
         var provider = EvalHook.Record(ModelProvider.Create(status => panel?.ShowStatus(status), endpoint));
         panel = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions);
         EvalHook.Attach(panel);
+        UpdateCheck.Start(panel);
         ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);
         return panel;
     }

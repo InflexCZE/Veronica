@@ -29,7 +29,7 @@
     <ProjectReference Include="..\Veronica.Editing\Veronica.Editing.csproj" />
   </ItemGroup>
 
-  <!-- Development wiring until WebQwen is installed: the exe from this repo's build output. -->
+  <!-- Development paths, used when no install folder surrounds the plugin (Install.cs). -->
   <ItemGroup>
     <AssemblyMetadata Include="WebQwenExe" Value="$(RepoRoot)Source\WebQwen\bin\x64\$(Configuration)\net9.0\WebQwen.exe" />
     <AssemblyMetadata Include="SkillsDir" Value="$(MSBuildProjectDirectory)\Skills" />

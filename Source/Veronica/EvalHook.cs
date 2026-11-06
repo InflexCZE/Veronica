@@ -14,9 +14,9 @@ internal static class EvalHook
     private static ControlServer? _server;
     private static RecordingProvider? _recording;
 
-    private static string RunDir => Environment.GetEnvironmentVariable("VERONICA_RUN_DIR")?.Trim() ?? "";
+    private static string RunDir => Install.Settings.Get(Settings.VERONICA_RUN_DIR)?.Trim() ?? "";
 
-    private static string Port => Environment.GetEnvironmentVariable("VERONICA_CONTROL_PORT")?.Trim() ?? "";
+    private static string Port => Install.Settings.Get(Settings.VERONICA_CONTROL_PORT)?.Trim() ?? "";
 
     public static IProvider Record(IProvider provider)
     {

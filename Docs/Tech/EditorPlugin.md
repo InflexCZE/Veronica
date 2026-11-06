@@ -35,6 +35,7 @@ A plugin compiled against VRage build N does not load into an Editor with a lowe
 ## Dependencies
 
 - `Veronica.Agent.dll` (providers, tool loop, WebQwen client) is a private dependency and sits beside `Veronica.dll`.
+- `System.Security.Cryptography.ProtectedData.dll` (NuGet, from `Veronica.Agent`) decrypts the API key in the settings file (`Distribution.md`) and is a private dependency beside `Veronica.dll`.
 - `AutomaticGraphLayout.dll` (MSAGL, MIT, NuGet `AutomaticGraphLayout`) lays out the Board's graphs and is a private dependency beside `Veronica.dll`. `Nodify.Avalonia.dll` is the Editor's and referenced like its other DLLs.
 - An installed plugin finds `WebQwen.exe`, the skills, the wiki and the models relative to itself (`Distribution.md`). A development build runs `WebQwen.exe` from this repo's build output (`Source/WebQwen/bin/x64/<Configuration>/net9.0`) with the models from `.deps/models`; the build writes these paths into `Veronica.dll` as assembly metadata.
 

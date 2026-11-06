@@ -19,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Editing", "Source\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Tests", "Source\Veronica.Tests\Veronica.Tests.csproj", "{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Setup", "Source\Veronica.Setup\Veronica.Setup.csproj", "{E703AE61-D04C-4517-ADCC-3D13BAB8D6AF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Setup.Tests", "Source\Veronica.Setup.Tests\Veronica.Setup.Tests.csproj", "{D2A2BCBB-83B7-4C81-A9D3-FD7B692731E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -57,6 +61,14 @@ Global
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Debug|x64.Build.0 = Debug|x64
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Release|x64.ActiveCfg = Release|x64
 		{27BDD3DC-8CF3-4982-BC60-C3A88A59B27F}.Release|x64.Build.0 = Release|x64
+		{E703AE61-D04C-4517-ADCC-3D13BAB8D6AF}.Debug|x64.ActiveCfg = Debug|x64
+		{E703AE61-D04C-4517-ADCC-3D13BAB8D6AF}.Debug|x64.Build.0 = Debug|x64
+		{E703AE61-D04C-4517-ADCC-3D13BAB8D6AF}.Release|x64.ActiveCfg = Release|x64
+		{E703AE61-D04C-4517-ADCC-3D13BAB8D6AF}.Release|x64.Build.0 = Release|x64
+		{D2A2BCBB-83B7-4C81-A9D3-FD7B692731E1}.Debug|x64.ActiveCfg = Debug|x64
+		{D2A2BCBB-83B7-4C81-A9D3-FD7B692731E1}.Debug|x64.Build.0 = Debug|x64
+		{D2A2BCBB-83B7-4C81-A9D3-FD7B692731E1}.Release|x64.ActiveCfg = Release|x64
+		{D2A2BCBB-83B7-4C81-A9D3-FD7B692731E1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

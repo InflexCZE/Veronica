@@ -2,6 +2,8 @@
   <PropertyGroup>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <DepsDir>$(RepoRoot).deps\</DepsDir>
+    <!-- The release tag vX.Y.Z; Build\Publish.ps1 sets it, development builds stay 0.0.0. -->
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
   </PropertyGroup>
 
   <Import Project="$(RepoRoot)Directory.Build.local.props" Condition="Exists('$(RepoRoot)Directory.Build.local.props')" />

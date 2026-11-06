@@ -6,12 +6,10 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 |---|---|
 | [ShaderCache.md](ShaderCache.md) | WebQwen: persist Dawn's compiled pipelines |
 | [EngineLoopPolling.md](EngineLoopPolling.md) | WebQwen: engine thread busy-polls while the GPU works (owner decision) |
-| [Setup.md](Setup.md) | Distribution: `Veronica.exe` not built |
-| [InstalledPlugin.md](InstalledPlugin.md) | Distribution: the plugin still finds everything through build-time paths and reads env vars directly |
 | [CodeSigning.md](CodeSigning.md) | Distribution: releases are unsigned |
 | [TestDiskWrites.md](TestDiskWrites.md) | Tests: one skill test still writes files |
-| [ModelDownloads.md](ModelDownloads.md) | Distribution: `Veronica.exe`'s model downloads |
-| [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM |
+| [ModelDownloads.md](ModelDownloads.md) | WebQwen: a model load cannot be cancelled |
+| [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM; `Veronica.exe` shows no fit until then |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
 | [StalledStream.md](StalledStream.md) | Chat: a reply stream that stops without closing waits until Stop (owner decision) |
@@ -29,7 +27,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
-| [ReleaseLayout.md](ReleaseLayout.md) | Distribution: publish of `Veronica.zip` and setup, the GitHub release |
+| [ReleaseLayout.md](ReleaseLayout.md) | Distribution: no GitHub repo or release yet |
 | [SplitLoad.md](SplitLoad.md) | Split model load: Editor live during shader compile (owner decision) |
 | [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict around a turn, edge cases not yet tested live |
 | [ReloadDuringTurn.md](ReloadDuringTurn.md) | Editor: a project reload during a turn, untested with the commit job disabled |
@@ -55,7 +53,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
 | [ConditionalWritability.md](ConditionalWritability.md) | Editor tools: conditional read-only rules of the inspector are ignored |
-| [ProviderSelection.md](ProviderSelection.md) | Distribution: provider selection and setup pages in `Veronica.exe` |
+| [ProviderSelection.md](ProviderSelection.md) | Chat: OpenAI-compatible provider untested in a live Editor chat |
 | [ClaudeProviderGaps.md](ClaudeProviderGaps.md) | Chat: Claude provider review findings not yet fixed (one owner decision) |
 | [OpenAiServerQuirks.md](OpenAiServerQuirks.md) | Chat: OpenAI-compatible server behaviours not handled (one owner decision) |
 | [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |

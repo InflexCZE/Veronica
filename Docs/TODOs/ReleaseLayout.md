@@ -1,8 +1,7 @@
-# Release publish
+# Publishing a release
 
-**Exists:** `Docs/Tech/Distribution.md` decides the release: `Veronica.exe` and `Veronica.zip` (`Runtime`, `Skills`, `Wiki`) on GitHub releases of this repo. The dev build puts the C# output in `Source/WebQwen/bin/...` with the native DLLs and the pinned DXC copied next to it.
+**Exists:** `Build\Publish.ps1 -Version X.Y.Z` builds `Veronica.exe` and `Veronica.zip` into `bin\dist\<version>` (`Docs/Tech/Distribution.md`).
 
 **Missing:**
-- A publish step producing `Veronica.zip`: the plugin and its private DLLs, `WebQwen.exe` as a framework-dependent single file with `wq.dll`, `webgpu_dawn.dll` and `manifest.json` (no DXC, no pdb, no test files), and the shipped skills and wiki.
-- The self-contained single-file publish of `Veronica.exe`.
-- Creating the GitHub release with both assets.
+- The GitHub repo and creating its releases with both assets; the repo lives on a local Gitea only.
+- The plugin in the release compiles against the Editor `Directory.Build.local.props` points at (`EditorVersionFloor.md`).

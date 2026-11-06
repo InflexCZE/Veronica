@@ -1,0 +1,266 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:Veronica.Setup.Ui"
+        x:Class="Veronica.Setup.Ui.MainWindow"
+        x:DataType="ui:MainViewModel"
+        Title="{Binding Title}"
+        Width="760" Height="600" MinWidth="560" MinHeight="420"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+    <Style Selector="TextBlock.note">
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.warning">
+      <Setter Property="Foreground" Value="#F0B040" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.error">
+      <Setter Property="Foreground" Value="#F06060" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+  </Window.Styles>
+
+  <Window.DataTemplates>
+
+    <DataTemplate DataType="ui:WelcomePage">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="title" Text="Hi, I'm Veronica" />
+        <TextBlock Text="I help you mod Space Engineers 2 from inside the Editor: I find and read content, create and edit definitions, prefabs and blocks, and walk you through the steps." />
+        <TextBlock Text="Next, pick where my brain runs: a local model on your graphics card, Claude Code, or an OpenAI-compatible server. Then choose the mods I should help with." />
+        <TextBlock Classes="note" Text="{Binding Root, StringFormat='Veronica installs into {0}'}" />
+        <TextBlock Classes="warning" IsVisible="{Binding HasWarning}" Text="{Binding Warning}" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Content="Install" Command="{Binding Continue}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:ProgressPage">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="title" Text="{Binding Title}" />
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" IsIndeterminate="{Binding Indeterminate}" IsVisible="{Binding !HasError}" />
+        <TextBlock Text="{Binding Status}" />
+        <TextBlock Classes="error" IsVisible="{Binding HasError}" Text="{Binding Error}" />
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding !HasError}">
+          <Button Content="Cancel" Command="{Binding Cancel}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding HasError}">
+          <Button Content="Retry" Command="{Binding Retry}" />
+          <Button Content="Back" Command="{Binding Back}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:WaitEditorPage">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="title" Text="Waiting for the Editor" />
+        <TextBlock Text="{Binding Reason}" />
+        <TextBlock Classes="note" Text="Veronica continues by itself once the Editor has closed." />
+        <ProgressBar IsIndeterminate="True" />
+        <StackPanel Orientation="Horizontal">
+          <Button Content="Cancel" Command="{Binding Cancel}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:ProviderSelectPage">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="title" Text="Where does my brain run?" />
+        <Button HorizontalAlignment="Stretch" Command="{Binding Local}">
+          <StackPanel>
+            <TextBlock FontWeight="SemiBold" Text="Local model" />
+            <TextBlock Classes="note" Text="Runs on your graphics card, offline after one large download. Small models make mistakes: trust, but verify." />
+          </StackPanel>
+        </Button>
+        <Button HorizontalAlignment="Stretch" Command="{Binding Claude}">
+          <StackPanel>
+            <TextBlock FontWeight="SemiBold" Text="Claude Code" />
+            <TextBlock Classes="note" Text="Uses your installed and signed-in Claude Code (claude)." />
+          </StackPanel>
+        </Button>
+        <Button HorizontalAlignment="Stretch" Command="{Binding OpenAi}">
+          <StackPanel>
+            <TextBlock FontWeight="SemiBold" Text="OpenAI-compatible server" />
+            <TextBlock Classes="note" Text="Any server speaking the OpenAI chat API, for example a local llama.cpp server." />
+          </StackPanel>
+        </Button>
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding CanGoBack}">
+          <Button Content="Back" Command="{Binding Back}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:LocalModelsPage">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="title" Text="Local model" />
+        <TextBlock DockPanel.Dock="Top" Classes="note" Margin="0,0,0,8"
+                   Text="Download a model, then choose Use. The local model is resource intensive; other applications holding graphics memory slow it down." />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Content="Continue" Command="{Binding Continue}" />
+          <Button Content="Back" Command="{Binding Back}" />
+          <TextBlock Classes="error" VerticalAlignment="Center" Text="{Binding Message}" />
+        </StackPanel>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Models}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="ui:ModelItem">
+                <Border BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                      <TextBlock Classes="note" Text="{Binding Details}" />
+                      <TextBlock Text="{Binding State}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Content="Download" IsVisible="{Binding NotInstalled}" Command="{Binding Download}" />
+                      <Button Content="Use" IsVisible="{Binding CanUse}" Command="{Binding Use}" />
+                      <Button Content="Delete" IsVisible="{Binding Installed}" Command="{Binding Delete}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:ClaudeSetupPage">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="title" Text="Claude Code" />
+        <TextBlock Classes="note" Text="Veronica runs your installed Claude Code. Install it and sign in by running 'claude' once." />
+        <TextBlock Text="Model (empty is sonnet)" />
+        <TextBox Text="{Binding Model}" />
+        <TextBlock Text="Effort (empty is Claude Code's default)" />
+        <TextBox Text="{Binding Effort}" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Content="Continue" Command="{Binding Continue}" />
+          <Button Content="Back" Command="{Binding Back}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:OpenAiSetupPage">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="title" Text="OpenAI-compatible server" />
+        <TextBlock Text="Server URL, including the API prefix (e.g. http://localhost:8080/v1)" />
+        <TextBox Text="{Binding Url}" />
+        <TextBlock Text="Model (empty takes the first the server lists)" />
+        <TextBox Text="{Binding Model}" />
+        <TextBlock Text="API key (optional, stored encrypted for your Windows user)" />
+        <TextBox Text="{Binding ApiKey}" PasswordChar="*" />
+        <TextBlock Text="Reasoning effort (optional)" />
+        <TextBox Text="{Binding Effort}" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Content="Continue" Command="{Binding Continue}" />
+          <Button Content="Back" Command="{Binding Back}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:CheckPage">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="title" Text="Checking the provider" />
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Checking}" />
+        <TextBlock Text="{Binding Status}" />
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding Ok}">
+          <Button Content="Done" Command="{Binding Finish}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding Failed}">
+          <Button Content="Retry" Command="{Binding Retry}" />
+          <Button Content="Back" Command="{Binding Back}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:AppPage">
+      <TabControl>
+        <TabItem Header="Provider">
+          <StackPanel Spacing="10" Margin="0,10,0,0">
+            <TextBlock Text="{Binding Provider}" />
+            <TextBlock Classes="note" Text="A change takes effect at the next Editor start." />
+            <StackPanel Orientation="Horizontal">
+              <Button Content="Change provider or model" Command="{Binding ChangeProvider}" />
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="Mods">
+          <DockPanel Margin="0,10,0,0">
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+              <TextBlock Classes="note" Text="Checked mods load Veronica in the Editor. A collaborator without Veronica installed at the same path cannot open a checked mod." />
+              <TextBlock Classes="note" Text="{Binding ModsMessage}" />
+            </StackPanel>
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding Mods}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="ui:ModItem">
+                    <StackPanel Margin="0,0,0,4">
+                      <CheckBox IsChecked="{Binding IsHooked, Mode=OneWay}" IsEnabled="{Binding CanToggle}" Command="{Binding Toggle}">
+                        <TextBlock Text="{Binding Name}" />
+                      </CheckBox>
+                      <TextBlock Classes="note" Margin="28,0,0,0" Text="{Binding Folder}" />
+                      <TextBlock Classes="warning" Margin="28,0,0,0" Text="{Binding Note}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+        <TabItem Header="Versions">
+          <DockPanel Margin="0,10,0,0">
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+              <TextBlock Text="{Binding VersionText}" />
+              <TextBlock Text="{Binding LatestText}" />
+              <StackPanel Orientation="Horizontal">
+                <Button Content="Update" IsEnabled="{Binding CanUpdate}" Command="{Binding Update}" />
+                <Button Content="Check again" Command="{Binding CheckUpdates}" />
+              </StackPanel>
+              <TextBlock Classes="warning" IsVisible="{Binding HasWarning}" Text="{Binding Warning}" />
+              <TextBlock Classes="error" Text="{Binding ConflictsMessage}" />
+              <TextBlock Classes="note" Margin="0,8,0,0"
+                         Text="Skill and wiki files you changed keep your version; the new release's version waits beside them as name.new.md until you choose." />
+            </StackPanel>
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding Conflicts}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="ui:ConflictItem">
+                    <Border BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                          <TextBlock Classes="note" Text="{Binding Note}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                          <Button Content="Keep mine" Command="{Binding KeepMine}" />
+                          <Button Content="Use new version" Command="{Binding UseNew}" />
+                          <Button Content="Open" Command="{Binding Open}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+      </TabControl>
+    </DataTemplate>
+
+  </Window.DataTemplates>
+
+  <ContentControl Margin="20" Content="{Binding Page}" />
+</Window>

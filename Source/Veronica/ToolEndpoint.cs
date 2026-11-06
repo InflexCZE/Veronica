@@ -1,5 +1,6 @@
 using System.Globalization;
 using Keen.VRage.Library.Diagnostics;
+using Veronica.Agent;
 using Veronica.Agent.Mcp;
 using Veronica.Agent.Tools;
 
@@ -13,7 +14,7 @@ internal static class ToolEndpoint
 
     public static void Start(McpEndpoint endpoint, bool providerNeedsIt, Action<string> showStatus)
     {
-        string flag = Environment.GetEnvironmentVariable("VERONICA_MCP")?.Trim() ?? "";
+        string flag = Install.Settings.Get(Settings.VERONICA_MCP)?.Trim() ?? "";
         if (flag.Length > 0 && flag != "0" && flag != "1")
             Log.Default.WriteLine($"[Veronica] VERONICA_MCP '{LocalModel.AsciiOnly(flag)}' is not 1 or 0, treated as 0.");
         if (flag != "1" && !providerNeedsIt)
@@ -31,7 +32,7 @@ internal static class ToolEndpoint
 
     private static int ReadPort()
     {
-        string port = Environment.GetEnvironmentVariable("VERONICA_MCP_PORT")?.Trim() ?? "";
+        string port = Install.Settings.Get(Settings.VERONICA_MCP_PORT)?.Trim() ?? "";
         if (port.Length == 0)
             return McpEndpoint.DefaultPort;
         if (int.TryParse(port, NumberStyles.None, CultureInfo.InvariantCulture, out int value) && value is >= 1 and <= 65535)

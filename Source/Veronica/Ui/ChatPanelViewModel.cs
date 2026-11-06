@@ -17,6 +17,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private readonly SkillPlan _plan;
     private string _draft = "";
     private string _status = "";
+    private string _updateNotice = "";
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
     private readonly IProvider _provider;
@@ -79,6 +80,32 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             OnPropertyChanged(nameof(Status));
         }
     }
+
+    // A newer Veronica release; empty hides the notice.
+    public string UpdateNotice
+    {
+        get => _updateNotice;
+        private set
+        {
+            if (_updateNotice == value)
+                return;
+            _updateNotice = value;
+            OnPropertyChanged(nameof(UpdateNotice));
+            OnPropertyChanged(nameof(HasUpdate));
+        }
+    }
+
+    public bool HasUpdate => _updateNotice.Length > 0;
+
+    public UiCommand? UpdateCommand { get; private set; }
+
+    // Any thread.
+    public void ShowUpdate(string notice, Action runSetup) => Dispatcher.UIThread.Post(() =>
+    {
+        UpdateCommand = new UiCommand(runSetup);
+        OnPropertyChanged(nameof(UpdateCommand));
+        UpdateNotice = notice;
+    });
 
     // Set when an eval run drives or records this chat.
     public RunControl? Run { get; set; }

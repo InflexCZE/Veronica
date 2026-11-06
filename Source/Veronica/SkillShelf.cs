@@ -1,4 +1,3 @@
-using System.Reflection;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
 
@@ -16,20 +15,16 @@ public sealed class SkillShelf
 
     public string SystemPrompt()
     {
-        var load = SkillFiles.Load(Directory("SkillsDir"));
+        var load = SkillFiles.Load(Install.SkillsDir);
         foreach (var problem in load.Problems)
             Log.Default.WriteLine($"[Veronica] Skill skipped: {problem}");
         _skills = load.Skills;
 
-        var wiki = WikiFiles.Load(Directory("WikiDir"));
+        var wiki = WikiFiles.Load(Install.WikiDir);
         foreach (var problem in wiki.Problems)
             Log.Default.WriteLine($"[Veronica] Wiki page skipped: {problem}");
         _pages = wiki.Pages;
 
         return Prompts.SystemWith(_skills);
     }
-
-    private static string? Directory(string key) =>
-        typeof(SkillShelf).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-            .SingleOrDefault(a => a.Key == key)?.Value;
 }

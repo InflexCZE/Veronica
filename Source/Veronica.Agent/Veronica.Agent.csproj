@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\WebQwen\Protocol\Protocol.cs" Link="WebQwen\Protocol.cs" />
   </ItemGroup>
 
