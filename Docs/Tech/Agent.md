@@ -90,9 +90,9 @@
 ## OpenAI-compatible provider
 
 - Any server that speaks OpenAI chat completions; the target is a local llama.cpp server. It uses one streamed request per round, run by `ClientToolLoop`.
-- It is selected by environment variables; there is no UI yet (`Docs/TODOs/ProviderSelection.md`). Without them, WebQwen is the provider.
+- It is selected by settings (`Distribution.md`), which `Veronica.exe` writes and environment variables override. Without them, WebQwen is the provider.
 
-| variable | value |
+| setting | value |
 |---|---|
 | `VERONICA_PROVIDER` | `openai` |
 | `VERONICA_OPENAI_URL` | base URL including the API prefix, e.g. `http://localhost:8080/v1` |

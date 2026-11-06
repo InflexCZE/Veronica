@@ -7,8 +7,9 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ShaderCache.md](ShaderCache.md) | WebQwen: persist Dawn's compiled pipelines |
 | [EngineLoopPolling.md](EngineLoopPolling.md) | WebQwen: engine thread busy-polls while the GPU works (owner decision) |
 | [Setup.md](Setup.md) | Distribution: `Veronica.exe` not built |
-| [InstalledPlugin.md](InstalledPlugin.md) | Distribution: the plugin still finds everything through build-time paths |
-| [ModelDownloads.md](ModelDownloads.md) | Distribution: setup's model downloads |
+| [InstalledPlugin.md](InstalledPlugin.md) | Distribution: the plugin still finds everything through build-time paths and reads env vars directly |
+| [CodeSigning.md](CodeSigning.md) | Distribution: releases are unsigned |
+| [ModelDownloads.md](ModelDownloads.md) | Distribution: `Veronica.exe`'s model downloads |
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
@@ -53,7 +54,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
 | [ConditionalWritability.md](ConditionalWritability.md) | Editor tools: conditional read-only rules of the inspector are ignored |
-| [ProviderSelection.md](ProviderSelection.md) | Chat: OpenAI-compatible and Claude providers chosen by environment variables, no UI (owner decision) |
+| [ProviderSelection.md](ProviderSelection.md) | Distribution: provider selection and setup pages in `Veronica.exe` |
 | [ClaudeProviderGaps.md](ClaudeProviderGaps.md) | Chat: Claude provider review findings not yet fixed (one owner decision) |
 | [OpenAiServerQuirks.md](OpenAiServerQuirks.md) | Chat: OpenAI-compatible server behaviours not handled (one owner decision) |
 | [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |

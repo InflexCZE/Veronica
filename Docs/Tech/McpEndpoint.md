@@ -4,9 +4,9 @@
 
 ## Selection
 
-Environment variables, read once when the panel is created.
+Settings (`Distribution.md`), read once when the panel is created.
 
-| variable | value |
+| setting | value |
 |---|---|
 | `VERONICA_MCP` | optional; `1` serves the endpoint with any provider |
 | `VERONICA_MCP_PORT` | optional; unset is 47812 |

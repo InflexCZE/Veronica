@@ -33,8 +33,8 @@ Local model runtime provider. Runs the WebQwen inference engine outside the brow
 
 - C# does all I/O: downloading, caching, file access. Script I/O goes through callbacks into C#.
 - The manifest ships beside `WebQwen.exe` and describes every model: its requirements and its weights and model library `.wasm` on Hugging Face at pinned revisions.
-- Setup asks WebQwen.exe whether this machine meets each model's requirements (GPU features, limits, VRAM) before it downloads the weights (`Distribution.md`).
-- C# owns the model files: setup downloads them, WebQwen.exe serves them from the models folder, and the engine reads them through the trampolines. The engine's own browser cache is a pass-through, so the weights exist on disk once: every cache scope is a view of the resources C# serves by URL.
+- `Veronica.exe` asks WebQwen.exe whether this machine meets each model's requirements (GPU features, limits, VRAM) before it downloads the weights (`Distribution.md`).
+- C# owns the model files: `Veronica.exe` downloads them, WebQwen.exe serves them from the models folder, and the engine reads them through the trampolines. The engine's own browser cache is a pass-through, so the weights exist on disk once: every cache scope is a view of the resources C# serves by URL.
 - C# stores Dawn's compiled shader cache, so pipelines compile once per machine rather than on every start.
 
 ## Binaries

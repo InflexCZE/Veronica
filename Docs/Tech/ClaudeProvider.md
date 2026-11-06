@@ -4,9 +4,9 @@ The Claude provider runs each turn through the Claude Code CLI (`claude -p`), wh
 
 ## Selection
 
-Environment variables, read once when the panel is created, like the OpenAI-compatible provider (`Agent.md`).
+Settings (`Distribution.md`), read once when the panel is created, like the OpenAI-compatible provider (`Agent.md`).
 
-| variable | value |
+| setting | value |
 |---|---|
 | `VERONICA_PROVIDER` | `claude` |
 | `VERONICA_CLAUDE_MODEL` | optional; unset is `sonnet` |

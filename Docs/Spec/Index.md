@@ -15,10 +15,11 @@ Veronica is a modding assistant integrated into the VRage3 / Space Engineers 2 E
 ## Distribution
 
 - The modder downloads `Veronica.exe` and puts it in a folder of their choice. Veronica installs into that folder.
-- Setup lists the modder's local mods; checking one adds Veronica to it, unchecking removes it.
-- Setup measures the GPU, shows every local model with whether it fits, recommends one and downloads the chosen ones. A model that does not fit can still be installed.
-- The panel tells the modder when a newer Veronica exists; its button runs setup, which updates once the Editor is closed.
-- Skill and wiki files the modder edited survive an update: setup lists them next to the new versions, to keep either.
+- On first start `Veronica.exe` welcomes the modder, lets them pick a provider (local model, Claude, OpenAI-compatible server), sets it up and waits until the provider reports all good.
+- For the local model it measures the GPU, shows every model with whether it fits, recommends one and downloads the chosen ones. A model that does not fit can still be installed.
+- Afterwards `Veronica.exe` manages the provider, the mods and the versions. It lists the modder's local mods; checking one adds Veronica to it, unchecking removes it.
+- The panel tells the modder when a newer Veronica exists; its button runs `Veronica.exe`, which updates once the Editor is closed.
+- Skill and wiki files the modder edited survive an update: `Veronica.exe` lists them next to the new versions, to keep either.
 
 | artifact | source |
 |---|---|

@@ -1,12 +1,9 @@
-# Provider selection (owner decision)
+# Provider selection
 
-**Exists:** the OpenAI-compatible provider and the Claude provider, chosen by environment variables read once when the panel is created (`Docs/Tech/Agent.md`, `Docs/Tech/ClaudeProvider.md`). WebQwen is used otherwise.
+**Exists:** the OpenAI-compatible and Claude providers, chosen by environment variables read once when the panel is created. WebQwen is used otherwise. `Docs/Tech/Distribution.md` decides that `Veronica.exe` selects and sets up the provider and writes the settings the plugin reads at the next Editor start.
 
 **Missing:**
-- A way for the user to pick the provider and enter its settings (server URL, model, key; Claude model, effort, port) in the Editor, and to keep those settings.
-- Switching provider without restarting the Editor.
+- `Veronica.exe`'s provider selection and setup pages, and each provider's check (WebQwen: model files verified; Claude: `claude` found and signed in; OpenAI-compatible: the server lists the model).
 - A full chat in the Editor against a live OpenAI-compatible server is untested. Only the unit tests and one live round outside the Editor have run.
-
-**Owner decision:** where the settings live (the panel, Editor preferences, a file), and how the API key is stored.
 
 **Start at:** `Source/Veronica/ModelProvider.cs`.
