@@ -5,6 +5,14 @@
 - The docs cover architecture and why. They do not restate what the code does; implementation details belong in the code.
 - The docs hold only decisions the owner approved. A design fork found during implementation goes to the owner as options with a recommendation; it is not decided in code.
 
+## Tests
+
+- Tests are deterministic and reproducible: no web and no disk writes. Reading committed repo files (shipped skills, wiki) is allowed.
+- Decisions live in pure code tested on data. Disk goes through a file interface with an in-memory version for tests; HTTP goes through `HttpClient` over an in-memory `HttpMessageHandler`.
+- Recorded external formats (GitHub, Hugging Face, `.vrgproj`, `ModIndex`) are inline strings in the tests.
+- What only the real machine can show is checked by hand: a live run, or a checklist in the doc that owns it.
+- Agree which parts get unit tests and which are left to a live run with the owner before writing them.
+
 ## Commit style
 
 - Headline: what the change brings to the user or the project, not how it was done or the history behind it.

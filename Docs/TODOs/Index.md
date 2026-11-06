@@ -9,6 +9,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [Setup.md](Setup.md) | Distribution: `Veronica.exe` not built |
 | [InstalledPlugin.md](InstalledPlugin.md) | Distribution: the plugin still finds everything through build-time paths and reads env vars directly |
 | [CodeSigning.md](CodeSigning.md) | Distribution: releases are unsigned |
+| [TestDiskWrites.md](TestDiskWrites.md) | Tests: one skill test still writes files |
 | [ModelDownloads.md](ModelDownloads.md) | Distribution: `Veronica.exe`'s model downloads |
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |

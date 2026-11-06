@@ -78,7 +78,14 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 
 ## Testing
 
-- Unit tests cover the skill and wiki merge, `.vrgproj` add, remove and repoint, the `ModIndex` parse, version comparison, the settings store's layering, the downloader's resume and verification against a local HTTP server inside the test, and the self-update rename in a test folder.
-- The release source is a setting, so tests serve a fake release.
-- One live test installs from the real GitHub release into a scratch folder.
+- Unit tests touch no web and no disk. The decisions are pure: the skill and wiki merge plan (installed record, disk snapshot and new release in, actions out), `.vrgproj` add, remove and repoint as text, the `ModIndex` parse, version comparison, the settings layering over a given environment, model fit and recommendation.
+- Effects sit behind seams with in-memory test versions: a file interface `Veronica.exe` owns, `HttpClient` over a test `HttpMessageHandler` (serving release and model bytes, honouring `Range`, cutting a stream short for resume and verification), the Editor-running check. Zips are read from memory.
+- Recorded GitHub and Hugging Face responses and sample `.vrgproj` and `ModIndex` files are inline strings in the tests.
 - The UI is not tested.
+- Before each release, by hand on a real machine:
+  - a fresh install from the GitHub release: provider setup, a model download with an interruption, the provider check;
+  - hooking and unhooking a mod, and repointing it after moving the install folder;
+  - an update with a changed skill: the conflict list and each of its buttons;
+  - a self-update of `Veronica.exe`;
+  - the panel's update notice and its button;
+  - the API key surviving a restart, and unreadable in the settings file.
