@@ -47,6 +47,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
 | [PlanChainFollowUps.md](PlanChainFollowUps.md) | Skills: optional follow-up skills (add-to-gscreen) are lost in a skill chain |
 | [PausedPlans.md](PausedPlans.md) | Skills: paused plans outlive a change of task; no drop tool, no depth cap (owner decision) |
+| [DummyTypeChoice.md](DummyTypeChoice.md) | Skills: dummy types chosen by name; no shared place names the configuration with the valid types (owner decision) |
 | [PartialPrefabs.md](PartialPrefabs.md) | Editor tools: no partial copies or overrides of prefabs |
 | [ToolRewards.md](ToolRewards.md) | Chat: no tool earns a reward; round budget raised to 50 meanwhile (owner decision) |
 | [FieldPathKeys.md](FieldPathKeys.md) | Editor tools: some dictionary keys print in a form paths cannot address |
