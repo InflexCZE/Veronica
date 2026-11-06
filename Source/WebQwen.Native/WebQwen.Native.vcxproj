@@ -93,6 +93,8 @@
     <RemoveDir Directories="$(EngineOutDir)" />
     <MakeDir Directories="$(EngineOutDir)" />
     <Exec Command="&quot;$(SystemRoot)\System32\tar.exe&quot; -xzf &quot;@(EngineTarball->'%(FullPath)')&quot; -C &quot;$(EngineOutDir.TrimEnd('\'))&quot; package/lib/index.js" />
+    <!-- npm tarballs date every file 1985; without a fresh time the resource compiler keeps the previous engine in wq.dll. -->
+    <Touch Files="$(EngineJs)" />
   </Target>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

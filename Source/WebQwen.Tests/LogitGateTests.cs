@@ -25,7 +25,8 @@ public sealed class LogitGateTests(ITestOutputHelper output)
         string modelsDir = FindModelsDir() ?? throw new InvalidOperationException(
             $"no .deps\\models above {AppContext.BaseDirectory}; run Build\\FetchModel.ps1 -ModelId {ModelId}");
         var model = Manifest.Load(Path.Combine(AppContext.BaseDirectory, "manifest.json")).Model(ModelId);
-        using var engine = Engine.Create(new ModelFiles(model, Path.Combine(modelsDir, ModelId)));
+        using var engine = Engine.Create(new ModelFiles(model, Path.Combine(modelsDir, ModelId)),
+            (level, text) => { if (level >= LogLevel.Warn) output.WriteLine($"[{level}] {text}"); });
         await engine.LoadModelAsync(model);
 
         var report = new StringBuilder();

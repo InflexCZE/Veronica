@@ -72,6 +72,10 @@ std::string ExceptionText(v8::Isolate* isolate, v8::Local<v8::Value> exception) 
         v8::Local<v8::Value> stack;
         if (exception.As<v8::Object>()->Get(context, Str(isolate, "stack")).ToLocal(&stack) && stack->IsString())
             return Utf8(isolate, stack);
+        v8::TryCatch tc(isolate);
+        v8::Local<v8::String> json;
+        if (!exception->IsFunction() && v8::JSON::Stringify(context, exception).ToLocal(&json))
+            return Utf8(isolate, json);
     }
     return Utf8(isolate, exception);
 }

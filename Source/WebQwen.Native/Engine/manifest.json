@@ -1,29 +1,30 @@
 {
   "repo": {
-    "sha": "99008d0107358391e878a8bb8798edf2486cded7",
-    "short_sha": "99008d0",
+    "sha": "c70f3affd535d8d6eda92e522ae60c57edc66943",
+    "short_sha": "c70f3af",
     "dirty": false
   },
-  "generated_at": "2026-10-24T11:04:55.700Z",
+  "generated_at": "2026-11-06T23:21:40.668Z",
   "web_llm": {
     "base_version": "0.2.85",
-    "version": "0.2.85-webqwen.99008d0",
-    "tarball": "mlc-ai-web-llm-0.2.85-webqwen.99008d0.tgz",
-    "tarball_sha256": "4d4681148a6bb6b34c990f4ff6451ffbf3cb79f119f3e84a9e831f880c095179"
+    "version": "0.2.85-webqwen.c70f3af",
+    "tarball": "mlc-ai-web-llm-0.2.85-webqwen.c70f3af.tgz",
+    "tarball_sha256": "c1cb3413bdd1086dd1e9fdc5f4f228a20d9ac4ef796743483d6db354494e0491"
   },
   "models": [
     {
       "model_id": "Qwen3.5-9B-UD-Q3_K_XL-MLC",
       "quantization": "ggufmix",
       "status": "production",
-      "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/e84331c36957dfb0e81c25f9046e9414e9935a51/UD-Q3_K_XL/",
-      "weights_bytes": 5712892241,
+      "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/927583cb205a3c4b387e99e506dbbe0267facfbb/UD-Q3_K_XL/",
+      "weights_bytes": 5712930400,
       "context_window_size": 20480,
       "required_features": [
         "shader-f16",
         "subgroups"
       ],
-      "vram_required_MB": 6000,
+      "vram_required_MB": 5600,
+      "host_ram_required_MB": 796,
       "subgroup_min_size": 32,
       "subgroup_max_size": 64,
       "required_limits": {
@@ -36,24 +37,25 @@
       "mtp_draft_length": 3,
       "mtp_min_draft_prob": 0.5,
       "lib": {
-        "original_name": "Qwen3.5-9B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s32-webgpu.wasm",
-        "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/36b3d8091a95c28f30f6e2f1566aa326208b11b9/UD-Q3_K_XL/webgpu.wasm",
-        "sha256": "a92dde27bb9d3e13cf44f6a0ab9637134052b0f9b066401dad77701e32dd63a1",
-        "bytes": 24712484
+        "original_name": "Qwen3.5-9B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s39-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/cefca4197b6d68bb3a888144535c7cf14bc19790/UD-Q3_K_XL/webgpu.wasm",
+        "sha256": "1e54ba0170e7ff35ab7af81532761f81bf74d232262bc25d7f05d2e8e9ca0e55",
+        "bytes": 25063994
       }
     },
     {
       "model_id": "Qwen3.8-27B-UD-Q3_K_XL-MLC",
       "quantization": "ggufmix",
       "status": "production",
-      "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/752bd11970be36080b806eb145b0b0f6fde58fb8/UD-Q3_K_XL/",
-      "weights_bytes": 13620643806,
+      "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/c7b924cf5b11e1d77ec0fcf399fe4bb78b37f29a/UD-Q3_K_XL/",
+      "weights_bytes": 13620681971,
       "context_window_size": 20480,
       "required_features": [
         "shader-f16",
         "subgroups"
       ],
-      "vram_required_MB": 15000,
+      "vram_required_MB": 14200,
+      "host_ram_required_MB": 834,
       "subgroup_min_size": 32,
       "subgroup_max_size": 64,
       "required_limits": {
@@ -66,24 +68,25 @@
       "mtp_draft_length": 3,
       "mtp_min_draft_prob": 0.5,
       "lib": {
-        "original_name": "Qwen3.8-27B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s32-webgpu.wasm",
-        "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/7ebbcebde617afc932ec43eae4e46f300093c69f/UD-Q3_K_XL/webgpu.wasm",
-        "sha256": "49854fbdd5717ac14c23e4cce2b8468642023ea8070f354fe2ff29e9dcb99ac0",
-        "bytes": 57878368
+        "original_name": "Qwen3.8-27B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s39-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/3fc79e4973a51d3dc6bef7a10fa316730af5ffb7/UD-Q3_K_XL/webgpu.wasm",
+        "sha256": "6122999ded5ec56ad1a8920ca990acb6568477a13c9e708cb7d09c706529ef2d",
+        "bytes": 58569868
       }
     },
     {
       "model_id": "Ternary-Bonsai-2-27B-MLC",
       "quantization": "ggufmix",
       "status": "production",
-      "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/bf4c77f054f290b3901fc3e2d06dc0e40d2095fa/T3/",
-      "weights_bytes": 5710355361,
+      "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/c141c108ab6c35fd4505e157334ce62798cdbca1/T3/",
+      "weights_bytes": 6176289066,
       "context_window_size": 20480,
       "required_features": [
         "shader-f16",
         "subgroups"
       ],
-      "vram_required_MB": 6900,
+      "vram_required_MB": 6700,
+      "host_ram_required_MB": 575,
       "subgroup_min_size": 32,
       "subgroup_max_size": 64,
       "required_limits": {
@@ -96,10 +99,10 @@
       "mtp_draft_length": null,
       "mtp_min_draft_prob": null,
       "lib": {
-        "original_name": "Ternary-Bonsai-2-27B-MLC_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_odm_dqmall_pf_k64_kvq8_ra_ab_sb_t3_s30s5-webgpu.wasm",
-        "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/7e1ed3c1825b61c42fbb672f91b336a3984009c5/T3/webgpu.wasm",
-        "sha256": "72f807aadc2e685f44357a2bca9164eb5fe4bea4cecdc9e68271e663b512e9b8",
-        "bytes": 20602590
+        "original_name": "Ternary-Bonsai-2-27B-MLC_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_odm_dqmall_pf_k64_kvq8_ra_vis_ab_sb_t3_s40-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/0c1060e75c26eb0e90387c081431a08828ff23ea/T3/webgpu.wasm",
+        "sha256": "cff54a862fe101ed2b3383f5d56d367e7596cda057745c90a9d715e52763e1db",
+        "bytes": 22168020
       }
     }
   ]
