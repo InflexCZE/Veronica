@@ -9,7 +9,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | `find_content(query, folder?)` | finds content items by name or definition type |
 | `find_references(target)` | lists the content items that point at an item, with the field that holds each reference |
 | `list_folder(folder_path)` | lists a folder's direct children |
-| `read(target, path?)` | shows a definition, or one field or subtree of it |
+| `read(target, path?)` | shows a definition or cubemap, or one field or subtree of it |
 | `contains(target, value, path?)` | lists where a definition holds a value, without reading its long lists, sets and dictionaries |
 | `describe(subject, member?)` | explains a type from the game's own documentation: its members, relations and units |
 | `write(target, path, value)` | sets a field: scalar, small struct, reference, or clear |
@@ -20,6 +20,7 @@ The first set of agent tools that act on the loaded project. The target is build
 | `create_prefab(template, name, folder)` | generates a prefab's definition set from a template |
 | `create_partial(source, kind, folder, name?)` | creates a partial override or copy of a definition |
 | `create_definition(type, name, folder)` | creates a new definition of a type, with its defaults |
+| `create_asset(kind, folder, name?, inputs?)` | creates an asset from input files through the Editor's Create menu: a skybox from six face images |
 | `component_add(prefab, type, definition?)` | adds a component to a block, on the sides its type belongs to, with its dependencies |
 | `component_remove(prefab, component)` | removes a component from a block |
 | `show(target)` | selects an item in the Editor and opens it in the Render View |
@@ -33,6 +34,7 @@ The first set of agent tools that act on the loaded project. The target is build
 - **Shortened paths:** a name is tried in this order, and the first step that finds anything decides: an exact path or bare name in any project; then, when the first segment names a loaded project (`Vanilla/Assets/...`, or `Vanilla:Assets/...` as models also write it), the rest exactly or as a path ending in that project; then the name as the end of an item's path on whole segments in any project: `Blocks/Ion/100/Model` and `Models/Model` name `Assets/Blocks/Ion/100/Models/Model.model`. An exact path always wins, so a project named like a folder never turns a full path into a guess. One match is taken, several are the usual ambiguity error. Small models drop the `Assets` prefix that find_content prints, or put the project in front, and repeated not-found errors sent them off building copies instead of reading the original. Replies and read headers always print the full path.
 - **Folders** that must already exist (list_folder, find_content's folder) resolve the same way. find_content's folder also keeps the project it was found in, so `Vanilla/Assets/Blocks` searches Vanilla only. A folder to create (create_folder and the creating tools' folder) is taken exactly as given, since a shortened path there would put new files into some other folder. A project name alone (`Vanilla`, `Vanilla/`) names that project's root, but only after every step above found nothing, so a project named like a folder never hides that folder.
 - **Not found:** the error names up to three items, or folders, whose last segment is spelled almost the same, ignoring case and the separators `.`, `_`, `-` and space, the mod's first on ties: `No content item named 'X.Client'; nearest: Assets\X\X_Client.partialdef in MyMod`. Nothing is named when nothing is close, and a name of one or two letters gets no hint, since every short name is near it. A target's hints are only items a target can be, never source files. A small model that rebuilt a name from memory, `X.Client` for `X_Client`, kept retrying the same wrong name after find_content had printed the right one.
+- **Assets with fields:** read, write, element_add, element_remove, contains, describe and find_references take definitions and a short list of other asset kinds whose data is plain serialized members, edited through the same `ObjectManipulator` the inspector uses: cubemaps so far. Kinds join the list as each is tested in the Editor; anything else is refused with the list. Plain images have no fields.
 - **Edits** go through the Editor's own definition data layer (`ObjectManipulator` / `MemberReference`), the same layer the Property Inspector uses. No UI is automated. For a `.partialdef`, reads see the merged definition and writes are recorded as overrides automatically.
 - **Saving:** every successful change saves the way an inspector edit does, and an open Property Inspector shows the new value. There is no save tool. As with inspector edits, a failed disk write only reaches the Editor log.
 - **No undo:** edits are not Ctrl-Z steps. The user reverts with version control.
@@ -248,6 +250,13 @@ Creates every missing level of `folder_path` inside the mod. An existing folder 
 - Prefabs are refused (`Docs/TODOs/PartialPrefabs.md`).
 - `name` is optional: the default is the Editor's own suggestion (`Override of <source>`).
 - A name already used in the folder is an error rather than the Editor's rename prompt.
+
+## create_asset
+
+- The Editor's Create menu entries for assets made from input files, through the Editor's own generators as `create_partial` does, so the Editor's rules come back as its errors. `kind` names the menu entry; the kinds offered are a short list that grows as each is tested: `skybox`.
+- **skybox:** a cubemap of Category Skybox. `inputs` are six images whose name endings `_px`, `_nx`, `_py`, `_ny`, `_pz`, `_nz` pick their faces, or none for an empty skybox whose faces are then written. The Editor refuses a wrong count, a missing or repeated ending, or an image type it does not take.
+- `name` defaults to the inputs' shared name before the endings.
+- A name already used in the folder is an error, as in `create_partial`.
 
 ## create_definition
 

@@ -1,5 +1,7 @@
 using Keen.VRage.ContentPipeline.Definitions.AssetInterfaces;
 using Keen.VRage.ContentPipeline.Project.Structure;
+using Keen.VRage.ContentPipeline.Project.Structure.Interfaces;
+using Keen.VRage.ContentPipeline.Textures.Cubemaps.Editor;
 using Keen.VRage.Library.Serialization;
 using Veronica.Editing;
 
@@ -54,12 +56,22 @@ internal static class Content
     public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(LoadedProject project, string target) =>
         Definition(Resolve(project, target));
 
-    public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(ExplorerAssetFile asset)
+    public static (ExplorerAssetFile Asset, ObjectManipulator Fields) Definition(ExplorerAssetFile asset) =>
+        Fields(asset) is { } fields
+            ? (asset, fields)
+            : throw new EditError($"'{asset.ProjectRelativePath}' has no fields to read and write; only definitions and cubemaps do.");
+
+    public static bool HasFields(ExplorerAssetFile asset) => Fields(asset) != null;
+
+    // Asset kinds join one by one as they are tested; their data is edited as the inspector edits it.
+    private static readonly Type[] AssetsWithFields = [typeof(CubemapAssetInterface)];
+
+    private static ObjectManipulator? Fields(ExplorerAssetFile asset) => asset.AssetInterface switch
     {
-        if (asset.AssetInterface is not IDefinitionAssetInterface definition)
-            throw new EditError($"'{asset.ProjectRelativePath}' is not a definition; only definitions have fields to read and write.");
-        return (asset, definition.GetDefinitionManipulator());
-    }
+        IDefinitionAssetInterface definition => definition.GetDefinitionManipulator(),
+        JsonAssetInterface json when AssetsWithFields.Contains(json.GetType()) => json.ObjectManipulator,
+        _ => null,
+    };
 
     public static void RequireWritable(ExplorerItem item)
     {

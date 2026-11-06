@@ -113,7 +113,7 @@ public sealed class FindReferencesTool : ITool
             var found = new List<string>();
             if (Derived(asset, targets) is { } derived)
                 found.Add(derived);
-            if (asset.AssetInterface is IDefinitionAssetInterface)
+            if (Content.HasFields(asset))
             {
                 var (_, fields) = Content.Definition(asset);
                 found.AddRange(FieldReader.FindLinks(fields.Root, targets, new ProjectLinks(project, asset)));

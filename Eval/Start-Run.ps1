@@ -37,7 +37,13 @@ try {
     git clean -fdxq -- $devMod
     if ($LASTEXITCODE -ne 0) { throw 'Cleaning the dev mod failed.' }
     if (Test-Path $fixture) {
-        Copy-Item -Path (Join-Path $fixture '*') -Destination (Join-Path $repo $devMod) -Recurse -Force
+        Copy-Item -Path (Join-Path $fixture '*') -Exclude 'make_fixture.py' -Destination (Join-Path $repo $devMod) -Recurse -Force
+        # Generated files stay out of git; their metas are in the fixture, so the Editor starts without its metafile prompt.
+        $maker = Join-Path $fixture 'make_fixture.py'
+        if (Test-Path $maker) {
+            python -I $maker (Join-Path $repo $devMod)
+            if ($LASTEXITCODE -ne 0) { throw 'Generating the fixture failed.' }
+        }
     }
 
     dotnet build $project -c Debug --nologo -v quiet

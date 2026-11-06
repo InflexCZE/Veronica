@@ -121,6 +121,7 @@ public sealed class EditorShell
         new PlanHintedTool(new CreatePrefabTool(), Plan),
         new PlanHintedTool(new CreatePartialTool(), Plan),
         new PlanHintedTool(new CreateDefinitionTool(), Plan),
+        new PlanHintedTool(new CreateAssetTool(), Plan),
         new ShowTool(),
         new PresentGraphTool(),
     ];

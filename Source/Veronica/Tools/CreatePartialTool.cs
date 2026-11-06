@@ -56,15 +56,15 @@ public sealed class CreatePartialTool : ITool
     public static Task<string> CreateCopyAsync(LoadedProject project, ExplorerAssetFile source, ExplorerFolder folder, string name) =>
         CreateFileAsync(Option(project, source, Copy), folder, name);
 
-    private static async Task<string> CreateFileAsync(AssetGeneratorOption option, ExplorerFolder folder, string? name)
+    internal static async Task<string> CreateFileAsync(AssetGeneratorOption option, ExplorerFolder folder, string? name, string what = "partial definition")
     {
         Content.RequireWritable(folder);
 
         var output = await option.GetGeneratorOutputAsync(new AssetCreationArguments(folder, new NameAnswer(name)));
         if (output.FailureReason is { } reason)
-            throw new EditError($"The partial definition could not be created: {reason}");
+            throw new EditError($"The {what} could not be created: {reason}");
         if (output.FilesToGenerate is not [var file])
-            throw new EditError("The Editor generated no partial definition.");
+            throw new EditError($"The Editor generated no {what}.");
 
         // The generator checks only loaded assets; a file that failed to load would be overwritten.
         if (FileStem.Taken(folder, Path.GetFileNameWithoutExtension(file.FileName)) is { } taken)

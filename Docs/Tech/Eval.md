@@ -67,7 +67,7 @@ Every run starts a fresh Editor on a clean dev mod. The Editor's load time is ac
 `Eval/Start-Run.ps1 -Task <name>`:
 1. Kills a running Editor.
 2. Resets `Assets/VeronicaDevMod` with git (restore and clean, including the Editor's caches).
-3. Copies the task's fixture folder into the dev mod, when the task has one.
+3. Copies the task's fixture folder into the dev mod, when the task has one, and runs its `make_fixture.py` on the dev mod, when it has one.
 4. Builds `Veronica.dll`, so uncommitted context edits are in the run.
 5. Creates the run folder and saves the changes under `Source` against `HEAD`, new files included, as `context.patch`, so each run records what differed.
 6. Writes `run.json`: task, commit, dirty flag, model (the server's first listed unless `-Model`), reasoning effort (`-Effort`, empty for the template's default), start time, Editor process id, port.
@@ -88,7 +88,7 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 - **Prompt**: the first message, as a user would type it.
 - **User**: what the user wants and knows, for the fork's role-play.
 - **Pass**: the criteria the run is judged against.
-- **Fixture** (optional): `Eval/Tasks/<name>/`, copied over the dev mod before the run.
+- **Fixture** (optional): `Eval/Tasks/<name>/`, copied over the dev mod before the run. Generated files (images a script can draw) stay out of git: the fixture holds `make_fixture.py`, which writes the same bytes every run, and the files' metas captured from the Editor's own import. Without their metas the Editor would stop at load on its prompt for files without one.
 
 ## Method
 
