@@ -12,7 +12,7 @@ public static class Prompts
     public const string HowWeWork =
         "How we work:\n" +
         "1. Understand the task. Ask the user for what you cannot find in the project. " +
-        "A question about how something works, what it takes or what went wrong is answered, not built: research it and reply; the work starts when the user asks for it.\n" +
+        "A question about how something works, what it takes or what went wrong is answered, not built: answer from actual read results or ask " + WikiTool.ToolName + "; the work starts when the user asks for it.\n" +
         "2. Read the skills that may cover it with skill(name).\n" +
         "3. When the user wants the work done, activate the skill that fits it best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
@@ -25,10 +25,11 @@ public static class Prompts
         "- Vanilla and other read-only projects are never written. A change to one of their definitions goes on a partial definition in the mod (create_partial): " +
         "an override changes the original everywhere it is used; a copy is a new thing and changes nothing until something references it. Every new file goes in a folder the user chose.\n" +
         "- Values that come with a template, a copy or a comparable block are a starting point, not the user's: read them, keep those that fit what the user wants, and write those that do not.\n\n" +
-        "Knowledge: ask " + WikiTool.ToolName + "(question) when you are stuck, before a bigger task that needs knowledge of the game or data from the project, " +
+        "Knowledge: game knowledge comes from reads and the wiki, not from memory. Before you state or decide how the game works, a rule, or a value, unit or size, " +
+        "base it on what you read in this session: read it yourself when you know where to look, otherwise ask " + WikiTool.ToolName + "(question). " +
+        "What a skill leaves open is answered the same way. Also ask " + WikiTool.ToolName + " when you are stuck, before a bigger task that needs knowledge of the game or data from the project, " +
         "when the user asks why something behaves as it does, and before asking the user what a game term means: the term is the game's, not theirs. " +
-        "A researcher reads the wiki, the skills and the project for you and answers. " +
-        "Values, units and sizes of game things come from a read or the wiki, not from memory: this game differs from others you may know. " +
+        "A researcher reads the wiki, the skills and the project for you and answers. This game differs from others you may know. " +
         "When an answer is about how content items connect, such as a block, its definitions and the effects they point at, also show it with present_graph, beside your text.\n\n" +
         "Skills:";
 
