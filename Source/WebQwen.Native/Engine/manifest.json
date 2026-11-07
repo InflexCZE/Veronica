@@ -13,69 +13,10 @@
   },
   "models": [
     {
-      "model_id": "Qwen3.5-9B-UD-Q3_K_XL-MLC",
-      "quantization": "ggufmix",
-      "status": "production",
-      "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/927583cb205a3c4b387e99e506dbbe0267facfbb/UD-Q3_K_XL/",
-      "weights_bytes": 5712930400,
-      "context_window_size": 20480,
-      "required_features": [
-        "shader-f16",
-        "subgroups"
-      ],
-      "vram_required_MB": 5600,
-      "host_ram_required_MB": 796,
-      "subgroup_min_size": 32,
-      "subgroup_max_size": 64,
-      "required_limits": {
-        "maxStorageBufferBindingSize": 1073741824,
-        "maxBufferSize": 1073741824
-      },
-      "max_record_bytes": 508559360,
-      "host_embedding": true,
-      "mtp_head": true,
-      "mtp_draft_length": 3,
-      "mtp_min_draft_prob": 0.5,
-      "lib": {
-        "original_name": "Qwen3.5-9B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s39-webgpu.wasm",
-        "url": "https://huggingface.co/InflexCZE/Qwen3.5-9B-MLC/resolve/cefca4197b6d68bb3a888144535c7cf14bc19790/UD-Q3_K_XL/webgpu.wasm",
-        "sha256": "1e54ba0170e7ff35ab7af81532761f81bf74d232262bc25d7f05d2e8e9ca0e55",
-        "bytes": 25063994
-      }
-    },
-    {
-      "model_id": "Qwen3.8-27B-UD-Q3_K_XL-MLC",
-      "quantization": "ggufmix",
-      "status": "production",
-      "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/c7b924cf5b11e1d77ec0fcf399fe4bb78b37f29a/UD-Q3_K_XL/",
-      "weights_bytes": 13620681971,
-      "context_window_size": 20480,
-      "required_features": [
-        "shader-f16",
-        "subgroups"
-      ],
-      "vram_required_MB": 14200,
-      "host_ram_required_MB": 834,
-      "subgroup_min_size": 32,
-      "subgroup_max_size": 64,
-      "required_limits": {
-        "maxStorageBufferBindingSize": 1073741824,
-        "maxBufferSize": 1073741824
-      },
-      "max_record_bytes": 635699200,
-      "host_embedding": true,
-      "mtp_head": true,
-      "mtp_draft_length": 3,
-      "mtp_min_draft_prob": 0.5,
-      "lib": {
-        "original_name": "Qwen3.8-27B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s39-webgpu.wasm",
-        "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/3fc79e4973a51d3dc6bef7a10fa316730af5ffb7/UD-Q3_K_XL/webgpu.wasm",
-        "sha256": "6122999ded5ec56ad1a8920ca990acb6568477a13c9e708cb7d09c706529ef2d",
-        "bytes": 58569868
-      }
-    },
-    {
       "model_id": "Ternary-Bonsai-2-27B-MLC",
+      "display_name": "Small",
+      "description": "Dumber, but less demanding.",
+      "graphics_card_GB": 8,
       "quantization": "ggufmix",
       "status": "production",
       "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/c141c108ab6c35fd4505e157334ce62798cdbca1/T3/",
@@ -103,6 +44,40 @@
         "url": "https://huggingface.co/InflexCZE/Ternary-Bonsai-2-27B-MLC/resolve/0c1060e75c26eb0e90387c081431a08828ff23ea/T3/webgpu.wasm",
         "sha256": "cff54a862fe101ed2b3383f5d56d367e7596cda057745c90a9d715e52763e1db",
         "bytes": 22168020
+      }
+    },
+    {
+      "model_id": "Qwen3.8-27B-UD-Q3_K_XL-MLC",
+      "display_name": "Smart",
+      "description": "Better answers, if you can run it.",
+      "graphics_card_GB": 16,
+      "quantization": "ggufmix",
+      "status": "production",
+      "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/c7b924cf5b11e1d77ec0fcf399fe4bb78b37f29a/UD-Q3_K_XL/",
+      "weights_bytes": 13620681971,
+      "context_window_size": 20480,
+      "required_features": [
+        "shader-f16",
+        "subgroups"
+      ],
+      "vram_required_MB": 14200,
+      "host_ram_required_MB": 834,
+      "subgroup_min_size": 32,
+      "subgroup_max_size": 64,
+      "required_limits": {
+        "maxStorageBufferBindingSize": 1073741824,
+        "maxBufferSize": 1073741824
+      },
+      "max_record_bytes": 635699200,
+      "host_embedding": true,
+      "mtp_head": true,
+      "mtp_draft_length": 3,
+      "mtp_min_draft_prob": 0.5,
+      "lib": {
+        "original_name": "Qwen3.8-27B-UD-Q3_K_XL_cs1k_k1k2s_ks16_by32_gdnr_tr64_ts4u2_b1_mtpg_mq16_odm_dqmall_pf_k64_kvq8_mtps_ra_vis_ab_sb_s39-webgpu.wasm",
+        "url": "https://huggingface.co/InflexCZE/Qwen3.8-27B-MLC/resolve/3fc79e4973a51d3dc6bef7a10fa316730af5ffb7/UD-Q3_K_XL/webgpu.wasm",
+        "sha256": "6122999ded5ec56ad1a8920ca990acb6568477a13c9e708cb7d09c706529ef2d",
+        "bytes": 58569868
       }
     }
   ]

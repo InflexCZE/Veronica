@@ -22,6 +22,15 @@ golden references in `Source/WebQwen.Tests/Golden/<model_id>/`.
    `manifest.json`. Report manifest changes: models added or removed, library
    `original_name` / `url` / `sha256`, weights `url` revisions (a new weights
    revision means every user downloads again).
+   Then re-apply Veronica's edit of the copied manifest (a WebQwen dist carries
+   every model it builds; modders get only these). Keep only the offered models,
+   ordered by `vram_required_MB`, each with `display_name`, `description` and
+   `graphics_card_GB` (the card size modders are told to have, with room for
+   the Editor) right after `model_id`:
+   - `Ternary-Bonsai-2-27B-MLC`: `Small`, `Dumber, but less demanding.`, 8
+   - `Qwen3.8-27B-UD-Q3_K_XL-MLC`: `Smart`, `Better answers, if you can run it.`, 16
+   Drop every other model (the 9B is not offered). A new model in the dist that
+   is not listed here goes to the owner: offer it or not, and under what name.
 4. Golden references, per model folder in `Source/WebQwen.Tests/Golden/`:
    the dumps' `lib` field names the library they were made with. If it equals
    the new manifest's `lib.original_name`, keep them. Otherwise find the

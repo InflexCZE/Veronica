@@ -11,12 +11,13 @@ public abstract class ViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
+    protected bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
-            return;
+            return false;
         field = value;
         Changed(name);
+        return true;
     }
 
     protected void Changed([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -31,37 +32,37 @@ public sealed class Command(Action execute) : ICommand
     public void Execute(object? parameter) => execute();
 }
 
-public sealed class WelcomePage(string root, string warning, Action next) : ViewModel
+public static class Format
 {
-    public string Root => root;
+    public static string Size(long bytes) =>
+        bytes >= 1L << 30 ? string.Format(CultureInfo.InvariantCulture, "{0:0.0} GB", bytes / (double)(1L << 30))
+        : string.Format(CultureInfo.InvariantCulture, "{0:0.0} MB", bytes / (double)(1L << 20));
 
-    public string Warning => warning;
-
-    public bool HasWarning => warning.Length > 0;
-
-    public ICommand Continue { get; } = new Command(next);
+    public static string Progress(DownloadProgress p) =>
+        p.Total > 0 ? $"{Size(p.Done)} of {Size(p.Total)}" : Size(p.Done);
 }
 
-public sealed class ProgressPage : ViewModel
+// Progress of one long operation shown in place: a bar, a status line, a wait for the Editor, an error.
+public sealed class Activity : ViewModel
 {
+    private bool _running;
     private string _status = "";
     private double _percent;
     private bool _indeterminate = true;
+    private string _waiting = "";
     private string _error = "";
 
-    public ProgressPage(string title, Action retry, Action back)
+    public bool Running
     {
-        Title = title;
-        Retry = new Command(retry);
-        Back = new Command(back);
-        Cancel = new Command(() => Cancellation.Cancel());
+        get => _running;
+        set
+        {
+            if (Set(ref _running, value))
+                Changed(nameof(Progressing));
+        }
     }
 
-    public CancellationTokenSource Cancellation { get; } = new();
-
-    public ICommand Cancel { get; }
-
-    public string Title { get; }
+    public bool Progressing => _running && _waiting.Length == 0;
 
     public string Status { get => _status; set => Set(ref _status, value); }
 
@@ -69,74 +70,527 @@ public sealed class ProgressPage : ViewModel
 
     public bool Indeterminate { get => _indeterminate; set => Set(ref _indeterminate, value); }
 
+    public string Waiting
+    {
+        get => _waiting;
+        set
+        {
+            if (!Set(ref _waiting, value))
+                return;
+            Changed(nameof(IsWaiting));
+            Changed(nameof(Progressing));
+        }
+    }
+
+    public bool IsWaiting => _waiting.Length > 0;
+
     public string Error
     {
         get => _error;
         set
         {
-            Set(ref _error, value);
-            Changed(nameof(HasError));
+            if (Set(ref _error, value))
+                Changed(nameof(HasError));
         }
     }
 
     public bool HasError => _error.Length > 0;
 
-    public ICommand Retry { get; }
+    public CancellationTokenSource Cancellation { get; private set; } = new();
 
-    public ICommand Back { get; }
+    public ICommand Cancel => new Command(() => Cancellation.Cancel());
 
-    public void Report(DownloadProgress progress)
+    public void Begin(string status)
+    {
+        Cancellation = new CancellationTokenSource();
+        Error = "";
+        Waiting = "";
+        Status = status;
+        Indeterminate = true;
+        Percent = 0;
+        Running = true;
+    }
+
+    public void End()
+    {
+        Running = false;
+        Waiting = "";
+    }
+
+    public void Report(DownloadProgress progress, string lead)
     {
         Indeterminate = progress.Total <= 0;
         Percent = progress.Total > 0 ? 100.0 * progress.Done / progress.Total : 0;
-        Status = string.Format(CultureInfo.InvariantCulture, "{0}: {1} / {2}", progress.File, Size(progress.Done), Size(progress.Total));
+        Status = $"{lead} {Format.Progress(progress)}";
+    }
+}
+
+public sealed class Dot(Slides slides, int index) : ViewModel
+{
+    public int Index => index;
+
+    public bool IsActive => slides.Index == index;
+
+    public bool IsReachable => index <= slides.Reachable;
+
+    public ICommand Go => new Command(() => slides.GoTo(index));
+
+    public void Refresh()
+    {
+        Changed(nameof(IsActive));
+        Changed(nameof(IsReachable));
+    }
+}
+
+// Pages that slide sideways under a fixed header, with dots and arrows below. Going back is always free;
+// going forward only as far as the pages done so far allow.
+public sealed class Slides : ViewModel
+{
+    private int _index;
+    private int _reachable;
+
+    public Slides(params object[] pages)
+    {
+        Pages = new ObservableCollection<object>(pages);
+        Dots = new ObservableCollection<Dot>(pages.Select((_, i) => new Dot(this, i)));
+        Previous = new Command(() => GoTo(_index - 1));
+        Next = new Command(() => GoTo(_index + 1));
     }
 
-    public static string Size(long bytes) =>
-        bytes >= 1L << 30 ? string.Format(CultureInfo.InvariantCulture, "{0:0.0} GB", bytes / (double)(1L << 30))
-        : string.Format(CultureInfo.InvariantCulture, "{0:0.0} MB", bytes / (double)(1L << 20));
+    public ObservableCollection<object> Pages { get; }
+
+    public ObservableCollection<Dot> Dots { get; }
+
+    public int Index
+    {
+        get => _index;
+        set
+        {
+            if (value < 0 || value > _reachable || !Set(ref _index, value))
+                return;
+            Refresh();
+        }
+    }
+
+    public int Reachable
+    {
+        get => _reachable;
+        set
+        {
+            if (!Set(ref _reachable, Math.Clamp(value, 0, Pages.Count - 1)))
+                return;
+            if (_index > _reachable)
+                Index = _reachable;
+            Refresh();
+        }
+    }
+
+    public bool CanPrevious => _index > 0;
+
+    public bool CanNext => _index < _reachable;
+
+    public ICommand Previous { get; }
+
+    public ICommand Next { get; }
+
+    public void GoTo(int index) => Index = index;
+
+    public void Open(int index)
+    {
+        if (index > Reachable)
+            Reachable = index;
+        Index = index;
+    }
+
+    private void Refresh()
+    {
+        Changed(nameof(CanPrevious));
+        Changed(nameof(CanNext));
+        foreach (var dot in Dots)
+            dot.Refresh();
+    }
 }
 
-public sealed class WaitEditorPage(string reason, Action cancel) : ViewModel
+public enum ProviderKind
 {
-    public string Reason => reason;
-
-    public ICommand Cancel { get; } = new Command(cancel);
+    Local,
+    Claude,
+    OpenAi,
 }
 
-public sealed class ProviderSelectPage(Action local, Action claude, Action openAi, Action? back) : ViewModel
+public static class Providers
 {
-    public ICommand Local { get; } = new Command(local);
+    public static string SettingsValue(ProviderKind kind) => kind switch
+    {
+        ProviderKind.Claude => "claude",
+        ProviderKind.OpenAi => "openai",
+        _ => "webqwen",
+    };
 
-    public ICommand Claude { get; } = new Command(claude);
+    public static ProviderKind FromSettings(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "claude" => ProviderKind.Claude,
+        "openai" => ProviderKind.OpenAi,
+        _ => ProviderKind.Local,
+    };
 
-    public ICommand OpenAi { get; } = new Command(openAi);
+    public static string Name(ProviderKind kind) => kind switch
+    {
+        ProviderKind.Claude => "Claude Code",
+        ProviderKind.OpenAi => "OpenAI-compatible server",
+        _ => "Local model",
+    };
 
-    public bool CanGoBack => back != null;
-
-    public ICommand Back { get; } = new Command(back ?? (() => { }));
+    public static string Pitch(ProviderKind kind) => kind switch
+    {
+        ProviderKind.Claude => "Frontier model through your Claude subscription. Runs through the Claude Code you have installed.",
+        ProviderKind.OpenAi => "Your server, your model. llama.cpp, LM Studio, Ollama or any service with an OpenAI-style API.",
+        _ => "A small model on your graphics card. One large download, then it works offline and nothing leaves your machine.",
+    };
 }
 
-public sealed class ModelItem : ViewModel
+public sealed class WelcomeSlide(string root, string warning, Action start) : ViewModel
+{
+    public string Root => $"Install folder: {root}";
+
+    public string Warning => warning;
+
+    public bool HasWarning => warning.Length > 0;
+
+    public ICommand Start { get; } = new Command(start);
+}
+
+public sealed class ProviderCard(ProviderKind kind, Action<ProviderKind> choose) : ViewModel
+{
+    private bool _selected;
+
+    public ProviderKind Kind => kind;
+
+    public string Name => Providers.Name(kind);
+
+    public string Pitch => Providers.Pitch(kind);
+
+    public bool Selected { get => _selected; set => Set(ref _selected, value); }
+
+    public ICommand Choose => new Command(() => choose(kind));
+}
+
+public sealed class ChooseSlide : ViewModel
+{
+    public ChooseSlide(Action<ProviderKind> choose, ProviderKind selected)
+    {
+        Cards = new ObservableCollection<ProviderCard>(Enum.GetValues<ProviderKind>().Select(k => new ProviderCard(k, choose)));
+        Select(selected);
+    }
+
+    public ObservableCollection<ProviderCard> Cards { get; }
+
+    public void Select(ProviderKind kind)
+    {
+        foreach (var card in Cards)
+            card.Selected = card.Kind == kind;
+    }
+}
+
+public sealed class ConnectSlide : ViewModel
+{
+    private ConnectPage? _content;
+
+    public ConnectPage? Content { get => _content; set => Set(ref _content, value); }
+}
+
+public enum ConnectState
+{
+    None,
+    Connecting,
+    Connected,
+    Failed,
+}
+
+// One provider's setup: its fields and one button that checks the connection, shows it passed, then saves.
+public abstract class ConnectPage : ViewModel
+{
+    private ConnectState _state;
+    private string _error = "";
+    private bool _filesReady;
+    private string _saved = "";
+
+    protected ConnectPage(ProviderKind kind, string continueLabel, Action<ConnectPage> connect)
+    {
+        Kind = kind;
+        ContinueLabel = continueLabel;
+        Continue = new Command(() =>
+        {
+            if (_state is ConnectState.Connecting or ConnectState.Connected || !_filesReady || !Valid)
+                return;
+            connect(this);
+        });
+    }
+
+    public ProviderKind Kind { get; }
+
+    public string Name => Providers.Name(Kind);
+
+    public string Pitch => Providers.Pitch(Kind);
+
+    public string ContinueLabel { get; }
+
+    public ICommand? Back { get; init; }
+
+    public ConnectState State
+    {
+        get => _state;
+        private set
+        {
+            if (!Set(ref _state, value))
+                return;
+            Changed(nameof(IsConnecting));
+            Changed(nameof(IsConnected));
+            Changed(nameof(IsFailed));
+            Refresh();
+        }
+    }
+
+    public bool IsConnecting => _state == ConnectState.Connecting;
+
+    public bool IsConnected => _state == ConnectState.Connected;
+
+    public bool IsFailed => _state == ConnectState.Failed;
+
+    public string Error { get => _error; private set => Set(ref _error, value); }
+
+    // Whether the fields are complete enough to try connecting.
+    protected abstract bool Valid { get; }
+
+    public bool FilesReady
+    {
+        get => _filesReady;
+        set
+        {
+            if (Set(ref _filesReady, value))
+                Refresh();
+        }
+    }
+
+    // A working button stays enabled so it keeps its color; clicks are ignored meanwhile.
+    public bool ButtonEnabled => _state is ConnectState.Connecting or ConnectState.Connected || (_filesReady && Valid);
+
+    public string ContinueText => _state switch
+    {
+        ConnectState.Connecting => "Connecting...",
+        ConnectState.Connected => "Connected",
+        _ => _filesReady ? ContinueLabel : "Finishing installation...",
+    };
+
+    public string Saved
+    {
+        get => _saved;
+        set
+        {
+            if (Set(ref _saved, value))
+                Changed(nameof(HasSaved));
+        }
+    }
+
+    public bool HasSaved => _saved.Length > 0;
+
+    public ICommand Continue { get; }
+
+    public void Connecting()
+    {
+        Error = "";
+        Saved = "";
+        State = ConnectState.Connecting;
+    }
+
+    public void Show(CheckResult result)
+    {
+        Error = result.Ok ? "" : result.Message;
+        State = result.Ok ? ConnectState.Connected : ConnectState.Failed;
+    }
+
+    // After the save the button returns to rest; Saved tells what happened.
+    public void Idle() => State = ConnectState.None;
+
+    // Any edit makes an earlier result stale.
+    protected void Edited()
+    {
+        Error = "";
+        Saved = "";
+        State = ConnectState.None;
+        Refresh();
+    }
+
+    public void Refresh()
+    {
+        Changed(nameof(ButtonEnabled));
+        Changed(nameof(ContinueText));
+    }
+}
+
+public sealed class ClaudeConnectPage(string? model, string? effort, string continueLabel, Action<ConnectPage> connect)
+    : ConnectPage(ProviderKind.Claude, continueLabel, connect)
+{
+    private string _model = model ?? "";
+    private string _effort = effort ?? "";
+
+    protected override bool Valid => true;
+
+    public string Model
+    {
+        get => _model;
+        set
+        {
+            if (Set(ref _model, value))
+                Edited();
+        }
+    }
+
+    public string Effort
+    {
+        get => _effort;
+        set
+        {
+            if (Set(ref _effort, value))
+                Edited();
+        }
+    }
+}
+
+public sealed class OpenAiConnectPage(string? url, string? apiKey, string? model, string? effort, string continueLabel, Action<ConnectPage> connect)
+    : ConnectPage(ProviderKind.OpenAi, continueLabel, connect)
+{
+    private string _url = url ?? "";
+    private string _apiKey = apiKey ?? "";
+    private string _model = model ?? "";
+    private string _effort = effort ?? "";
+
+    protected override bool Valid => !string.IsNullOrWhiteSpace(_url);
+
+    public string Url
+    {
+        get => _url;
+        set
+        {
+            if (Set(ref _url, value))
+                Edited();
+        }
+    }
+
+    public string ApiKey
+    {
+        get => _apiKey;
+        set
+        {
+            if (Set(ref _apiKey, value))
+                Edited();
+        }
+    }
+
+    public string Model
+    {
+        get => _model;
+        set
+        {
+            if (Set(ref _model, value))
+                Edited();
+        }
+    }
+
+    public string Effort
+    {
+        get => _effort;
+        set
+        {
+            if (Set(ref _effort, value))
+                Edited();
+        }
+    }
+}
+
+public sealed class LocalConnectPage(bool understood, string continueLabel, Action<ConnectPage> connect)
+    : ConnectPage(ProviderKind.Local, continueLabel, connect)
+{
+    private bool _understood = understood;
+    private bool _busy;
+
+    protected override bool Valid => Chosen is { Installed: true } && !_busy;
+
+    public ObservableCollection<ModelCard> Models { get; } = new();
+
+    public bool HasModels => Models.Count > 0;
+
+    public bool Understood
+    {
+        get => _understood;
+        set
+        {
+            if (Set(ref _understood, value))
+                Changed(nameof(CardsEnabled));
+        }
+    }
+
+    // One download or delete at a time.
+    public bool Busy
+    {
+        get => _busy;
+        set
+        {
+            if (!Set(ref _busy, value))
+                return;
+            Changed(nameof(CardsEnabled));
+            Refresh();
+        }
+    }
+
+    public bool CardsEnabled => _understood && !_busy;
+
+    public ModelCard? Chosen => Models.FirstOrDefault(m => m.Chosen);
+
+    public void SetModels(IEnumerable<ModelCard> models)
+    {
+        Models.Clear();
+        foreach (var model in models)
+            Models.Add(model);
+        Changed(nameof(HasModels));
+    }
+
+    public void Choose(ModelCard? card)
+    {
+        foreach (var model in Models)
+            model.Chosen = model == card;
+        Edited();
+    }
+}
+
+public sealed class ModelCard : ViewModel
 {
     private bool _installed;
-    private bool _active;
+    private bool _chosen;
 
-    public ModelItem(ModelRecord model, bool installed, bool active, Action<ModelItem> download, Action<ModelItem> delete, Action<ModelItem> use)
+    public ModelCard(ModelRecord model, bool installed, Action<ModelCard> choose, Action<ModelCard> delete)
     {
         Model = model;
         _installed = installed;
-        _active = active;
-        Download = new Command(() => download(this));
+        Choose = new Command(() => choose(this));
         Delete = new Command(() => delete(this));
-        Use = new Command(() => use(this));
     }
 
     public ModelRecord Model { get; }
 
-    public string Name => Model.Id;
+    public string Id => Model.Id;
 
-    public string Details => string.Format(CultureInfo.InvariantCulture, "{0} download, needs {1:0.0} GB VRAM", ProgressPage.Size(Model.DownloadBytes), Model.VramRequiredMb / 1024.0);
+    public string Name => Model.DisplayName ?? Model.Id;
+
+    public string Description => Model.Description ?? "";
+
+    public bool HasDescription => Description.Length > 0;
+
+    public string Requirements => Model.GraphicsCardGb is { } card
+        ? $"{card} GB graphics card, {Format.Size(Model.DownloadBytes)} download"
+        : string.Format(CultureInfo.InvariantCulture, "{0:0} GB graphics memory, {1} download", Math.Ceiling(Model.VramRequiredMb / 1024.0), Format.Size(Model.DownloadBytes));
+
+    public Activity Activity { get; } = new();
 
     public bool Installed
     {
@@ -144,140 +598,131 @@ public sealed class ModelItem : ViewModel
         set
         {
             Set(ref _installed, value);
-            Changed(nameof(NotInstalled));
-            Changed(nameof(CanUse));
-            Changed(nameof(State));
         }
     }
 
-    public bool NotInstalled => !_installed;
-
-    public bool Active
+    public bool Chosen
     {
-        get => _active;
+        get => _chosen;
         set
         {
-            Set(ref _active, value);
-            Changed(nameof(CanUse));
-            Changed(nameof(State));
+            Set(ref _chosen, value);
         }
     }
 
-    public bool CanUse => _installed && !_active;
-
-    public string State => _active ? "Active" : _installed ? "Installed" : "";
-
-    public ICommand Download { get; }
+    public ICommand Choose { get; }
 
     public ICommand Delete { get; }
-
-    public ICommand Use { get; }
 }
 
-public sealed class LocalModelsPage(IEnumerable<ModelItem> models, Action next, Action back) : ViewModel
+// The footer strip of first run: Veronica's own files arriving while the modder sets up a brain.
+public sealed class FilesStrip : ViewModel
 {
-    private string _message = "";
-
-    public ObservableCollection<ModelItem> Models { get; } = new(models);
-
-    public string Message { get => _message; set => Set(ref _message, value); }
-
-    public ICommand Continue { get; } = new Command(next);
-
-    public ICommand Back { get; } = new Command(back);
-}
-
-public sealed class ClaudeSetupPage(string? model, string? effort, Action<ClaudeSetupPage> next, Action back) : ViewModel
-{
-    public string Model { get; set; } = model ?? "";
-
-    public string Effort { get; set; } = effort ?? "";
-
-    public ICommand Continue => new Command(() => next(this));
-
-    public ICommand Back { get; } = new Command(back);
-}
-
-public sealed class OpenAiSetupPage(string? url, string? model, string? apiKey, string? effort, Action<OpenAiSetupPage> next, Action back) : ViewModel
-{
-    public string Url { get; set; } = url ?? "";
-
-    public string Model { get; set; } = model ?? "";
-
-    public string ApiKey { get; set; } = apiKey ?? "";
-
-    public string Effort { get; set; } = effort ?? "";
-
-    public ICommand Continue => new Command(() => next(this));
-
-    public ICommand Back { get; } = new Command(back);
-}
-
-public sealed class CheckPage : ViewModel
-{
-    private string _status = "Checking...";
     private bool _done;
-    private bool _ok;
 
-    public CheckPage(Action finish, Action retry, Action back)
+    public FilesStrip(Action retry) => Retry = new Command(retry);
+
+    public Activity Activity { get; } = new();
+
+    public bool Done
     {
-        Finish = new Command(finish);
-        Retry = new Command(retry);
-        Back = new Command(back);
+        get => _done;
+        set
+        {
+            if (Set(ref _done, value))
+                Changed(nameof(Visible));
+        }
     }
 
-    public string Status { get => _status; set => Set(ref _status, value); }
-
-    public bool Ok { get => _ok; private set => Set(ref _ok, value); }
-
-    public bool Failed => _done && !_ok;
-
-    public bool Checking => !_done;
-
-    public void Show(CheckResult result)
-    {
-        _done = true;
-        Ok = result.Ok;
-        Status = result.Message;
-        Changed(nameof(Failed));
-        Changed(nameof(Checking));
-    }
-
-    public ICommand Finish { get; }
+    public bool Visible => _done || Activity.Running || Activity.HasError;
 
     public ICommand Retry { get; }
 
-    public ICommand Back { get; }
+    public void Touch() => Changed(nameof(Visible));
 }
 
-public sealed class ModItem(string name, string folder, string? project, HookState state, Action<ModItem> toggle) : ViewModel
+public sealed class SetupFlow(Slides slides, FilesStrip files) : ViewModel
 {
-    public string Name => name;
+    public Slides Slides => slides;
 
-    public string Folder => folder;
-
-    public string? Project => project;
-
-    public HookState State => state;
-
-    public bool IsHooked => state is HookState.Hooked or HookState.Foreign;
-
-    public bool CanToggle => project != null && state != HookState.Foreign;
-
-    public string Note { get; init; } = project == null ? "no .vrgproj found"
-        : state == HookState.Foreign ? "loads Veronica from another build or folder, left alone"
-        : "";
-
-    public ICommand Toggle => new Command(() => toggle(this));
+    public FilesStrip Files => files;
 }
 
-public sealed class ConflictItem(MergeConflict conflict, string name, Action<ConflictItem> keepMine, Action<ConflictItem> useNew) : ViewModel
+public sealed class ModCard : ViewModel
+{
+    private readonly Action<ModCard, bool> _toggle;
+    private bool _on;
+
+    public ModCard(string name, string folder, string? project, HookState state, Action<ModCard, bool> toggle)
+    {
+        Name = name;
+        Folder = folder;
+        Project = project;
+        State = state;
+        _toggle = toggle;
+        _on = state is HookState.Hooked or HookState.Foreign;
+        Note = project == null ? "No .vrgproj file found."
+            : state == HookState.Foreign ? "Loads Veronica from another build or folder, so it is left as it is."
+            : "";
+    }
+
+    public string Name { get; }
+
+    public string Folder { get; }
+
+    public string? Project { get; }
+
+    public HookState State { get; }
+
+    public bool CanToggle => Project != null && State != HookState.Foreign && !Activity.Running;
+
+    public string Note { get; init; }
+
+    public bool HasNote => Note.Length > 0;
+
+    public Activity Activity { get; } = new();
+
+    public bool On
+    {
+        get => _on;
+        set
+        {
+            if (Set(ref _on, value))
+                _toggle(this, value);
+        }
+    }
+
+    public void Touch() => Changed(nameof(CanToggle));
+}
+
+public sealed class ModsPane : ViewModel
+{
+    private string _message = "";
+
+    public ObservableCollection<ModCard> Mods { get; } = new();
+
+    public string Message
+    {
+        get => _message;
+        set
+        {
+            if (Set(ref _message, value))
+                Changed(nameof(HasMessage));
+        }
+    }
+
+    public bool HasMessage => _message.Length > 0;
+}
+
+public sealed class ConflictCard(MergeConflict conflict, string name, Action<ConflictCard> keepMine, Action<ConflictCard> useNew) : ViewModel
 {
     public MergeConflict Conflict => conflict;
 
     public string Name => name;
 
-    public string Note => conflict.Dropped ? "the new release removes this file; you changed it" : "you changed this file; the new release changes it too";
+    public string Note => conflict.Dropped
+        ? "You changed this file; the new version removes it."
+        : "You changed this file; the new version changes it too.";
 
     public ICommand KeepMine => new Command(() => keepMine(this));
 
@@ -286,54 +731,120 @@ public sealed class ConflictItem(MergeConflict conflict, string name, Action<Con
     public ICommand Open => new Command(() => SetupHost.Open(new[] { conflict.Mine, conflict.Incoming }.Where(File.Exists).ToArray()));
 }
 
-public sealed class AppPage : ViewModel
+public sealed class UpdatesPane : ViewModel
 {
-    private string _provider = "";
-    private string _versionText = "";
-    private string _latestText = "";
+    private string _installed = "";
+    private string _latest = "";
     private bool _canUpdate;
-    private string _modsMessage = "";
-    private string _conflictsMessage = "";
+    private bool _upToDate;
     private string _warning = "";
+    private string _conflictsMessage = "";
 
-    public AppPage(Action changeProvider, Action update, Action checkUpdates)
+    public UpdatesPane(Action update, Action check)
     {
-        ChangeProvider = new Command(changeProvider);
         Update = new Command(update);
-        CheckUpdates = new Command(checkUpdates);
+        Check = new Command(check);
+        Conflicts.CollectionChanged += (_, _) =>
+        {
+            Changed(nameof(HasConflicts));
+            Changed(nameof(NeedsAttention));
+        };
     }
+
+    public string Installed { get => _installed; set => Set(ref _installed, value); }
+
+    public string Latest { get => _latest; set => Set(ref _latest, value); }
+
+    public bool CanUpdate
+    {
+        get => _canUpdate;
+        set
+        {
+            if (Set(ref _canUpdate, value))
+                Changed(nameof(NeedsAttention));
+        }
+    }
+
+    public bool UpToDate { get => _upToDate; set => Set(ref _upToDate, value); }
 
     public string Warning
     {
         get => _warning;
         set
         {
-            Set(ref _warning, value);
-            Changed(nameof(HasWarning));
+            if (Set(ref _warning, value))
+                Changed(nameof(HasWarning));
         }
     }
 
     public bool HasWarning => _warning.Length > 0;
 
-    public string ConflictsMessage { get => _conflictsMessage; set => Set(ref _conflictsMessage, value); }
+    public Activity Activity { get; } = new();
 
-    public string Provider { get => _provider; set => Set(ref _provider, value); }
+    public ObservableCollection<ConflictCard> Conflicts { get; } = new();
 
-    public ObservableCollection<ModItem> Mods { get; } = new();
+    public bool HasConflicts => Conflicts.Count > 0;
 
-    public string ModsMessage { get => _modsMessage; set => Set(ref _modsMessage, value); }
+    public string ConflictsMessage
+    {
+        get => _conflictsMessage;
+        set
+        {
+            if (Set(ref _conflictsMessage, value))
+                Changed(nameof(HasConflictsMessage));
+        }
+    }
 
-    public string VersionText { get => _versionText; set => Set(ref _versionText, value); }
+    public bool HasConflictsMessage => _conflictsMessage.Length > 0;
 
-    public string LatestText { get => _latestText; set => Set(ref _latestText, value); }
-
-    public bool CanUpdate { get => _canUpdate; set => Set(ref _canUpdate, value); }
-
-    public ObservableCollection<ConflictItem> Conflicts { get; } = new();
-
-    public ICommand ChangeProvider { get; }
+    public bool NeedsAttention => _canUpdate || Conflicts.Count > 0;
 
     public ICommand Update { get; }
 
-    public ICommand CheckUpdates { get; }
+    public ICommand Check { get; }
+}
+
+public enum AppTab
+{
+    Mods,
+    Brain,
+    Updates,
+}
+
+public sealed class AppShell(ModsPane mods, Slides brain, UpdatesPane updates) : ViewModel
+{
+    private AppTab _tab;
+
+    public ModsPane Mods => mods;
+
+    public Slides Brain => brain;
+
+    public UpdatesPane Updates => updates;
+
+    public AppTab Tab
+    {
+        get => _tab;
+        set
+        {
+            if (!Set(ref _tab, value))
+                return;
+            Changed(nameof(Content));
+        }
+    }
+
+    public object Content => _tab switch
+    {
+        AppTab.Brain => brain,
+        AppTab.Updates => updates,
+        _ => mods,
+    };
+}
+
+public sealed class ErrorPage(string message, Action retry, Action close) : ViewModel
+{
+    public string Message => message;
+
+    public ICommand Retry { get; } = new Command(retry);
+
+    public ICommand Close { get; } = new Command(close);
 }

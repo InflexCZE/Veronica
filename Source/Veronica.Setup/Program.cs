@@ -31,7 +31,7 @@ public static class Program
         App.StartUpdate = update;
         App.SelfUpdated = selfUpdated;
         App.Instance = instance;
-        return AppBuilder.Configure<App>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
+        return AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().StartWithClassicDesktopLifetime(args);
     }
 
     private static void DeleteSoon(string path)

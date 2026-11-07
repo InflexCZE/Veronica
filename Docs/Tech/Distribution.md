@@ -24,8 +24,12 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 - One instance runs per install folder; a second start brings the first to the front, and passes on the panel's update request.
 - Downloads (the release, a model) can be cancelled; a partial model stays in `Downloads` and resumes next time.
 - Names that come from a download (zip entries, Hugging Face file names, the manifest's model ids) must stay inside their folder; anything else fails the install or download.
-- First run: Welcome, provider selection, the chosen provider's setup, then a wait until the provider's check reports all good.
-- Afterwards it opens in app mode: the provider, the mods Veronica is hooked into, and versions (updates and their conflicts).
+- Headlines and greetings speak as Veronica, in the first person. Information, status and technical lines are plain UI text: no "I" or "my", and the local model is "the local model", never Veronica herself.
+- First run is three pages under a fixed header: Welcome, the provider choice, and the chosen provider's setup. The title bar shows a single Initial Setup tab in place of the app's tabs. Going back is always free; going forward only past the pages that are done.
+- Welcome's start button begins the install in the background; nothing touches the folder before it. A strip at the bottom shows its progress or its error with a retry. First run installs the latest release with the running exe; the exe updates itself at the next update.
+- A provider's setup page has one button, which needs the finished install: it runs the provider's check, shows a pass for a moment, then saves and moves on. A failed check stays on the page with its reason.
+- Afterwards it opens in app mode, with tabs in the title bar: Mods first, then Brain (the provider choice and its setup, opened on the current provider's setup), then Updates (marked when an update or a conflict waits).
+- An operation that needs the Editor closed shows the wait where it was started, with Cancel.
 
 ## Install folder
 
@@ -62,21 +66,22 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 - The WebQwen manifest lists the models and pins each one's weights (a Hugging Face commit) and library (sha256). `Veronica.exe` downloads exactly those revisions.
 - It measures the GPU: `WebQwen.exe`'s requirements check (features, limits, VRAM) runs against every model in the manifest. All models are shown with their size and result, and one that fits is recommended. A model fits by total VRAM, since the Editor's VRAM is evicted during turns; low free VRAM is shown as a warning that other applications will slow it. A failed requirement is shown with its reason and can be overridden.
 - Until that check exists, the list shows every model with its download size and the manifest's VRAM need, with no measurement, recommendation or override (`Docs/TODOs/RequirementsCheck.md`).
+- The local model's setup shows its limits first (small model, heavy on the graphics card), and the model list stays disabled until the modder confirms they understand; that confirmation counts as given once any model is installed. Picking a model downloads it if needed.
 - Several models may be installed, each with a Delete button, which waits for the Editor to close. The settings name the active one; the plugin runs it and offers no choice. An installed plugin with no active model says so in the chat and points at `Veronica.exe`.
 - A download lands in `Downloads`, resumes after an interruption, is verified against the Hugging Face hashes and the manifest's library sha256, and only then moves into `Models`. Everything is on disk before WebQwen loads a model, so the engine stays offline.
 
 ## Hooking into a mod
 
-- `Veronica.exe` lists the local mods from the HUB's mod index (`%APPDATA%\SpaceEngineers2\Temp\LocalMods\ModIndex`, project GUID to folder), each with a checkbox. Which mods are hooked is read from their `.vrgproj` files, not recorded.
-- Checking a mod adds `Veronica.dll` to its `.vrgproj`'s `EditorExtensionAssemblies` and this install's absolute `Runtime` path to `EditorExtensionAssembliesSearchPaths`. Unchecking removes exactly these two entries.
-- A mod that loads `Veronica.dll` with any other search path (a development build, another install, an install that was moved) is another build: shown checked and disabled, never edited.
+- `Veronica.exe` lists the local mods from the HUB's mod index (`%APPDATA%\SpaceEngineers2\Temp\LocalMods\ModIndex`, project GUID to folder), each with a switch. Which mods are hooked is read from their `.vrgproj` files, not recorded.
+- Switching a mod on adds `Veronica.dll` to its `.vrgproj`'s `EditorExtensionAssemblies` and this install's absolute `Runtime` path to `EditorExtensionAssembliesSearchPaths`. Switching it off removes exactly these two entries.
+- A mod that loads `Veronica.dll` with any other search path (a development build, another install, an install that was moved) is another build: shown on and disabled, never edited.
 - A `.vrgproj` is edited only while the Editor is closed, since an open Editor may write the project back over the edit.
 - The Editor refuses to load a project whose extension assembly it cannot find. A collaborator without Veronica at the same path therefore cannot open the mod. This cost is accepted.
 
 ## Updates
 
 - Veronica checks the latest release once per Editor start. The panel shows a newer version with a button that starts `Veronica.exe` with `--update`: it starts the update at once and waits for the Editor to exit, since the Editor keeps `Runtime`'s DLLs locked.
-- `Veronica.exe` updates itself first. When the release carries a newer one, it renames its running exe to `.old` (Windows allows renaming a running exe, not overwriting it), moves the new one in and restarts; if the move fails, the `.old` exe is renamed back. The new instance deletes the `.old` file and does not update itself again in that run, so an exe stamped lower than its tag cannot loop.
+- An update (not the first install) updates `Veronica.exe` itself first. When the release carries a newer one, it renames its running exe to `.old` (Windows allows renaming a running exe, not overwriting it), moves the new one in and restarts; if the move fails, the `.old` exe is renamed back. The new instance deletes the `.old` file and does not update itself again in that run, so an exe stamped lower than its tag cannot loop.
 - `Runtime` is replaced without a window where none works: the zip is downloaded and unpacked into `Runtime.new`, the Editor is checked closed right before the swap, then `Runtime` becomes `Runtime.old` and `Runtime.new` becomes `Runtime`. A failed swap puts the old `Runtime` back.
 - An installed model whose pinned revision changed is replaced without asking. The old revision is deleted once the new one is verified.
 - `Skills` and `Wiki` are merged against `Veronica.installed.json`:

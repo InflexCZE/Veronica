@@ -1,8 +1,258 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
              x:Class="Veronica.Setup.App"
              RequestedThemeVariant="Dark">
+
   <Application.Styles>
-    <FluentTheme />
+    <!-- The Windows accent color would replace the palette's blue on switches and checkboxes. -->
+    <sty:FluentAvaloniaTheme PreferUserAccentColor="False" CustomAccentColor="#58A6FF" />
+
+    <!-- Colored buttons are a tinted outline, never a solid fill: blue is the main action, red destroys, green restores. -->
+    <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentDisabledFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentDisabledBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentDisabledBrush}" />
+    </Style>
+    <Style Selector="Button.accentRed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentRedFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusAbortedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusAbortedBrush}" />
+    </Style>
+    <Style Selector="Button.accentRed:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentRedHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusAbortedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusAbortedBrush}" />
+    </Style>
+    <Style Selector="Button.accentRed:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentRedPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusAbortedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusAbortedBrush}" />
+    </Style>
+    <Style Selector="Button.accentGreen /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#1A3FB950" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
+    </Style>
+    <Style Selector="Button.accentGreen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#333FB950" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
+    </Style>
+    <Style Selector="Button.accentGreen:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#4D3FB950" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
+    </Style>
+
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.big">
+      <Setter Property="Padding" Value="16,8" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <!-- A text-only button that reads as a link. -->
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.h1">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.cardTitle">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.dim">
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="TextBlock.ok">
+      <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
+    </Style>
+    <Style Selector="TextBlock.warning">
+      <Setter Property="Foreground" Value="{DynamicResource StatusAwaitingBrush}" />
+    </Style>
+    <Style Selector="TextBlock.error">
+      <Setter Property="Foreground" Value="{DynamicResource StatusAbortedBrush}" />
+    </Style>
+
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border0Brush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <Style Selector="Border.card.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <!-- Callouts: a tinted panel with a colored edge for a warning or an error that needs the modder. -->
+    <Style Selector="Border.callout">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <Style Selector="Border.callout.warning">
+      <Setter Property="Background" Value="{DynamicResource StatusAwaitingFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusAwaitingBrush}" />
+    </Style>
+    <Style Selector="Border.callout.error">
+      <Setter Property="Background" Value="{DynamicResource StatusAbortedFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StatusAbortedBrush}" />
+    </Style>
+
+    <!-- A clickable card: a Button whose content is the card, rest/hover/selected like the provider cards. -->
+    <Style Selector="Button.cardButton">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Button.cardButton /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border0Brush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.cardButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.cardButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.cardButton.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Button.cardButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+
+    <Style Selector="ProgressBar">
+      <Setter Property="MinHeight" Value="3" />
+      <Setter Property="Height" Value="3" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Border0Brush}" />
+    </Style>
   </Application.Styles>
+
+  <Application.Resources>
+    <Color x:Key="Surface0">#1F1F1F</Color>
+    <Color x:Key="Surface1">#111111</Color>
+    <Color x:Key="Surface2">#1C1C1C</Color>
+    <Color x:Key="CardBackground">#2E2E2E</Color>
+    <Color x:Key="AppAccentColor">#58A6FF</Color>
+    <Color x:Key="TextPrimary">#D4D4D4</Color>
+    <Color x:Key="TextSecondary">#6E6E6E</Color>
+    <Color x:Key="TextMuted">#3A3A3A</Color>
+    <Color x:Key="BorderSubtle">#2A2A2A</Color>
+    <Color x:Key="ButtonHover">#383838</Color>
+    <Color x:Key="ButtonPressed">#424242</Color>
+    <Color x:Key="StatusRunning">#58A6FF</Color>
+    <Color x:Key="StatusPending">#6E6E6E</Color>
+    <Color x:Key="StatusAwaiting">#E3A53E</Color>
+    <Color x:Key="StatusComplete">#3FB950</Color>
+    <Color x:Key="StatusAborted">#F85149</Color>
+
+    <SolidColorBrush x:Key="Surface0Brush" Color="{StaticResource Surface0}" />
+    <SolidColorBrush x:Key="Surface1Brush" Color="{StaticResource Surface1}" />
+    <SolidColorBrush x:Key="Surface2Brush" Color="{StaticResource Surface2}" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{StaticResource CardBackground}" />
+
+    <SolidColorBrush x:Key="AppAccentBrush" Color="{StaticResource AppAccentColor}" />
+    <SolidColorBrush x:Key="AccentFillBrush" Color="#1A58A6FF" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#3358A6FF" />
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#4D58A6FF" />
+    <SolidColorBrush x:Key="AccentDisabledFillBrush" Color="#0D58A6FF" />
+    <SolidColorBrush x:Key="AccentDisabledBrush" Color="#3358A6FF" />
+    <SolidColorBrush x:Key="AccentRedFillBrush" Color="#1AF85149" />
+    <SolidColorBrush x:Key="AccentRedHoverBrush" Color="#33F85149" />
+    <SolidColorBrush x:Key="AccentRedPressedBrush" Color="#4DF85149" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}" />
+    <SolidColorBrush x:Key="AppDimmedBrush" Color="{StaticResource TextSecondary}" />
+
+    <SolidColorBrush x:Key="Border0Brush" Color="{StaticResource BorderSubtle}" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="{StaticResource ButtonHover}" />
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="{StaticResource ButtonPressed}" />
+
+    <!-- Fluent's own hover and press brushes flash white on this palette. -->
+    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource ButtonHover}" />
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource ButtonPressed}" />
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource TextPrimary}" />
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{StaticResource TextPrimary}" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource TextMuted}" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="{StaticResource TextMuted}" />
+
+
+    <!-- The dark theme fills an on switch and a checked box with a lighter shade of the accent; they take the palette's blue itself. -->
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#58A6FF" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#6CB0FF" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#4C94E6" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#58A6FF" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#6CB0FF" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#4C94E6" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#58A6FF" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#6CB0FF" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#4C94E6" />
+
+    <SolidColorBrush x:Key="StatusRunningBrush" Color="{StaticResource StatusRunning}" />
+    <SolidColorBrush x:Key="StatusAwaitingBrush" Color="{StaticResource StatusAwaiting}" />
+    <SolidColorBrush x:Key="StatusAwaitingFillBrush" Color="#1AE3A53E" />
+    <SolidColorBrush x:Key="StatusCompleteBrush" Color="{StaticResource StatusComplete}" />
+    <SolidColorBrush x:Key="StatusCompleteFillBrush" Color="#1A3FB950" />
+    <SolidColorBrush x:Key="StatusAbortedBrush" Color="{StaticResource StatusAborted}" />
+    <SolidColorBrush x:Key="StatusAbortedFillBrush" Color="#1AF85149" />
+  </Application.Resources>
 </Application>

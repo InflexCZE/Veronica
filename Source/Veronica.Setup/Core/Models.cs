@@ -20,6 +20,14 @@ public sealed record ModelRecord(
     public string Pin => $"{Url}|{LibSha256}";
 
     public long DownloadBytes => WeightsBytes + LibBytes;
+
+    // What modders see in place of the id; the vendored manifest carries it (pull-webqwen re-applies it).
+    public string? DisplayName { get; init; }
+
+    public string? Description { get; init; }
+
+    // The graphics card size modders are told to have: the model's own need plus room for the Editor.
+    public int? GraphicsCardGb { get; init; }
 }
 
 public static partial class ModelCatalog
@@ -48,7 +56,12 @@ public static partial class ModelCatalog
                 m.TryGetProperty("vram_required_MB", out var v) ? v.GetInt32() : 0,
                 lib.GetProperty("url").GetString()!,
                 lib.GetProperty("sha256").GetString()!,
-                lib.TryGetProperty("bytes", out var b) ? b.GetInt64() : -1));
+                lib.TryGetProperty("bytes", out var b) ? b.GetInt64() : -1)
+            {
+                DisplayName = m.TryGetProperty("display_name", out var n) ? n.GetString() : null,
+                Description = m.TryGetProperty("description", out var d) ? d.GetString() : null,
+                GraphicsCardGb = m.TryGetProperty("graphics_card_GB", out var g) ? g.GetInt32() : null,
+            });
         }
         return models;
     }
@@ -189,7 +202,9 @@ public sealed class ModelDownloader(HttpClient http, IFiles files, InstallLayout
         int read;
         while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
         {
-            await sink.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            // No token on the write: a FileStream write cancelled before it runs has already moved the file
+            // position, so the next write leaves a gap of zeros that the resumed .part keeps.
+            await sink.WriteAsync(buffer.AsMemory(0, read)).ConfigureAwait(false);
             have += read;
             report(have);
         }
