@@ -58,6 +58,9 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PrefabChildEntities.md](PrefabChildEntities.md) | Editor tools: prefab component tools see the root entity only (owner decision) |
 | [PrefabComponentEdits.md](PrefabComponentEdits.md) | Editor tools: prefab component edits refused per block, not per side; no rollback of a failed add |
 | [TimeSpanWrites.md](TimeSpanWrites.md) | Editor tools: a TimeSpan write error does not show the accepted form |
+| [ReadBoundPartHeader.md](ReadBoundPartHeader.md) | Editor tools: a read of a block's part shows the whole block without saying so |
+| [ListHeaderTargets.md](ListHeaderTargets.md) | Editor tools: listing headers get copied into read targets |
+| [PrefabOutsidePlan.md](PrefabOutsidePlan.md) | Editor tools: create_prefab outside create-block leaves name and models unset with no hint |
 | [EditorStartupHang.md](EditorStartupHang.md) | Eval: an Editor start sometimes hangs after load (startup push never finishes) |
 | [SyntheticTemplates.md](SyntheticTemplates.md) | Editor tools: no template for a bound child model such as a door leaf (owner decision) |
 | [ReplaceBlockComponent.md](ReplaceBlockComponent.md) | Editor tools: a block's component cannot be replaced, e.g. made powerable (owner decision) |
