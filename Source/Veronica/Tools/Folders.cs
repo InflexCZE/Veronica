@@ -14,6 +14,9 @@ internal static class Folders
             throw new EditError("Give a folder path inside the mod, e.g. Assets/MyThruster.");
 
         ExplorerFolder folder = project.GetRootFolder();
+        // Targets take the mod's name in front, so models write folders that way too.
+        if (segments.Length > 1 && Same(segments[0], project.Name) && folder.GetItemByName(segments[0]) == null)
+            segments = segments[1..];
         bool created = false;
         foreach (string segment in segments)
         {
