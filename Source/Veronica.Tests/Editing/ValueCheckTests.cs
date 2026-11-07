@@ -44,6 +44,14 @@ public sealed class ValueCheckTests
     public void Only_the_written_field_is_checked() => Assert.Equal("Discharge: 3 -> 2", Write("Discharge", "2"));
 
     [Fact]
+    public void A_fixed_point_is_written_and_shown_as_a_decimal_number()
+    {
+        Assert.Equal("Discharge: 3 -> 2.5", Write("Discharge", "2.5"));
+        Assert.Equal("Discharge: 2.5 -> 2150400", Write("Discharge", "\"2150400\""));
+        Assert.Equal("0.000001", Values.Render(Values.FromText("0.000001", typeof(FixedPoint)), _links));
+    }
+
+    [Fact]
     public void String_length_is_checked() => Assert.Contains("game validation", Write("Label", "\"Much too long\""));
 
     [Fact]

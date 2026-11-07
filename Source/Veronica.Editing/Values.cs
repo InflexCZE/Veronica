@@ -5,6 +5,7 @@ using System.Text.Json;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Extensions;
 using Keen.VRage.Library.Localization;
+using Keen.VRage.Library.Mathematics;
 using Keen.VRage.Library.Utils;
 
 namespace Veronica.Editing;
@@ -62,6 +63,17 @@ public static class Values
     public static bool HasParse(Type type) =>
         Fields.HasPublicStaticMethod(type, "Parse", typeof(string), typeof(IFormatProvider))
         || Fields.HasPublicStaticMethod(type, "Parse", typeof(string));
+
+    // describe's text for an engine struct that read and write treat as one value. Its own fields and doc describe
+    // the storage (FixedPoint's RawValue), which a model took for the unit of the number read shows.
+    public static string? PlainValueText(Type type)
+    {
+        if (type == typeof(FixedPoint))
+            return "A decimal number with up to 6 decimal places, in the unit of the field that holds it. read shows it and write takes it as a plain number, like 0.5 or 2150400.";
+        if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && HasParse(type))
+            return "One value: read shows it and write takes it as plain text in the same form.";
+        return null;
+    }
 
     private static object ParseEnum(string text, Type type)
     {

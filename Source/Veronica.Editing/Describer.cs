@@ -134,6 +134,9 @@ public static class Describer
 
     public static string Listing(Type type, MemberReference? fields, ITypeCatalog catalog)
     {
+        if (Values.PlainValueText(type) is { } plain)
+            return $"{Name(type)}\n{plain}";
+
         var lines = new List<string> { type.IsAbstract && !type.IsSealed ? $"{Name(type)} (abstract)" : Name(type) };
         if (catalog.Summary(type) is { } summary)
             lines.Add(summary);
@@ -242,7 +245,11 @@ public static class Describer
             return string.Join("\n", lines);
         }
         if (Fields.IsScalar(next) && !typeof(Definition).IsAssignableFrom(next))
+        {
+            if (Values.PlainValueText(next) is { } plain)
+                lines.Add(plain);
             return string.Join("\n", lines);
+        }
 
         lines.Add("");
         lines.Add(Listing(catalog.Shown(next), fields, catalog));

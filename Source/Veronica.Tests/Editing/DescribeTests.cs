@@ -1,4 +1,5 @@
 using Keen.VRage.Library.Definitions;
+using Keen.VRage.Library.Mathematics;
 using Keen.VRage.Library.Serialization;
 using Keen.VRage.Library.Units;
 using Keen.VRage.ContentPipeline.Definitions.Utility;
@@ -287,5 +288,23 @@ public class DescribeTests
     {
         var e = Assert.Throws<EditError>(() => Describer.OfType(typeof(Machine), "Speed", Catalog));
         Assert.Contains("'Speed' is not a field of the definition. Fields: Reach, Idle, Parts, Setup, Dummy, Main, Undocumented", e.Message);
+    }
+
+    [Fact]
+    public void FixedPointIsDescribedAsADecimalNumberNotItsStorage()
+    {
+        string text = Describer.OfType(typeof(FixedPoint), "", Catalog);
+        Assert.StartsWith("FixedPoint\nA decimal number", text);
+        Assert.DoesNotContain("RawValue", text);
+        Assert.DoesNotContain("64-bit", text);
+    }
+
+    [Fact]
+    public void AFixedPointMemberSaysHowItIsWritten()
+    {
+        string text = Describer.OfType(typeof(Bounded), "Charge", Catalog);
+        Assert.StartsWith("Bounded:\nCharge: FixedPoint", text);
+        Assert.Contains("like 0.5 or 2150400", text);
+        Assert.DoesNotContain("RawValue", text);
     }
 }
