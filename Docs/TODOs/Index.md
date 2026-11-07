@@ -35,7 +35,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [EditorVersionFloor.md](EditorVersionFloor.md) | Editor: oldest Editor build a release supports (owner decision) |
 | [EditorTextOutside.md](EditorTextOutside.md) | Editor: font-fallback crash for text written outside our views |
 | [EditorProjectUnload.md](EditorProjectUnload.md) | Editor: panel and menu stay live after Unload Project |
-| [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps (owner decision) |
+| [EditorUndo.md](EditorUndo.md) | Editor tools: agent edits are not Ctrl-Z steps, and the model cannot take back its own (owner decision) |
 | [WriteValueChecks.md](WriteValueChecks.md) | Editor tools: write hints only on the written field's own validation (owner decision) |
 | [SkillSources.md](SkillSources.md) | Skills: install location and a community repository (owner decision) |
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
