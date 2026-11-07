@@ -17,13 +17,15 @@ public static class ContentNames
         if (wanted.Length == 0)
             return false;
 
-        if (Same(path, wanted) || Same(WithoutExtension(path), wanted))
+        // Some vanilla templates end their name in a space ("X .partialdef") and every block copies it;
+        // a query is trimmed, so the stem is too.
+        if (Same(path, wanted) || Same(WithoutExtension(path).TrimEnd(), wanted))
             return true;
         if (wanted.Contains('\\'))
             return false;
 
         string name = Path.GetFileName(path);
-        return Same(name, wanted) || Same(Path.GetFileNameWithoutExtension(name), wanted);
+        return Same(name, wanted) || Same(Path.GetFileNameWithoutExtension(name).TrimEnd(), wanted);
     }
 
     // The end of the path on whole segments, e.g. Ion\100\Model names Assets\Blocks\Ion\100\Model.def.

@@ -32,6 +32,10 @@ public sealed class NamingTests
     [InlineData(@"Mods\Thruster\Engine.def", @"Thruster\Engine", false)]
     [InlineData(@"Mods\Thruster\Engine.def", "Engin", false)]
     [InlineData(@"Mods\Thruster\Engine.def", "", false)]
+    [InlineData(@"Mods\Gyro\Gyro_PowerDefinition .partialdef", "Gyro_PowerDefinition", true)]
+    [InlineData(@"Mods\Gyro\Gyro_PowerDefinition .partialdef", "Gyro_PowerDefinition ", true)]
+    [InlineData(@"Mods\Gyro\Gyro_PowerDefinition .partialdef", @"Mods\Gyro\Gyro_PowerDefinition", true)]
+    [InlineData(@"Mods\Gyro\Gyro_PowerDefinition .partialdef", "Gyro_PowerDefinition .partialdef", true)]
     public void Content_names(string path, string query, bool matches) => Assert.Equal(matches, ContentNames.Matches(path, query));
 
     [Theory]
