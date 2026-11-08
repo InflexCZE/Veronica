@@ -1,8 +1,8 @@
 namespace Veronica.Editing;
 
-// Corrections of what the game itself declares wrongly about a member: a unit attribute that names the wrong
-// quantity, or a doc comment that describes another field. Hand-kept; entries join as they are confirmed in the
-// game code, and leave when the game is fixed.
+// Corrections of what the game itself declares wrongly or leaves out about a member: a unit attribute that names the
+// wrong quantity or is missing, or a doc comment that describes another field. Hand-kept; entries join as they are
+// confirmed in the game code, and leave when the game is fixed.
 public static class DocOverrides
 {
     // Unit: a symbol to show instead, or "" to show none. Null leaves the game's own.
@@ -21,6 +21,8 @@ public static class DocOverrides
         ["Keen.Game2.Simulation.WorldObjects.Characters.ContactDamageReceiverDefinition.MinSeparationSpeed"] = new(Unit: "m/s"),
         // [Length] on a plain multiplier.
         ["Keen.Game2.Simulation.WorldObjects.Shared.Visuals.Lights.LightDefinition.FalloffRangeMultiplier"] = new(Unit: ""),
+        // No unit attribute; the inventory screens show it in kg, and items' MassPerUnit is [Mass].
+        ["Keen.Game2.Simulation.WorldObjects.Items.InventoryDefinition.MaxMass"] = new(Unit: "kg"),
         // Documented as the destruction effect; it is the thrust flame.
         ["Keen.Game2.Client.WorldObjects.CubeBlocks.Effects.ThrusterEffectsComponentDefinition.OnThrustPoweredParticleEffect"] = new(
             Summary: "Looped flame effect shown at each thrust dummy while the thruster is working, driven by how hard it thrusts."),

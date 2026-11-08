@@ -307,4 +307,11 @@ public class DescribeTests
         Assert.Contains("like 0.5 or 2150400", text);
         Assert.DoesNotContain("RawValue", text);
     }
+
+    [Fact]
+    public void AnOverrideAddsAUnitTheGameLeavesOut()
+    {
+        string text = Describer.OfType(typeof(Keen.Game2.Simulation.WorldObjects.Items.InventoryDefinition), "MaxMass", Catalog);
+        Assert.StartsWith("InventoryDefinition:\nMaxMass: FixedPoint, kg", text);
+    }
 }
