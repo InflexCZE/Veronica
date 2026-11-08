@@ -12,6 +12,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebQwen.Tests", "Source\WebQwen.Tests\WebQwen.Tests.csproj", "{8E4B7D21-3C6A-4F59-A1D8-2B9C0E5F7A34}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica", "Source\Veronica\Veronica.csproj", "{AC4B2DCC-7715-45E2-A8E7-32EFA39D0864}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3D1C2F5A-8B4E-4C7A-9E21-6F0B5A7C4D12} = {3D1C2F5A-8B4E-4C7A-9E21-6F0B5A7C4D12}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veronica.Agent", "Source\Veronica.Agent\Veronica.Agent.csproj", "{22E77F97-C97B-4913-A0A5-52C11BABA9DD}"
 EndProject
