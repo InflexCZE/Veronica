@@ -40,10 +40,11 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         if (_runner is not { } runner)
-            return new ToolResult(UnavailableOutput);
+            return new ToolResult(UnavailableOutput, Refused: true) { Summary = "Could not ask the wiki: not available with this model provider" };
         var question = ToolArgs.Text(arguments, "question");
         if (question.Length == 0)
-            return new ToolResult(NoQuestionOutput);
+            return new ToolResult(NoQuestionOutput, Refused: true) { Summary = "Could not ask the wiki: no question given" };
+        string asked = $"Asked the wiki: {Gist.Clip(question, 75)}";
 
         var request = new SubAgentRequest(
             ToolName,
@@ -57,7 +58,11 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
             new CallReminder(Prompts.ResearchReminderCalls, Prompts.ResearchReminder));
         var result = await runner(request, cancellationToken).ConfigureAwait(false);
         if (result.Text == null)
-            return new ToolResult(NoAnswerOutput);
-        return new ToolResult(result.RoundCap ? result.Text + "\n\n(The research ran out of rounds; this may be incomplete.)" : result.Text);
+            return new ToolResult(NoAnswerOutput) { Summary = asked + " (no answer)" };
+        return result.RoundCap
+            ? new ToolResult(result.Text + "\n\n(The research ran out of rounds; this may be incomplete.)") { Summary = asked + " (incomplete)" }
+            : new ToolResult(result.Text) { Summary = asked };
     }
+
+    public string Attempt(JsonElement arguments) => "ask the wiki";
 }

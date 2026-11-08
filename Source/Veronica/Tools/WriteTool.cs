@@ -33,6 +33,13 @@ public sealed class WriteTool : ITool
             string reply = FieldWriter.Write(fields.Root, path, value, new ProjectLinks(project, asset));
             Content.Save(asset);
             return reply;
-        }, cancellationToken));
+        }, cancellationToken))
+        {
+            Summary = value.ValueKind == JsonValueKind.Null
+                ? $"Reset {Gist.Clip(path, 40)} on {Gist.Item(target)}"
+                : $"Set {Gist.Clip(path, 40)} on {Gist.Item(target)} to {Gist.Value(value)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"set {Gist.Clip(Args.Text(arguments, "path"), 40)} on {Gist.Item(Args.Text(arguments, "target"))}";
 }

@@ -22,10 +22,12 @@ public sealed class FindContentTool : ITool
     {
         string query = Args.Text(arguments, "query");
         string? folder = Args.OptionalText(arguments, "folder");
-        return new ToolResult(await EditorProject.RunAsync(project => Find(project, query, folder), cancellationToken));
+        return await EditorProject.RunAsync(project => Find(project, query, folder), cancellationToken);
     }
 
-    private static string Find(LoadedProject project, string query, string? folder)
+    public string Attempt(JsonElement arguments) => $"search for \"{Gist.Clip(Args.Text(arguments, "query"), 40)}\"";
+
+    private static ToolResult Find(LoadedProject project, string query, string? folder)
     {
         string scope = "";
         HashSet<LoadedProject>? inProjects = null;
@@ -47,12 +49,17 @@ public sealed class FindContentTool : ITool
             .ThenBy(f => f.ProjectRelativePath, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        string where = scope.Length == 0 ? "" : $" in {Gist.Item(scope)}";
+        string quoted = $"\"{Gist.Clip(query, 40)}\"";
         if (matches.Count == 0)
-            return scope.Length == 0 ? $"Nothing matches '{query}'." : $"Nothing under '{scope.TrimEnd('\\')}' matches '{query}'.";
+            return new ToolResult(scope.Length == 0 ? $"Nothing matches '{query}'." : $"Nothing under '{scope.TrimEnd('\\')}' matches '{query}'.")
+            {
+                Summary = $"Found nothing matching {quoted}{where}",
+            };
 
         var lines = Content.ByProject(project, matches.Take(MaxResults));
         if (matches.Count > MaxResults)
             lines.Add($"... {matches.Count - MaxResults} more; narrow the query or pass folder.");
-        return string.Join("\n", lines);
+        return new ToolResult(string.Join("\n", lines)) { Summary = $"Found {Gist.Count(matches.Count, "item", "items")} matching {quoted}{where}" };
     }
 }

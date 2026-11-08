@@ -19,6 +19,11 @@ public sealed class ShowTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         string target = Args.Text(arguments, "target");
-        return new ToolResult(await EditorProject.RunAsync(project => Explorer.Show(Content.Resolve(project, target)), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Explorer.Show(Content.Resolve(project, target)), cancellationToken))
+        {
+            Summary = $"Showed {Gist.Item(target)} in the Editor",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"show {Gist.Item(Args.Text(arguments, "target"))}";
 }

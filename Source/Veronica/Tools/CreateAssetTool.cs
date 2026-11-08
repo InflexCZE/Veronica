@@ -36,8 +36,15 @@ public sealed class CreateAssetTool : ITool
             : [];
         var provider = Kinds.FirstOrDefault(k => string.Equals(k.Kind, kind, StringComparison.OrdinalIgnoreCase)).Provider
             ?? throw new EditError($"kind is '{kind}'; use {string.Join(" or ", Kinds.Select(k => k.Kind.ToLowerInvariant()))}.");
-        return new ToolResult(await EditorProject.RunAsync(project => CreateAsync(project, provider, kind.ToLowerInvariant(), folderPath, name, inputs), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => CreateAsync(project, provider, kind.ToLowerInvariant(), folderPath, name, inputs), cancellationToken))
+        {
+            Summary = name is { Length: > 0 }
+                ? $"Created {kind.ToLowerInvariant()} {Gist.Clip(name, 40)} in {Gist.Clip(folderPath, 40)}"
+                : $"Created a {kind.ToLowerInvariant()} in {Gist.Clip(folderPath, 40)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"create a {Gist.Clip(Args.Text(arguments, "kind").ToLowerInvariant(), 20)}";
 
     private static async Task<string> CreateAsync(LoadedProject project, Type providerType, string kind, string folderPath, string? name, List<string> inputs)
     {

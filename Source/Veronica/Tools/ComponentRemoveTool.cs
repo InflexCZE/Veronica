@@ -19,6 +19,11 @@ public sealed class ComponentRemoveTool : ITool
     {
         string prefab = Args.Text(arguments, "prefab");
         string component = Args.Text(arguments, "component");
-        return new ToolResult(await EditorProject.RunAsync(project => Block.Open(project, prefab).Remove(component), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Block.Open(project, prefab).Remove(component), cancellationToken))
+        {
+            Summary = $"Removed {Gist.Clip(component, 40)} from {Gist.Item(prefab)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"remove {Gist.Clip(Args.Text(arguments, "component"), 40)} from {Gist.Item(Args.Text(arguments, "prefab"))}";
 }

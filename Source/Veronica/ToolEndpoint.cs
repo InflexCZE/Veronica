@@ -12,7 +12,7 @@ internal static class ToolEndpoint
 {
     public static McpEndpoint Create(ToolSet tools) => new(ReadPort(), tools);
 
-    public static void Start(McpEndpoint endpoint, bool providerNeedsIt, Action<string> showStatus)
+    public static void Start(McpEndpoint endpoint, bool providerNeedsIt, Action<ProviderStatus> showStatus)
     {
         string flag = Install.Settings.Get(Settings.VERONICA_MCP)?.Trim() ?? "";
         if (flag.Length > 0 && flag != "0" && flag != "1")
@@ -26,7 +26,7 @@ internal static class ToolEndpoint
         catch (McpEndpointException e)
         {
             Log.Default.WriteLine($"[Veronica] {LocalModel.AsciiOnly(e.Message)}");
-            showStatus(e.Message);
+            showStatus(new ProviderStatus("Veronica's tools could not start", e.Message));
         }
     }
 

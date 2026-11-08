@@ -84,7 +84,7 @@
 - WebQwen.exe starts with the first round of the first turn and stays up. See `WebQwenProtocol.md`.
 - Stop while WebQwen.exe is starting or loading the model ends the turn, and the load continues. The user's message stays in the transcript.
 - When WebQwen.exe exits or breaks the protocol, the running round fails, the turn shows the error, and the next round starts a new process. A failed request (an `error` event with an id) fails the round but keeps the process. One with the code `context_full`, and a reply that ended as `length` short of its `max_tokens`, are reported as the context wall (`Compaction.md`).
-- The status line shows the start, the load progress, ready, and each round's prompt and decode speed.
+- The strip above the input shows the start, the load progress and a stopped process, and hides once the model is ready (`EditorUi.md`, Chat). Speeds show in the turn's stats footer.
 - The provider holds the Editor's VRAM (`IGpuShare`, `VramSharing.md`) for each whole turn and for each model load until it completes. `GpuShare` counts the holds: the first one frees the Editor's VRAM, the last one gives it back. A hold that cannot free the VRAM fails the turn.
 
 ## OpenAI-compatible provider

@@ -27,8 +27,15 @@ public sealed class DescribeTool : ITool
     {
         string subject = Args.Text(arguments, "subject");
         string member = Args.OptionalText(arguments, "member") ?? "";
-        return new ToolResult(await EditorProject.RunAsync(project => Describe(project, subject, member), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Describe(project, subject, member), cancellationToken))
+        {
+            Summary = "Looked up" + Attempt(arguments)["look up".Length..],
+        };
     }
+
+    public string Attempt(JsonElement arguments) => Args.OptionalText(arguments, "member") is { Length: > 0 } member
+        ? $"look up {Gist.Clip(member, 40)} of {Gist.Item(Args.Text(arguments, "subject"))}"
+        : $"look up {Gist.Item(Args.Text(arguments, "subject"))}";
 
     private static string Describe(LoadedProject project, string subject, string member)
     {

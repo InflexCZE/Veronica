@@ -1,4 +1,5 @@
 using Veronica.Agent;
+using Veronica.Agent.Chat;
 
 namespace Veronica.Ui;
 

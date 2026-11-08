@@ -52,8 +52,13 @@ public sealed class WikiPageTool(Func<IReadOnlyList<WikiPage>> pages) : ITool
         if (page == null)
         {
             var names = all.Count == 0 ? "there are none" : "the pages are: " + string.Join(", ", all.Select(p => p.Name));
-            return Task.FromResult(new ToolResult($"There is no wiki page named '{name}'; {names}."));
+            return Task.FromResult(new ToolResult($"There is no wiki page named '{name}'; {names}.", Refused: true)
+            {
+                Summary = $"Could not open wiki page {Gist.Clip(name, 50)}: there is no such page",
+            });
         }
-        return Task.FromResult(new ToolResult($"# {page.Title}\n\n{page.Body}"));
+        return Task.FromResult(new ToolResult($"# {page.Title}\n\n{page.Body}") { Summary = $"Read wiki page: {Gist.Clip(page.Title, 70)}" });
     }
+
+    public string Attempt(JsonElement arguments) => $"open wiki page {Gist.Text(arguments, "name")}";
 }

@@ -36,7 +36,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
     private bool _announced;
     private int _externalCalls;
 
-    public event Action<string>? StatusChanged;
+    public event Action<ProviderStatus>? StatusChanged;
 
     public IProviderSession OpenSession(string name) => new Session(this);
 
@@ -55,7 +55,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
             _announced = true;
         }
         if (announce)
-            StatusChanged?.Invoke($"Claude Code ({settings.Model}), tools at {url}");
+            StatusChanged?.Invoke(new ProviderStatus($"Claude Code ({settings.Model})", $"tools at {url}", Ready: true));
         return url;
     }
 

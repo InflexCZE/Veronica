@@ -248,8 +248,26 @@ public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPl
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         var skill = SkillTool.Find(skills(), arguments, out var notFound);
-        return Task.FromResult(new ToolResult(skill == null ? notFound : plan.Activate(skill)));
+        if (skill == null)
+            return Task.FromResult(new ToolResult(notFound, Refused: true) { Summary = $"Could not start skill {Gist.Text(arguments, "name")}: there is no such skill" });
+        var before = plan.ActiveSkill;
+        var output = plan.Activate(skill);
+        var after = plan.ActiveSkill;
+        bool active = string.Equals(after, skill.Name, StringComparison.OrdinalIgnoreCase);
+        var result = active && !string.Equals(before, skill.Name, StringComparison.OrdinalIgnoreCase)
+            ? new ToolResult(output) { Summary = $"Started skill: {skill.Name}" }
+            : active
+                ? new ToolResult(output) { Summary = $"Skill {skill.Name} is already active" }
+                : new ToolResult(output, Refused: true)
+                {
+                    Summary = skill.Plan.Count == 0
+                        ? $"Could not start skill {skill.Name}: it has no plan"
+                        : $"Could not start skill {skill.Name}: it is paused under {after}",
+                };
+        return Task.FromResult(result);
     }
+
+    public string Attempt(JsonElement arguments) => $"start skill {Gist.Text(arguments, "name")}";
 }
 
 public sealed class MarkCompletedTool(SkillPlan plan) : ITool
@@ -266,10 +284,24 @@ public sealed class MarkCompletedTool(SkillPlan plan) : ITool
         {"type":"object","properties":{"proof":{"type":"string","description":"One line on what you did for this item"}},"required":["proof"]}
         """;
 
-    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
+    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
+        Task.FromResult(Close(plan, plan.Complete, ToolArgs.Text(arguments, "proof"), "Finished step", "finish a step", "proof"));
+
+    // The closed count tells whether the plan took the call.
+    internal static ToolResult Close(SkillPlan plan, Func<string, string> close, string note, string done, string attempt, string noteName)
     {
-        return Task.FromResult(new ToolResult(plan.Complete(ToolArgs.Text(arguments, "proof"))));
+        var step = plan.Items.FirstOrDefault(i => i.State == PlanItemState.Open)?.Text;
+        int closed = plan.ClosedItems;
+        var output = close(note);
+        if (plan.ClosedItems != closed && step != null)
+            return new ToolResult(output) { Summary = $"{done}: {Gist.Clip(step, 80)}" };
+        return new ToolResult(output, Refused: true)
+        {
+            Summary = step == null ? $"Could not {attempt}: no skill is active" : $"Could not {attempt}: no {noteName} given",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => "finish a step";
 }
 
 public sealed class MarkSkippedTool(SkillPlan plan) : ITool
@@ -285,10 +317,10 @@ public sealed class MarkSkippedTool(SkillPlan plan) : ITool
         {"type":"object","properties":{"reason":{"type":"string","description":"Why the item does not apply"}},"required":["reason"]}
         """;
 
-    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new ToolResult(plan.Skip(ToolArgs.Text(arguments, "reason"))));
-    }
+    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
+        Task.FromResult(MarkCompletedTool.Close(plan, plan.Skip, ToolArgs.Text(arguments, "reason"), "Skipped step", "skip a step", "reason"));
+
+    public string Attempt(JsonElement arguments) => "skip a step";
 }
 
 // Small models act through tool calls; a reply marker beside the plan tools read to them as one more way to close an item.
@@ -303,7 +335,7 @@ public sealed class WaitForUserTool : ITool
     public string Parameters => """{"type":"object","properties":{}}""";
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
-        Task.FromResult(new ToolResult("Waiting for the user."));
+        Task.FromResult(new ToolResult("Waiting for the user.") { Summary = "Waiting for you to do the step in the Editor" });
 }
 
 // An editing tool whose results carry the plan's activation hint while no skill plan is open.
@@ -314,6 +346,8 @@ public sealed class PlanHintedTool(ITool inner, SkillPlan plan) : ITool
     public string Description => inner.Description;
 
     public string Parameters => inner.Parameters;
+
+    public string Attempt(JsonElement arguments) => inner.Attempt(arguments);
 
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {

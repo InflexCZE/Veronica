@@ -34,8 +34,13 @@ public sealed class CreateDefinitionTool : ITool
         string type = Args.Text(arguments, "type");
         string name = FileStem.Of(Args.Text(arguments, "name"), FileExtensions.DEFINITION_DOT) ?? throw new EditError("name is missing.");
         string folderPath = Args.Text(arguments, "folder");
-        return new ToolResult(await EditorProject.RunAsync(project => Create(project, type, name, folderPath), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Create(project, type, name, folderPath), cancellationToken))
+        {
+            Summary = $"Created definition {Gist.Clip(name, 40)} in {Gist.Clip(folderPath, 40)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"create definition {Gist.Clip(Args.Text(arguments, "name"), 40)}";
 
     private static string Create(LoadedProject project, string typeQuery, string name, string folderPath)
     {

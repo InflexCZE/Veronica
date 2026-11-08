@@ -38,8 +38,13 @@ public sealed class ContainsTool : ITool
             var (asset, fields) = Content.Definition(resolved);
             var entries = FieldReader.Entries(fields.Root, path, new ProjectLinks(project, asset));
             return $"{Content.Describe(asset)}:\n{FieldSearch.Search(entries, value, items, scope)}{note}";
-        }, cancellationToken));
+        }, cancellationToken))
+        {
+            Summary = "Searched" + Attempt(arguments)["search".Length..],
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"search {Gist.Item(Args.Text(arguments, "target"))} for \"{Gist.Clip(Args.Text(arguments, "value"), 40)}\"";
 
     // The items the value names, a block with all of its files, so a reference to any of them is a match.
     private static HashSet<Guid> NamedItems(LoadedProject project, string value, out string? tooMany)

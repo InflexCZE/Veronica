@@ -32,6 +32,13 @@ public sealed class ElementAddTool : ITool
             string reply = Elements.Add(fields.Root, path, key, type, new ProjectLinks(project, asset), value: value);
             Content.Save(asset);
             return reply;
-        }, cancellationToken));
+        }, cancellationToken))
+        {
+            Summary = (key ?? value) is { Length: > 0 } named
+                ? $"Added {Gist.Clip(named, 30)} to {Gist.Clip(path, 40)} on {Gist.Item(target)}"
+                : $"Added an element to {Gist.Clip(path, 40)} on {Gist.Item(target)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"add to {Gist.Clip(Args.Text(arguments, "path"), 40)} on {Gist.Item(Args.Text(arguments, "target"))}";
 }

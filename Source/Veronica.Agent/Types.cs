@@ -30,9 +30,16 @@ public sealed record ChatMessage(ChatRole Role, string Content)
 public sealed record ToolDefinition(string Name, string Description, string Parameters);
 
 // Refused: the call did nothing, so a turn-ending tool does not end the turn.
-public sealed record ToolResult(string Output, bool EarnedReward = false, bool Refused = false);
+public sealed record ToolResult(string Output, bool EarnedReward = false, bool Refused = false)
+{
+    // One plain-English line for the chat; the model never sees it.
+    public string? Summary { get; init; }
+}
 
 public sealed record ToolCallContext(bool LastRound);
+
+// Progress is 0..1 while something loads, null when there is nothing to measure.
+public sealed record ProviderStatus(string Text, string? Detail = null, double? Progress = null, bool Ready = false);
 
 // PromptTokens counts only the tokens actually prefilled, not those served from the KV cache.
 // CachedTokens are the ones served from it, when the server reports them.

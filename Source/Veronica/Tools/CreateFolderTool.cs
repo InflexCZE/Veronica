@@ -17,10 +17,15 @@ public sealed class CreateFolderTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         string path = Args.Text(arguments, "folder_path");
-        return new ToolResult(await EditorProject.RunAsync(project =>
+        return await EditorProject.RunAsync(project =>
         {
             var (folder, created) = Folders.Ensure(project, path);
-            return created ? $"Created {Content.Shown(folder)}." : $"{Content.Shown(folder)} already exists.";
-        }, cancellationToken));
+            string shown = Content.Shown(folder);
+            return created
+                ? new ToolResult($"Created {shown}.") { Summary = $"Created folder {Gist.Clip(shown, 70)}" }
+                : new ToolResult($"{shown} already exists.") { Summary = $"Folder {Gist.Clip(shown, 70)} already exists" };
+        }, cancellationToken);
     }
+
+    public string Attempt(JsonElement arguments) => $"create folder {Gist.Clip(Args.Text(arguments, "folder_path"), 70)}";
 }

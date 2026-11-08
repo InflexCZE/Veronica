@@ -12,6 +12,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [RequirementsCheck.md](RequirementsCheck.md) | WebQwen: can this machine run a model, including free VRAM; `Veronica.exe` shows no fit until then |
 | [EngineHang.md](EngineHang.md) | Chat: no way out of a hung engine (owner decision) |
 | [ToolCallHang.md](ToolCallHang.md) | Chat: no way out of a tool call that never returns (owner decision) |
+| [ChatPanelGaps.md](ChatPanelGaps.md) | Chat: per-token streaming cost, one status at a time, timers outside turns |
 | [StalledStream.md](StalledStream.md) | Chat: a reply stream that stops without closing waits until Stop (owner decision) |
 | [QuestionCutBeforeWait.md](QuestionCutBeforeWait.md) | Chat: a question cut to its lead-in before wait_for_user (owner decision) |
 | [McpAskDisconnect.md](McpAskDisconnect.md) | Chat: ask_user from an MCP client that disconnected stays on the card |

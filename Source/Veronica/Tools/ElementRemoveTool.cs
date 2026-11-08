@@ -29,6 +29,11 @@ public sealed class ElementRemoveTool : ITool
             string reply = Elements.Remove(fields.Root, path, new ProjectLinks(project, asset));
             Content.Save(asset);
             return reply;
-        }, cancellationToken));
+        }, cancellationToken))
+        {
+            Summary = "Removed" + Attempt(arguments)["remove".Length..],
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"remove {Gist.Clip(Args.Text(arguments, "path"), 40)} from {Gist.Item(Args.Text(arguments, "target"))}";
 }

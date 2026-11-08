@@ -156,14 +156,17 @@ public sealed class AskUserTool(QuestionBoard board, bool waitsForAnswers) : ITo
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         if (Parse(arguments) is not { } questions)
-            return new ToolResult(MalformedOutput, Refused: true);
+            return new ToolResult(MalformedOutput, Refused: true) { Summary = "Could not ask questions: they were unreadable" };
+        string asked = questions.Count == 1 ? $"Asked: {Gist.Clip(questions[0].Text, 80)}" : $"Asked {questions.Count} questions";
         if (!waitsForAnswers)
         {
             board.Post(questions);
-            return new ToolResult(ShownOutput);
+            return new ToolResult(ShownOutput) { Summary = asked };
         }
-        return new ToolResult(await board.WaitAsync(questions, cancellationToken).ConfigureAwait(false));
+        return new ToolResult(await board.WaitAsync(questions, cancellationToken).ConfigureAwait(false)) { Summary = asked };
     }
+
+    public string Attempt(JsonElement arguments) => "ask questions";
 
     // Small models write the list as JSON text, or a question as a bare string; both are read.
     // Any unreadable entry refuses the whole call: a dropped question would be waited for forever.

@@ -15,6 +15,9 @@ public interface ITool
 
     // False for a tool that may wait on the user: holding the queue would stall every other caller.
     bool Exclusive => true;
+
+    // What the call set out to do, lower case, for the chat's line when it fails: "Could not <attempt>: <reason>".
+    string Attempt(JsonElement arguments) => $"run {Name}";
 }
 
 public static class ToolArgs
@@ -55,10 +58,16 @@ public sealed class ToolSet
     public async Task<ToolResult> ExecuteAsync(ToolCall call, CancellationToken cancellationToken)
     {
         if (call.Name.Length == 0)
-            return new ToolResult($"Your tool call could not be parsed: {call.Arguments}\nWrite the call again in the tool call format.", Refused: true);
+            return new ToolResult($"Your tool call could not be parsed: {call.Arguments}\nWrite the call again in the tool call format.", Refused: true)
+            {
+                Summary = "Could not read a tool call",
+            };
 
         if (!_tools.TryGetValue(call.Name, out var tool))
-            return new ToolResult($"There is no tool named {call.Name}. The tools are: {string.Join(", ", _tools.Keys)}.", Refused: true);
+            return new ToolResult($"There is no tool named {call.Name}. The tools are: {string.Join(", ", _tools.Keys)}.", Refused: true)
+            {
+                Summary = $"Called a tool that does not exist: {Gist.Clip(call.Name, 40)}",
+            };
 
         JsonElement arguments;
         try
@@ -68,10 +77,16 @@ public sealed class ToolSet
         }
         catch (JsonException e)
         {
-            return new ToolResult($"The arguments of {call.Name} are not valid JSON ({e.Message}). Write the call again.", Refused: true);
+            return new ToolResult($"The arguments of {call.Name} are not valid JSON ({e.Message}). Write the call again.", Refused: true)
+            {
+                Summary = $"Could not run {call.Name}: its arguments were unreadable",
+            };
         }
         if (arguments.ValueKind != JsonValueKind.Object)
-            return new ToolResult($"The arguments of {call.Name} must be a JSON object. Write the call again.", Refused: true);
+            return new ToolResult($"The arguments of {call.Name} must be a JSON object. Write the call again.", Refused: true)
+            {
+                Summary = $"Could not run {call.Name}: its arguments were unreadable",
+            };
 
         bool exclusive = tool.Exclusive;
         if (exclusive)
@@ -86,12 +101,28 @@ public sealed class ToolSet
         }
         catch (Exception e)
         {
-            return new ToolResult($"{call.Name} failed: {e.Message}", Refused: true);
+            return new ToolResult($"{call.Name} failed: {e.Message}", Refused: true)
+            {
+                Summary = $"Could not {Attempt(tool, arguments)}: {Gist.FirstLine(e.Message)}",
+            };
         }
         finally
         {
             if (exclusive)
                 _running.Release();
+        }
+    }
+
+    // The arguments that failed the call may well fail the phrase too.
+    private static string Attempt(ITool tool, JsonElement arguments)
+    {
+        try
+        {
+            return tool.Attempt(arguments);
+        }
+        catch (Exception)
+        {
+            return $"run {tool.Name}";
         }
     }
 }

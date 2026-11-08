@@ -33,8 +33,13 @@ public sealed class PresentGraphTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         var graph = Graph.Parse(arguments);
-        return new ToolResult(await EditorProject.RunAsync(project => Present(project, graph), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Present(project, graph), cancellationToken))
+        {
+            Summary = $"Put a graph of {Gist.Count(graph.Nodes.Count, "item", "items")} on the Board",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => "put a graph on the Board";
 
     private static string Present(LoadedProject project, Graph graph)
     {

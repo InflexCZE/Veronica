@@ -1,8 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
+using System.Diagnostics;
 using Avalonia.Threading;
 using Keen.VRage.Editor.Services.Docking;
 using Veronica.Agent;
+using Veronica.Agent.Chat;
 using Veronica.Agent.Eval;
 using Veronica.Agent.Tools;
 
@@ -12,11 +13,15 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 {
     private const string ClearCommand = "/clear";
 
+    private static readonly Stopwatch Clock = Stopwatch.StartNew();
+
     private readonly Conversation _conversation;
     private readonly ToolSet _tools;
     private readonly SkillPlan _plan;
+    private readonly ChatTimeline _timeline;
+    private readonly DispatcherTimer _ticker;
     private string _draft = "";
-    private string _status = "";
+    private ProviderStatus? _state;
     private string _updateNotice = "";
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
@@ -46,10 +51,43 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         }
         SendCommand = new UiCommand(SendOrStop);
         SubmitCommand = new UiCommand(Submit);
+        SuggestCommand = new UiCommand(p => { if (p is string text) TrySend(text); });
+        DismissUpdateCommand = new UiCommand(() => UpdateNotice = "");
+        _timeline = new ChatTimeline(Messages, () => Clock.Elapsed, new HashSet<string> { AskUserTool.ToolName });
+        _ticker = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _ticker.Tick += (_, _) => _timeline.Tick();
+        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowSuggestions));
     }
 
     // Any thread.
-    public void ShowStatus(string status) => Dispatcher.UIThread.Post(() => Status = status);
+    public void ShowStatus(ProviderStatus status) => Dispatcher.UIThread.Post(() =>
+    {
+        _state = status;
+        OnPropertyChanged(nameof(ShowState));
+        OnPropertyChanged(nameof(StateText));
+        OnPropertyChanged(nameof(StateDetail));
+        OnPropertyChanged(nameof(HasProgress));
+        OnPropertyChanged(nameof(StateProgress));
+    });
+
+    // The strip above the input says only what keeps the model from being ready.
+    public bool ShowState => _state is { Ready: false };
+
+    public string StateText => _state?.Text ?? "";
+
+    public string StateDetail => _state?.Detail ?? "";
+
+    public bool HasProgress => _state?.Progress != null;
+
+    public double StateProgress => (_state?.Progress ?? 0) * 100;
+
+    public IReadOnlyList<string> Suggestions { get; } = ["Hi", "Can you help me?", "I would like to make a new thruster Block"];
+
+    public bool ShowSuggestions => Messages.Count == 0 && Card == null && !IsBusy;
+
+    public UiCommand SuggestCommand { get; }
+
+    public UiCommand DismissUpdateCommand { get; }
 
     // The dock item's content is built from a template with no data, so ChatView looks its view model
     // up here, the way the Editor's own panels use its view model registry.
@@ -66,18 +104,6 @@ public sealed class ChatPanelViewModel : DockItemViewModel
                 return;
             _draft = value;
             OnPropertyChanged(nameof(Draft));
-        }
-    }
-
-    public string Status
-    {
-        get => _status;
-        private set
-        {
-            if (_status == value)
-                return;
-            _status = value;
-            OnPropertyChanged(nameof(Status));
         }
     }
 
@@ -122,6 +148,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
                 return;
             _card = value;
             OnPropertyChanged(nameof(Card));
+            OnPropertyChanged(nameof(ShowSuggestions));
         }
     }
 
@@ -243,10 +270,13 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         foreach (var full in Messages.OfType<ContextFullItem>())
             full.Close();
         var turn = _turn = new CancellationTokenSource();
+        _timeline.BeginTurn();
+        _ticker.Start();
         BusyChanged();
         var run = Run;
         var outcome = TurnOutcome.Answered;
         string? error = null;
+        ContextFullTurnException? contextFull = null;
         try
         {
             run?.TurnStarted();
@@ -260,12 +290,16 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             outcome = turn.IsCancellationRequested ? TurnOutcome.Stopped : TurnOutcome.Failed;
             error = e.Message;
             if (e is ContextFullTurnException full && !turn.IsCancellationRequested)
-                Messages.Add(new ContextFullItem(full.Message, full.CanCompact ? StartCompact : null, () => _ = ClearAsync()));
-            else
-                Messages.Add(new NoticeItem(e.Message, true));
+                contextFull = full;
         }
         finally
         {
+            // The turn's callbacks are posted; they all land before the turn is closed.
+            await Dispatcher.UIThread.InvokeAsync(static () => { });
+            _ticker.Stop();
+            _timeline.EndTurn(outcome == TurnOutcome.Failed && contextFull == null ? error : null);
+            if (contextFull != null)
+                Messages.Add(new ContextFullItem(contextFull.Message, contextFull.CanCompact ? StartCompact : null, () => _ = ClearAsync()));
             // Not disposed: Stop can complete the turn inline, inside the token's own Cancel().
             _turn = null;
             BusyChanged();
@@ -288,7 +322,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
                 await _turnTask;
             await _conversation.ClearAsync();
             _plan.Reset();
-            Messages.Clear();
+            _timeline.Clear();
         }
         finally
         {
@@ -300,24 +334,25 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     {
         OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(SendLabel));
+        OnPropertyChanged(nameof(ShowSuggestions));
     }
 
     // Turn callbacks arrive on worker threads, in order; posting keeps that order on the UI thread.
     private sealed class UiHost(ChatPanelViewModel panel) : ITurnHost
     {
-        private AssistantItem? _reply;
+        private readonly int _generation = panel._timeline.Generation;
 
-        public void OnRoundStart() => Post(() => _reply = null);
+        private ChatTimeline Timeline => panel._timeline;
 
-        public void OnReasoning(string delta) => Post(() => Reply().AppendReasoning(delta));
+        public void OnRoundStart() => Post(() => Timeline.RoundStart());
 
-        public void OnText(string delta) => Post(() => Reply().AppendText(delta));
+        public void OnReasoning(string delta) => Post(() => Timeline.Reasoning(delta));
 
-        public void OnRoundStats(RoundStats stats) => Post(() => panel.Status = string.Format(CultureInfo.InvariantCulture,
-            "{0} prompt tokens at {1:F0} tok/s, {2} generated at {3:F1} tok/s",
-            stats.PromptTokens, stats.PrefillTokensPerSecond, stats.CompletionTokens, stats.DecodeTokensPerSecond));
+        public void OnText(string delta) => Post(() => Timeline.Text(delta));
 
-        public void OnNotice(string text) => Post(() => panel.Messages.Add(new NoticeItem(text, false)));
+        public void OnRoundStats(RoundStats stats) => Post(() => Timeline.RoundStats(stats));
+
+        public void OnNotice(string text) => Post(() => Timeline.Notice(text));
 
         public void AppendTranscript(ChatMessage message)
         {
@@ -325,58 +360,50 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 
         public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
         {
-            var activity = new ToolActivity(call.Name.Length > 0 ? $"{call.Name} {call.Arguments}" : "unreadable tool call");
-            Post(() => Reply().Tools.Add(activity));
+            Post(() => Timeline.ToolStarted());
             try
             {
                 var result = await panel._tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);
-                Post(() => activity.Complete(result.Output));
+                Post(() => Timeline.ToolDone(call.Name, result));
                 return result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                Post(() => activity.Complete("stopped"));
+                Post(() => Timeline.ToolStopped(call.Name));
                 return null;
             }
         }
 
-        private AssistantItem Reply()
+        private void Post(Action action) => Dispatcher.UIThread.Post(() =>
         {
-            if (_reply == null)
-            {
-                _reply = new AssistantItem();
-                panel.Messages.Add(_reply);
-            }
-            return _reply;
-        }
-
-        private static void Post(Action action) => Dispatcher.UIThread.Post(action);
+            if (Timeline.Generation == _generation)
+                action();
+        });
     }
 
     // A subagent gets a card of its own in the chat: its steps as it works, then its answer.
     private async Task<SubAgentResult> RunSubAgentAsync(SubAgentRequest request, CancellationToken cancellationToken)
     {
-        var card = new SubAgentItem(request.Title);
-        Dispatcher.UIThread.Post(() => Messages.Add(card));
+        var card = await Dispatcher.UIThread.InvokeAsync(() => _timeline.StartSubAgent(request.Title));
         try
         {
-            var result = await SubAgent.RunAsync(_provider, request, host => new CardHost(this, card, host), cancellationToken).ConfigureAwait(false);
-            Dispatcher.UIThread.Post(() => card.Finish(result.Text ?? "(no answer)", result.RoundCap ? "ran out of rounds" : "finished"));
+            var result = await SubAgent.RunAsync(_provider, request, host => new CardHost(card, host), cancellationToken).ConfigureAwait(false);
+            Dispatcher.UIThread.Post(() => card.Finish(result.Text ?? "", result.RoundCap ? "Ran out of rounds" : "Finished"));
             return result;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            Dispatcher.UIThread.Post(() => card.Finish("", "stopped"));
+            Dispatcher.UIThread.Post(() => card.Finish("", "Stopped"));
             throw;
         }
         catch (Exception e)
         {
-            Dispatcher.UIThread.Post(() => card.Finish("", "failed: " + e.Message));
+            Dispatcher.UIThread.Post(() => card.Finish("", "Failed: " + e.Message));
             throw;
         }
     }
 
-    private sealed class CardHost(ChatPanelViewModel panel, SubAgentItem card, ITurnHost host) : ITurnHost
+    private sealed class CardHost(SubAgentPart card, ITurnHost host) : ITurnHost
     {
         public void OnRoundStart() => host.OnRoundStart();
 
@@ -384,18 +411,16 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 
         public void OnReasoning(string delta) => host.OnReasoning(delta);
 
-        public void OnRoundStats(RoundStats stats)
-        {
-            Dispatcher.UIThread.Post(() => panel.Status = string.Format(CultureInfo.InvariantCulture,
-                "{0}: {1} prompt tokens at {2:F0} tok/s, {3} generated at {4:F1} tok/s",
-                card.Title, stats.PromptTokens, stats.PrefillTokensPerSecond, stats.CompletionTokens, stats.DecodeTokensPerSecond));
-            host.OnRoundStats(stats);
-        }
+        public void OnRoundStats(RoundStats stats) => host.OnRoundStats(stats);
 
-        public Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
+        public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
         {
-            Dispatcher.UIThread.Post(() => card.Steps.Add($"{call.Name} {call.Arguments}"));
-            return host.OnToolCallAsync(call, context, cancellationToken);
+            var result = await host.OnToolCallAsync(call, context, cancellationToken).ConfigureAwait(false);
+            var step = result == null
+                ? ChatTimeline.Stopped(call.Name)
+                : ChatTimeline.Line(call.Name, result);
+            Dispatcher.UIThread.Post(() => card.AddStep(step));
+            return result;
         }
 
         public void OnNotice(string text) => host.OnNotice(text);

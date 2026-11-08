@@ -33,13 +33,21 @@ The panel that shows `present_graph` (`EditorTools.md`).
 
 ## Chat
 
-- Each tool call shows as a dim line in the reply's bubble, `name arguments -> result`. The text after a tool call starts a new bubble.
-- Each reply shows its reasoning in a collapsible Thinking block above the answer. The block is expanded while the reasoning streams and collapses when the answer starts.
-- During a turn the Send button becomes Stop. Enter only sends; it never stops a turn.
-- `/clear` starts a new chat; a running turn is stopped first.
-- A status line under the input shows the model's state and the last round's speed.
-- Notices (round budget) and errors appear in the chat as plain lines.
+- **Turn:** one "Veronica" header in its own blue (`#4DABF7`, the one colour outside the Editor theme), then thinking, text and tool lines in the order they happened, across all rounds. A message of the user's inside a turn (answers to a blocked question) starts a new block under its own header.
+- **Your message:** a full-width grey bubble headed "You".
+- **Thinking:** each round opens a one-line `Thinking Ns` with the latest reasoning trimmed from the left, so the newest words show. It goes once the round moves on to text or a tool, unless it was clicked. A click expands the full reasoning and keeps the line; another click collapses it to one line. A kept line reads `Thought for Ns` once the thinking ends.
+- **Busy:** a pulsing blue dot on live thinking, on a running subagent, and under the turn while nothing else shows that it works (a tool running).
+- **Tool lines:** each tool returns a plain-English line for the chat next to the output the model reads (`ToolResult.Summary`); a tool without one shows its name and the output's first line. The line shows as `-> Read LargeDoor.def` in dim text once the tool has finished; clicking it expands the text the model received. A refused or failed call's line is red. `ask_user` has no line: its card and the answers already show.
+- **Text:** a small subset of Markdown: fenced and inline code, bold, and bare links, which open in the browser. The rest shows as typed, line breaks included. An unclosed fence shows as code while it streams.
+- **Stats:** after the turn, a footer with the speeds over all its rounds, the tokens read and written, and the context the last round left: `read 385 tok/s . write 27 tok/s . 5.1k read / 224 written . context 5.4k`. With several rounds, hovering it lists them.
+- **Subagent:** a bordered card with the title and elapsed seconds, and its tool lines while it runs. Once done it shows its outcome, with Show / Hide for the steps and its answer.
+- **Notices** (round budget, compaction) are small orange lines in the turn. A failed turn ends with a red "Turn failed" box with the error.
 - A turn that ended at a full context it could not compact past (`Compaction.md`) shows a card in the chat: the error, then option rows in the question card's style, Compact (when compacting again is allowed) and Clear. The rows go once one is picked or another turn starts.
+- **Empty chat:** suggestion chips that send a starter message.
+- **Above the input:**
+  - a dismissible banner when a newer Veronica exists, with Update;
+  - a dim strip while the model is not ready (loading with a progress bar, stopped, unavailable). It hides once the provider is ready.
+- **Input:** Enter sends, Shift+Enter starts a new line. During a turn the Send button becomes Stop; Enter never stops a turn. `/clear` starts a new chat; a running turn is stopped first.
 - The view follows a streaming reply unless the user has scrolled up.
 
 ## Question card

@@ -36,8 +36,14 @@ public sealed class CreatePartialTool : ITool
         string? name = FileStem.Of(Args.OptionalText(arguments, "name"), FileExtensions.PARTIAL_DEFINITION_DOT);
         if (kind is not (Override or Copy))
             throw new EditError($"kind is '{kind}'; use override or copy.");
-        return new ToolResult(await EditorProject.RunAsync(project => CreateAsync(project, source, kind, folderPath, name), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => CreateAsync(project, source, kind, folderPath, name), cancellationToken))
+        {
+            Summary = $"Created {(kind == Override ? "an override" : "a copy")} of {Gist.Item(source)} in {Gist.Clip(folderPath, 40)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) =>
+        $"create {(Args.OptionalText(arguments, "kind")?.ToLowerInvariant() == Override ? "an override" : "a copy")} of {Gist.Item(Args.Text(arguments, "source"))}";
 
     private static async Task<string> CreateAsync(LoadedProject project, string source, string kind, string folderPath, string? name)
     {

@@ -134,8 +134,29 @@ public sealed class EditorShell
         var tools = new ToolSet([.. Tools, new AskUserTool(questions, waitsForAnswers: ModelProvider.NeedsEndpoint)]);
         // The researcher reads the chat's transcript, so an MCP client has nothing to ask it about.
         var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).With(new AskUserTool(questions, waitsForAnswers: true)));
-        var provider = EvalHook.Record(ModelProvider.Create(status => panel?.ShowStatus(status), endpoint));
-        panel = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions);
+        ProviderStatus? early = null;
+        var gate = new Lock();
+        var provider = EvalHook.Record(ModelProvider.Create(status =>
+        {
+            ChatPanelViewModel target;
+            lock (gate)
+            {
+                if (panel == null)
+                {
+                    early = status;
+                    return;
+                }
+                target = panel;
+            }
+            target.ShowStatus(status);
+        }, endpoint));
+        var created = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions);
+        lock (gate)
+        {
+            panel = created;
+            if (early != null)
+                created.ShowStatus(early);
+        }
         EvalHook.Attach(panel);
         UpdateCheck.Start(panel);
         ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);

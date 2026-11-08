@@ -80,7 +80,7 @@ public static class SubAgent
         public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
         {
             if (Context >= contextLimit)
-                return new ToolResult(request.ContextFullOutput);
+                return new ToolResult(request.ContextFullOutput) { Summary = $"Did not run {call.Name}: no room left to read more" };
             try
             {
                 var result = await tools.ExecuteAsync(call, cancellationToken).ConfigureAwait(false);

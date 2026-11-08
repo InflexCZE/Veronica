@@ -31,8 +31,13 @@ public sealed class CreatePrefabTool : ITool
         string folderPath = Args.Text(arguments, "folder");
         var prefab = await EditorProject.RunAsync(project => CreateAsync(project, template, name, folderPath), cancellationToken);
         await TemplateRepairs.ApplyAsync(prefab, cancellationToken);
-        return new ToolResult(await EditorProject.RunAsync(_ => Reply(prefab), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(_ => Reply(prefab), cancellationToken))
+        {
+            Summary = $"Created prefab {Gist.Clip(name, 40)} from {Gist.Item(prefab.Template)} ({Gist.Count(prefab.Files.Count, "file", "files")})",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"create prefab {Gist.Clip(Args.Text(arguments, "name"), 40)}";
 
     private static string Reply(GeneratedPrefab prefab)
     {

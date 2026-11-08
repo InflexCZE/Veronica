@@ -22,7 +22,7 @@ internal static class ModelProvider
 
     public static bool NeedsEndpoint => IsClaude;
 
-    public static IProvider Create(Action<string> showStatus, McpEndpoint endpoint)
+    public static IProvider Create(Action<ProviderStatus> showStatus, McpEndpoint endpoint)
     {
         if (IsOpenAi)
         {
@@ -50,7 +50,7 @@ internal static class ModelProvider
         if (webQwen == null)
         {
             Log.Default.WriteLine($"[Veronica] {unavailable}");
-            showStatus(unavailable!);
+            showStatus(new ProviderStatus("The local model is not available", unavailable));
             return new UnavailableProvider(unavailable!);
         }
         webQwen.StatusChanged += showStatus;

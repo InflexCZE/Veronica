@@ -18,15 +18,18 @@ public sealed class FindTemplateTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         string? filter = Args.OptionalText(arguments, "filter");
-        return new ToolResult(await EditorProject.RunAsync(project =>
+        string matching = filter is { Length: > 0 } ? $" matching \"{Gist.Clip(filter, 40)}\"" : "";
+        return await EditorProject.RunAsync(project =>
         {
             var found = Templates.Filter(PrefabTemplates.List(project).Keys, filter);
             if (found.Count == 0)
-                return $"No template matches '{filter}'.";
+                return new ToolResult($"No template matches '{filter}'.") { Summary = $"Found no prefab template{matching}" };
             var lines = found.Take(Templates.MaxListed).ToList();
             if (found.Count > Templates.MaxListed)
                 lines.Add($"... {found.Count - Templates.MaxListed} more; add words to the filter.");
-            return string.Join("\n", lines);
-        }, cancellationToken));
+            return new ToolResult(string.Join("\n", lines)) { Summary = $"Found {Gist.Count(found.Count, "prefab template", "prefab templates")}{matching}" };
+        }, cancellationToken);
     }
+
+    public string Attempt(JsonElement arguments) => "list prefab templates";
 }

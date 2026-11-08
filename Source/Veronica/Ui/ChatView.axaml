@@ -1,12 +1,16 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:Veronica.Ui"
+             xmlns:chat="using:Veronica.Agent.Chat"
              x:Class="Veronica.Ui.ChatView"
              x:DataType="ui:ChatPanelViewModel">
 
   <UserControl.Resources>
     <FontFamily x:Key="VeronicaUiFont">avares://VRage.UI.Shared/Resources/Fonts/Roboto/Roboto-*.ttf#Roboto</FontFamily>
     <FontFamily x:Key="VeronicaTextFont">Segoe UI, Segoe UI Emoji, Segoe UI Symbol</FontFamily>
+    <FontFamily x:Key="VeronicaMonoFont">Cascadia Mono, Consolas, Segoe UI Symbol</FontFamily>
+    <SolidColorBrush x:Key="VeronicaBlue" Color="#4DABF7" />
+    <SolidColorBrush x:Key="VeronicaBanner" Color="#EA9A00" Opacity="0.3" />
   </UserControl.Resources>
 
   <!-- The Editor's global TextBlock style uses Roboto by relative URI, and Avalonia's glyph fallback
@@ -16,18 +20,32 @@
     <Style Selector=":is(TextBlock)">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaUiFont}" />
     </Style>
+    <Style Selector=":is(TextBlock).model">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style Selector="SelectableTextBlock.message">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="FontSize" Value="{DynamicResource MediumFontSize}" />
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
     </Style>
-    <Style Selector="SelectableTextBlock.reasoning">
-      <Setter Property="Opacity" Value="0.6" />
-    </Style>
-    <Style Selector="SelectableTextBlock.tool">
+    <Style Selector=":is(TextBlock).small">
       <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
-      <Setter Property="Margin" Value="0,2,0,0" />
+    </Style>
+    <Style Selector=":is(TextBlock).dim">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+      <Setter Property="Opacity" Value="0.65" />
+    </Style>
+    <Style Selector=":is(TextBlock).italic">
+      <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style Selector=":is(TextBlock).mono">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaMonoFont}" />
+    </Style>
+    <Style Selector=":is(TextBlock).failed">
+      <Setter Property="Foreground" Value="{DynamicResource ErrorColor}" />
+      <Setter Property="Opacity" Value="0.85" />
     </Style>
     <Style Selector="TextBox">
       <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
@@ -35,41 +53,59 @@
     <Style Selector="TextBlock.author">
       <Setter Property="FontWeight" Value="Bold" />
       <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
-      <Setter Property="Foreground" Value="{DynamicResource HighlightedTextColor}" />
-    </Style>
-    <Style Selector="Border.message">
-      <Setter Property="Background" Value="{DynamicResource SemiDarkGrayColor}" />
-      <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Padding" Value="8,6" />
-      <Setter Property="Margin" Value="0,0,24,6" />
-    </Style>
-    <Style Selector="Border.message.user">
-      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
-      <Setter Property="Margin" Value="24,0,0,6" />
-    </Style>
-    <Style Selector="Border.message.notice">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Margin" Value="0,0,0,6" />
-    </Style>
-    <Style Selector="Border.message.notice.error SelectableTextBlock">
-      <Setter Property="Foreground" Value="IndianRed" />
-    </Style>
-    <Style Selector="TextBlock.model">
-      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
-      <Setter Property="TextWrapping" Value="Wrap" />
-      <Setter Property="FontSize" Value="{DynamicResource MediumFontSize}" />
       <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
     </Style>
+    <Style Selector="TextBlock.author.veronica">
+      <Setter Property="Foreground" Value="{StaticResource VeronicaBlue}" />
+      <Setter Property="Margin" Value="0,0,0,2" />
+    </Style>
+    <Style Selector="Border.user">
+      <Setter Property="Background" Value="{DynamicResource SemiLightestGrayColor}" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="6" />
+    </Style>
+    <Style Selector="Border.quote">
+      <Setter Property="BorderBrush" Value="{DynamicResource LightestGrayColor}" />
+      <Setter Property="BorderThickness" Value="2,0,0,0" />
+      <Setter Property="Padding" Value="10,0,0,0" />
+      <Setter Property="Margin" Value="0,2,0,0" />
+    </Style>
+    <Style Selector=":is(Panel).clickable">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Ellipse.pulse">
+      <Setter Property="Width" Value="8" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="Fill" Value="{StaticResource VeronicaBlue}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Style.Animations>
+        <Animation Duration="0:0:0.9" IterationCount="Infinite" PlaybackDirection="Alternate">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0.2" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
     <Style Selector="Border.card">
-      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LightestGrayColor}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Margin" Value="0,0,0,6" />
       <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.error">
+      <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}" />
+      <Setter Property="Background" Value="{DynamicResource SecondaryColor}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="8,6" />
     </Style>
     <Style Selector="Button.option">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LightestGrayColor}" />
       <Setter Property="BorderThickness" Value="0,1,0,0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Padding" Value="8,6" />
@@ -78,15 +114,15 @@
       <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.option:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="Background" Value="{DynamicResource SemiLightGrayColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LightestGrayColor}" />
     </Style>
     <Style Selector="Button.option:pressed">
       <Setter Property="RenderTransform" Value="none" />
     </Style>
     <Style Selector="Button.option:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource PrimaryAccentDarkColor}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentDarkColor}" />
+      <Setter Property="Background" Value="{DynamicResource SemiLightGrayColor}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LightestGrayColor}" />
     </Style>
     <Style Selector="Button.icon">
       <Setter Property="Background" Value="Transparent" />
@@ -100,159 +136,228 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="Background" Value="{DynamicResource SemiLightestGrayColor}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.stop">
+      <Setter Property="Background" Value="{DynamicResource SecondaryColor}" />
+    </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="6">
-    <Border Grid.Row="0"
-            IsVisible="{Binding HasUpdate}"
-            Classes="message"
-            Margin="0,0,0,6">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding UpdateNotice}"
-                   TextWrapping="Wrap"
-                   VerticalAlignment="Center"
-                   Foreground="{DynamicResource PrimaryTextColor}" />
-        <Button Grid.Column="1"
-                Content="Update"
-                Margin="6,0,0,0"
-                Command="{Binding UpdateCommand}" />
-      </Grid>
-    </Border>
-    <ScrollViewer x:Name="MessagesScroll" Grid.Row="1">
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="chat:UserItem">
+      <Border Classes="user" Margin="0,0,0,12">
+        <StackPanel>
+          <TextBlock Classes="author" Text="You" />
+          <SelectableTextBlock Classes="message" Text="{Binding Text}" />
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:TurnItem">
+      <StackPanel Margin="0,0,0,12">
+        <TextBlock Classes="author veronica" Text="Veronica" />
+        <ItemsControl ItemsSource="{Binding Parts}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+        <Ellipse Classes="pulse" IsVisible="{Binding Waiting}" HorizontalAlignment="Left" Margin="0,6,0,0" />
+        <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,8,0,0" IsVisible="{Binding HasStats}"
+                    Background="Transparent" ToolTip.Tip="{Binding StatsDetail}">
+          <Path Data="M1,10 A6,6 0 1 1 13,10 M7,10 L10,5" Stroke="{DynamicResource PrimaryTextColor}" Opacity="0.65"
+                StrokeThickness="1.3" Width="14" Height="11" VerticalAlignment="Center" />
+          <TextBlock Classes="dim small mono" Text="{Binding Stats}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:ThinkingPart">
       <StackPanel>
-      <ItemsControl ItemsSource="{Binding Messages}">
-        <ItemsControl.DataTemplates>
-          <DataTemplate DataType="ui:UserItem">
-            <Border Classes="message user">
-              <StackPanel>
-                <TextBlock Classes="author" Text="You" />
-                <SelectableTextBlock Classes="message" Text="{Binding Text}" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-          <DataTemplate DataType="ui:AssistantItem">
-            <Border Classes="message">
-              <StackPanel>
-                <TextBlock Classes="author" Text="Veronica" />
-                <Expander Header="Thinking"
-                          IsVisible="{Binding HasReasoning}"
-                          IsExpanded="{Binding ThinkingExpanded, Mode=TwoWay}"
-                          HorizontalAlignment="Stretch"
-                          Margin="0,2,0,2">
-                  <SelectableTextBlock Classes="message reasoning" Text="{Binding Reasoning}" />
-                </Expander>
-                <SelectableTextBlock Classes="message" Text="{Binding Text}" IsVisible="{Binding HasText}" />
-                <ItemsControl ItemsSource="{Binding Tools}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="ui:ToolActivity">
-                      <SelectableTextBlock Classes="message reasoning tool" Text="{Binding Text}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-          <DataTemplate DataType="ui:SubAgentItem">
-            <Border Classes="message notice">
-              <Expander Header="{Binding Headline}" HorizontalAlignment="Stretch">
+        <Grid ColumnDefinitions="Auto,Auto,*" Classes="clickable" Tapped="OnThinkingTapped">
+          <Ellipse Grid.Column="0" Classes="pulse" IsVisible="{Binding Live}" Margin="0,0,6,0" />
+          <TextBlock Grid.Column="1" Classes="dim small italic model" Text="{Binding Label}" TextWrapping="NoWrap" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Classes="dim small italic model" Text="{Binding Tail}" IsVisible="{Binding ShowTail}"
+                     TextWrapping="NoWrap" TextTrimming="LeadingCharacterEllipsis" Margin="6,0,0,0" VerticalAlignment="Center" />
+        </Grid>
+        <Border Classes="quote" IsVisible="{Binding Expanded}">
+          <SelectableTextBlock Classes="dim small italic model" Text="{Binding Text}" />
+        </Border>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:TextPart">
+      <ui:MarkupView Blocks="{Binding Blocks}" />
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:ToolPart">
+      <StackPanel>
+        <Panel Classes="clickable" Tapped="OnToolTapped">
+          <TextBlock Classes="dim small model" Classes.failed="{Binding Failed}"
+                     Text="{Binding Summary, StringFormat='-&gt; {0}'}" />
+        </Panel>
+        <Border Classes="quote" IsVisible="{Binding Expanded}">
+          <SelectableTextBlock Classes="dim small mono" Text="{Binding Detail}" TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:NoticePart">
+      <SelectableTextBlock Classes="small model" Foreground="{DynamicResource WarningColor}" Text="{Binding Text}" />
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:ErrorPart">
+      <Border Classes="error">
+        <StackPanel>
+          <TextBlock Classes="author" Text="Turn failed" />
+          <SelectableTextBlock Classes="message" Text="{Binding Text}" />
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="chat:SubAgentPart">
+      <Border Classes="card" Padding="8,6">
+        <StackPanel Spacing="4">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Ellipse Grid.Column="0" Classes="pulse" IsVisible="{Binding Running}" Margin="0,0,6,0" />
+            <TextBlock Grid.Column="1" Classes="author model" Text="{Binding Title}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Column="2" Classes="dim small" Text="{Binding Elapsed}" Margin="6,0,0,0" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !Running}">
+            <TextBlock Grid.Column="0" Classes="dim small model" Text="{Binding Outcome}" />
+            <Panel Grid.Column="1" Classes="clickable" Tapped="OnSubAgentTapped" Margin="6,0,0,0">
+              <TextBlock Classes="small" Foreground="{DynamicResource HyperlinkColor}" Text="{Binding ToggleLabel}" />
+            </Panel>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Steps}" IsVisible="{Binding ShowSteps}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="4" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+          </ItemsControl>
+          <Border Classes="quote" IsVisible="{Binding Expanded}">
+            <SelectableTextBlock Classes="dim small model" Text="{Binding Answer}" IsVisible="{Binding HasAnswer}" />
+          </Border>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:ContextFullItem">
+      <Border Classes="card" Margin="0,0,0,12">
+        <StackPanel>
+          <SelectableTextBlock Classes="message" Margin="8,6" Foreground="{DynamicResource ErrorColor}" Text="{Binding Text}" />
+          <Button Classes="option" Command="{Binding CompactCommand}" IsVisible="{Binding ShowCompact}">
+            <TextBlock Classes="model" Text="Compact: summarize the conversation and go on" />
+          </Button>
+          <Button Classes="option" Command="{Binding ClearCommand}" IsVisible="{Binding Open}">
+            <TextBlock Classes="model" Text="Clear: start a new chat" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid RowDefinitions="*,Auto,Auto,Auto,Auto" Margin="6,10,6,6">
+    <ScrollViewer x:Name="MessagesScroll" Grid.Row="0">
+      <StackPanel Margin="0,0,8,0">
+        <ItemsControl ItemsSource="{Binding Messages}" />
+        <ContentControl Content="{Binding Card}" IsVisible="{Binding Card, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate DataType="ui:QuestionCard">
+              <Border Classes="card" Margin="0,0,0,12">
                 <StackPanel>
-                  <ItemsControl ItemsSource="{Binding Steps}">
+                  <Grid ColumnDefinitions="*,Auto" Background="{DynamicResource SemiLightGrayColor}">
+                    <TextBlock Grid.Column="0" Classes="model" FontWeight="Bold" Margin="8,6" Text="{Binding Question}"
+                               Foreground="{DynamicResource PrimaryTextColor}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
+                      <Button Classes="icon" Content="&lt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoBack}" Command="{Binding PreviousCommand}" ToolTip.Tip="Previous question" />
+                      <TextBlock Text="{Binding Position}" IsVisible="{Binding Paging}" VerticalAlignment="Center" Classes="dim small" />
+                      <Button Classes="icon" Content="&gt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoForward}" Command="{Binding NextCommand}" ToolTip.Tip="Next question" />
+                      <Button Classes="icon" Content="X" Command="{Binding CloseCommand}" ToolTip.Tip="Close without answering" />
+                    </StackPanel>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding HasOptions}">
                     <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="x:String">
-                        <SelectableTextBlock Classes="message reasoning tool" Text="{Binding}" />
+                      <DataTemplate DataType="ui:QuestionOption">
+                        <Button Classes="option" Command="{Binding Pick}">
+                          <TextBlock Classes="model" Text="{Binding Text}" Foreground="{DynamicResource PrimaryTextColor}" />
+                        </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <SelectableTextBlock Classes="message reasoning" Text="{Binding Answer}" IsVisible="{Binding HasAnswer}" Margin="0,4,0,0" />
+                  <Grid ColumnDefinitions="*,Auto" Margin="8,6">
+                    <TextBox Grid.Column="0" Text="{Binding Typed}" Watermark="Type your answer" TextWrapping="Wrap" MaxHeight="120">
+                      <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding CommitCommand}" />
+                      </TextBox.KeyBindings>
+                    </TextBox>
+                    <Button Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Bottom" Content="{Binding CommitLabel}" Command="{Binding CommitCommand}" />
+                  </Grid>
                 </StackPanel>
-              </Expander>
-            </Border>
-          </DataTemplate>
-          <DataTemplate DataType="ui:NoticeItem">
-            <Border Classes="message notice" Classes.error="{Binding IsError}">
-              <SelectableTextBlock Classes="message reasoning" Text="{Binding Text}" />
-            </Border>
-          </DataTemplate>
-          <DataTemplate DataType="ui:ContextFullItem">
-            <Border Classes="card">
-              <StackPanel>
-                <Border Classes="message notice error" Margin="8,6">
-                  <SelectableTextBlock Classes="message" Text="{Binding Text}" />
-                </Border>
-                <Button Classes="option" Command="{Binding CompactCommand}" IsVisible="{Binding ShowCompact}">
-                  <TextBlock Classes="model" Text="Compact: summarize the conversation and go on" />
-                </Button>
-                <Button Classes="option" Command="{Binding ClearCommand}" IsVisible="{Binding Open}">
-                  <TextBlock Classes="model" Text="Clear: start a new chat" />
-                </Button>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.DataTemplates>
-      </ItemsControl>
-      <ContentControl Content="{Binding Card}" IsVisible="{Binding Card, Converter={x:Static ObjectConverters.IsNotNull}}">
-        <ContentControl.ContentTemplate>
-          <DataTemplate DataType="ui:QuestionCard">
-            <Border Classes="card">
-              <StackPanel>
-                <Grid ColumnDefinitions="*,Auto" Background="{DynamicResource SemiDarkGrayColor}">
-                  <TextBlock Grid.Column="0" Classes="model" FontWeight="Bold" Margin="8,6" Text="{Binding Question}" />
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
-                    <Button Classes="icon" Content="&lt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoBack}" Command="{Binding PreviousCommand}" ToolTip.Tip="Previous question" />
-                    <TextBlock Text="{Binding Position}" IsVisible="{Binding Paging}" VerticalAlignment="Center" Opacity="0.6"
-                               FontSize="{DynamicResource SmallFontSize}" Foreground="{DynamicResource PrimaryTextColor}" />
-                    <Button Classes="icon" Content="&gt;" IsVisible="{Binding Paging}" IsEnabled="{Binding CanGoForward}" Command="{Binding NextCommand}" ToolTip.Tip="Next question" />
-                    <Button Classes="icon" Content="X" Command="{Binding CloseCommand}" ToolTip.Tip="Close without answering" />
-                  </StackPanel>
-                </Grid>
-                <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding HasOptions}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="ui:QuestionOption">
-                      <Button Classes="option" Command="{Binding Pick}">
-                        <TextBlock Classes="model" Text="{Binding Text}" />
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Grid ColumnDefinitions="*,Auto" Margin="8,6">
-                  <TextBox Grid.Column="0" Text="{Binding Typed}" Watermark="Type your answer" TextWrapping="Wrap" MaxHeight="120">
-                    <TextBox.KeyBindings>
-                      <KeyBinding Gesture="Enter" Command="{Binding CommitCommand}" />
-                    </TextBox.KeyBindings>
-                  </TextBox>
-                  <Button Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Bottom" Content="{Binding CommitLabel}" Command="{Binding CommitCommand}" />
-                </Grid>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ContentControl.ContentTemplate>
-      </ContentControl>
+              </Border>
+            </DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
       </StackPanel>
     </ScrollViewer>
 
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-      <TextBox Grid.Column="0"
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Suggestions}" IsVisible="{Binding ShowSuggestions}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <Button Classes="chip" Click="OnSuggestionClick">
+            <TextBlock Classes="small" Foreground="{DynamicResource PrimaryTextColor}" Text="{Binding}" />
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <Border Grid.Row="2" IsVisible="{Binding HasUpdate}" Background="{StaticResource VeronicaBanner}"
+            CornerRadius="4" Padding="10,6" Margin="0,6,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Grid.Column="0" Text="{Binding UpdateNotice}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Foreground="{DynamicResource HighlightedTextColor}" Classes="small" />
+        <Panel Grid.Column="1" Classes="clickable" VerticalAlignment="Center" Margin="8,0,0,0" Tapped="OnUpdateTapped">
+          <TextBlock Text="Update" Classes="small" Foreground="{DynamicResource HyperlinkColor}" />
+        </Panel>
+        <Button Grid.Column="2" Classes="icon" Content="X" Margin="6,0,0,0" Command="{Binding DismissUpdateCommand}" ToolTip.Tip="Hide until the next Editor start" />
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="3" IsVisible="{Binding ShowState}" Margin="2,6,2,0">
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Grid.Column="0" Classes="dim small" Text="{Binding StateText}" />
+        <TextBlock Grid.Column="1" Classes="dim small model" Text="{Binding StateDetail}" Margin="12,0,0,0"
+                   HorizontalAlignment="Right" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+      </Grid>
+      <ProgressBar IsVisible="{Binding HasProgress}" Value="{Binding StateProgress}" Minimum="0" Maximum="100"
+                   Height="3" MinHeight="3" Margin="0,3,0,0" Foreground="{StaticResource VeronicaBlue}" />
+    </StackPanel>
+
+    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+      <TextBox x:Name="Input"
+               Grid.Column="0"
                Text="{Binding Draft}"
-               Watermark="Ask Veronica... (/clear starts a new chat)"
+               Watermark="Ask Veronica... (Shift+Enter for a new line, /clear starts a new chat)"
+               AcceptsReturn="True"
                TextWrapping="Wrap"
-               MaxHeight="120">
-        <TextBox.KeyBindings>
-          <KeyBinding Gesture="Enter" Command="{Binding SubmitCommand}" />
-        </TextBox.KeyBindings>
-      </TextBox>
+               VerticalContentAlignment="Center"
+               Padding="6,5"
+               MaxHeight="120" />
       <Button Grid.Column="1"
               Content="{Binding SendLabel}"
+              Classes.stop="{Binding IsBusy}"
               Margin="6,0,0,0"
               VerticalAlignment="Bottom"
               Command="{Binding SendCommand}" />
     </Grid>
-
-    <TextBlock Grid.Row="3"
-               Text="{Binding Status}"
-               Margin="2,4,0,0"
-               FontSize="{DynamicResource SmallFontSize}"
-               Foreground="{DynamicResource PrimaryTextColor}"
-               Opacity="0.6"
-               TextTrimming="CharacterEllipsis" />
   </Grid>
 </UserControl>

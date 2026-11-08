@@ -28,6 +28,13 @@ public sealed class ReadTool : ITool
                 return block.Read(path);
             var (asset, fields) = Content.Definition(resolved);
             return $"{Content.Describe(asset)}:\n{FieldReader.Read(fields.Root, path, new ProjectLinks(project, asset))}";
-        }, cancellationToken));
+        }, cancellationToken))
+        {
+            Summary = Gist.Capitalized(Attempt(arguments)),
+        };
     }
+
+    public string Attempt(JsonElement arguments) => Args.OptionalText(arguments, "path") is { Length: > 0 } path
+        ? $"read {Gist.Clip(path, 40)} of {Gist.Item(Args.Text(arguments, "target"))}"
+        : $"read {Gist.Item(Args.Text(arguments, "target"))}";
 }

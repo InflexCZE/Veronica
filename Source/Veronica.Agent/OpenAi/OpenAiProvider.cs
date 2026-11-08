@@ -27,7 +27,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
         _http = new HttpClient(handler ?? AnyCertificateHandler()) { Timeout = Timeout.InfiniteTimeSpan };
     }
 
-    public event Action<string>? StatusChanged;
+    public event Action<ProviderStatus>? StatusChanged;
 
     public IProviderSession OpenSession(string name) => ClientToolLoop.CreateSession(StreamRoundAsync);
 
@@ -87,7 +87,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
                 ? String(data[0], "id")
                 : null;
             _model = id ?? throw new OpenAiException("The server lists no models.");
-            StatusChanged?.Invoke($"Model {_model}");
+            StatusChanged?.Invoke(new ProviderStatus($"Model {_model}", Ready: true));
             return _model;
         }
         finally

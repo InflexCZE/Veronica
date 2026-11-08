@@ -25,10 +25,12 @@ public sealed class FindReferencesTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         string target = Args.Text(arguments, "target");
-        return new ToolResult(await EditorProject.RunAsync(project => Find(project, target), cancellationToken));
+        return await EditorProject.RunAsync(project => Find(project, target), cancellationToken);
     }
 
-    private static string Find(LoadedProject project, string target)
+    public string Attempt(JsonElement arguments) => $"find what uses {Gist.Item(Args.Text(arguments, "target"))}";
+
+    private static ToolResult Find(LoadedProject project, string target)
     {
         var asset = Content.Resolve(project, target);
         var index = project.ReferencesManager;
@@ -79,10 +81,11 @@ public sealed class FindReferencesTool : ITool
         }
 
         string name = Content.Shown(subject);
+        string shortName = Gist.Item(name);
         if (entries.Count == 0 && unseen == 0)
         {
             lines.Add($"Nothing references {name}.");
-            return string.Join("\n", lines);
+            return new ToolResult(string.Join("\n", lines)) { Summary = $"Nothing uses {shortName}" };
         }
 
         var rows = entries.Take(MaxResults).Select(item => Row(project, item, targets)).ToList();
@@ -92,7 +95,8 @@ public sealed class FindReferencesTool : ITool
             lines.Add($"... {entries.Count - MaxResults} more not shown.");
         if (unseen > 0)
             lines.Add(unseen == 1 ? "1 more reference comes from an item the project does not list." : $"{unseen} more references come from items the project does not list.");
-        return string.Join("\n", lines);
+        int count = entries.Count + unseen;
+        return new ToolResult(string.Join("\n", lines)) { Summary = $"Found {Gist.Count(count, "item", "items")} that {(count == 1 ? "uses" : "use")} {shortName}" };
     }
 
     private static (ExplorerItem, string) Row(LoadedProject project, ExplorerItem item, IReadOnlySet<Guid> targets)

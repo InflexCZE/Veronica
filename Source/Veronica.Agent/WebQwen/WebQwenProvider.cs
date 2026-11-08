@@ -8,7 +8,9 @@ public sealed class WebQwenProvider(WebQwenLaunch launch, Action<string> log, IG
     private WebQwenProcess? _process;
     private bool _disposed;
 
-    public event Action<string>? StatusChanged;
+    private const string Loading = "The local model is loading...";
+
+    public event Action<ProviderStatus>? StatusChanged;
 
     public int ContextWindow => IProvider.AssumedContextWindow;
 
@@ -56,21 +58,21 @@ public sealed class WebQwenProvider(WebQwenLaunch launch, Action<string> log, IG
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (_process != null)
                 return _process;
-            StatusChanged?.Invoke("Starting WebQwen...");
+            StatusChanged?.Invoke(new ProviderStatus(Loading, "Starting WebQwen"));
             _process = process = WebQwenProcess.Start(launch, line => log(line));
         }
         var connection = process.Connection;
-        connection.Progress += (_, text) => StatusChanged?.Invoke(text);
+        connection.Progress += (progress, text) => StatusChanged?.Invoke(new ProviderStatus(Loading, text, double.IsFinite(progress) ? Math.Clamp(progress, 0, 1) : null));
         connection.Start();
         connection.Ready.ContinueWith(t =>
         {
             if (t.IsCompletedSuccessfully)
-                StatusChanged?.Invoke("Ready");
+                StatusChanged?.Invoke(new ProviderStatus("The local model is ready", Ready: true));
         }, TaskScheduler.Default);
         connection.Closed.ContinueWith(t =>
         {
             Drop(process);
-            StatusChanged?.Invoke($"WebQwen stopped: {t.Result}");
+            StatusChanged?.Invoke(new ProviderStatus("The local model stopped", t.Result));
         }, TaskScheduler.Default);
         // Taken after the process starts: rounds run inside a turn's hold, so the VRAM is already free.
         if (gpu != null)

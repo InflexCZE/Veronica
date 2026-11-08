@@ -21,18 +21,23 @@ public sealed class ListFolderTool : ITool
     public async Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
     {
         string folder = Args.OptionalText(arguments, "folder_path") ?? "";
-        return new ToolResult(await EditorProject.RunAsync(project => List(project, folder), cancellationToken));
+        return await EditorProject.RunAsync(project => List(project, folder), cancellationToken);
     }
 
-    private static string List(LoadedProject project, string folderPath)
+    public string Attempt(JsonElement arguments) =>
+        Args.OptionalText(arguments, "folder_path") is { Length: > 0 } folder ? $"list {Gist.Clip(folder, 60)}" : "list the project roots";
+
+    private static ToolResult List(LoadedProject project, string folderPath)
     {
         var found = Folders.Existing(project, folderPath);
         if (found.Count == 0)
             throw new EditError(Folders.NotFound(project, folderPath, "list a parent folder to see what exists"));
 
         var lines = new List<string>();
+        int items = 0;
         foreach (var (owner, folder) in found)
         {
+            items += folder.ChildItems.Count;
             lines.Add($"{Content.Shown(folder)} in {owner.Name}{(owner.IsReadOnly ? " (read-only)" : "")}:");
             var children = folder.ChildItems
                 .OrderByDescending(c => c is ExplorerFolder)
@@ -49,8 +54,10 @@ public sealed class ListFolderTool : ITool
             }
         }
 
+        string listed = ContentNames.Normalize(folderPath).Length == 0 ? "the project roots" : Gist.Clip(folderPath, 60);
+        string summary = $"Listed {listed} ({Gist.Count(items, "item", "items")})";
         if (lines.Count <= MaxLines)
-            return string.Join("\n", lines);
-        return string.Join("\n", lines.Take(MaxLines)) + $"\n... {lines.Count - MaxLines} more lines; list a subfolder or use find_content with folder.";
+            return new ToolResult(string.Join("\n", lines)) { Summary = summary };
+        return new ToolResult(string.Join("\n", lines.Take(MaxLines)) + $"\n... {lines.Count - MaxLines} more lines; list a subfolder or use find_content with folder.") { Summary = summary };
     }
 }

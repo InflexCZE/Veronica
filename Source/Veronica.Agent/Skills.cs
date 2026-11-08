@@ -83,10 +83,12 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
     {
         var skill = Find(skills(), arguments, out var notFound);
         if (skill == null)
-            return Task.FromResult(new ToolResult(notFound));
+            return Task.FromResult(new ToolResult(notFound, Refused: true) { Summary = $"Could not open skill {Gist.Text(arguments, "name")}: there is no such skill" });
         plan.MarkRead(skill.Name);
-        return Task.FromResult(new ToolResult(skill.Overview));
+        return Task.FromResult(new ToolResult(skill.Overview) { Summary = $"Opened skill: {skill.Name}" });
     }
+
+    public string Attempt(JsonElement arguments) => $"open skill {Gist.Text(arguments, "name")}";
 
     public static Skill? Find(IReadOnlyList<Skill> all, JsonElement arguments, out string notFound)
     {

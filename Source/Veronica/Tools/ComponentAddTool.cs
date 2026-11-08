@@ -22,6 +22,11 @@ public sealed class ComponentAddTool : ITool
         string prefab = Args.Text(arguments, "prefab");
         string type = Args.Text(arguments, "type");
         string? definition = Args.OptionalText(arguments, "definition");
-        return new ToolResult(await EditorProject.RunAsync(project => Block.Open(project, prefab).Add(type, definition), cancellationToken));
+        return new ToolResult(await EditorProject.RunAsync(project => Block.Open(project, prefab).Add(type, definition), cancellationToken))
+        {
+            Summary = $"Added {Gist.Clip(type, 40)} to {Gist.Item(prefab)}",
+        };
     }
+
+    public string Attempt(JsonElement arguments) => $"add {Gist.Clip(Args.Text(arguments, "type"), 40)} to {Gist.Item(Args.Text(arguments, "prefab"))}";
 }

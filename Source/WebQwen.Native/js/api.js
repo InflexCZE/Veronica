@@ -7,6 +7,22 @@
   let engine = null
   let slot = null
 
+  const mb = (bytes) => Math.round(bytes / 1024 / 1024)
+
+  // web-llm's own text carries the elapsed time and browser advice; the phase and counts say it plainly.
+  const describeProgress = (report) => {
+    if ((report.phase === 'fetch' || report.phase === 'cache') && report.loadedBytes !== undefined && report.totalBytes) {
+      const verb = report.phase === 'cache' ? 'Loading from the cache' : 'Downloading'
+      return { fraction: report.loadedBytes / report.totalBytes, text: `${verb}: ${mb(report.loadedBytes)} / ${mb(report.totalBytes)} MB` }
+    }
+    if (report.phase === 'shaders' && report.shadersTotal) {
+      const done = report.shadersDone ?? 0
+      return { fraction: done / report.shadersTotal, text: `Compiling GPU shaders: ${done} / ${report.shadersTotal}` }
+    }
+    if (report.phase === 'done') return { fraction: 1, text: 'Model loaded' }
+    return { fraction: report.progress, text: 'Preparing...' }
+  }
+
   // Operations run one after another: web-llm does not guard a reload
   // against a concurrent request, or a request against a reload. Each holds
   // the model's GPU memory resident only while it runs; when its promise
@@ -59,7 +75,10 @@
         },
       ],
     })
-    engine.setInitProgressCallback((report) => host.progress(op, report.progress, report.text))
+    engine.setInitProgressCallback((report) => {
+      const p = describeProgress(report)
+      host.progress(op, p.fraction, p.text)
+    })
     try {
       await engine.reload(m.modelId, m.contextWindowSize > 0 ? { context_window_size: m.contextWindowSize } : undefined)
     } finally {
