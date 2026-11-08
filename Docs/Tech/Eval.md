@@ -89,6 +89,7 @@ The owner keeps the llama.cpp server running; runs do not start or stop it.
 - **User**: what the user wants and knows, for the fork's role-play.
 - **Pass**: the criteria the run is judged against.
 - **Fixture** (optional): `Eval/Tasks/<name>/`, copied over the dev mod before the run. Generated files (images a script can draw) stay out of git: the fixture holds `make_fixture.py`, which writes the same bytes every run, and the files' metas captured from the Editor's own import. Without their metas the Editor would stop at load on its prompt for files without one.
+- Fixtures reuse the MyThruster models, even for rings or door leaves: no new model files go into git.
 
 ## Method
 

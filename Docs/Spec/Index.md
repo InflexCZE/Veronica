@@ -10,6 +10,8 @@ Veronica is a modding assistant integrated into the VRage3 / Space Engineers 2 E
   - `claude -p`: Claude Code CLI.
   - Any OpenAI-compatible server, local or remote.
 
+- [Context.md](Context.md): rules for what the model is told.
+
 ## Distribution
 
 | artifact | source |
