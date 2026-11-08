@@ -45,17 +45,17 @@
       <Setter Property="Foreground" Value="{DynamicResource StatusAbortedBrush}" />
     </Style>
     <Style Selector="Button.accentGreen /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1A3FB950" />
+      <Setter Property="Background" Value="{DynamicResource StatusCompleteFillBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
     </Style>
     <Style Selector="Button.accentGreen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#333FB950" />
+      <Setter Property="Background" Value="{DynamicResource AccentGreenHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
     </Style>
     <Style Selector="Button.accentGreen:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#4D3FB950" />
+      <Setter Property="Background" Value="{DynamicResource AccentGreenPressedBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StatusCompleteBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
     </Style>
@@ -63,11 +63,10 @@
     <Style Selector="Button">
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Padding" Value="12,6" />
-      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button.big">
       <Setter Property="Padding" Value="16,8" />
-      <Setter Property="FontSize" Value="13" />
     </Style>
     <!-- A text-only button that reads as a link. -->
     <Style Selector="Button.link">
@@ -102,17 +101,19 @@
       <Setter Property="FontSize" Value="16" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
-    <Style Selector="TextBlock.cardTitle">
-      <Setter Property="FontSize" Value="13" />
+    <!-- Everything but headings has one size; titles are bold, secondary text is grey. -->
+    <Style Selector="TextBlock.title">
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.dim">
       <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-      <Setter Property="FontSize" Value="12" />
     </Style>
-    <Style Selector="TextBlock.caption">
-      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-      <Setter Property="FontSize" Value="11" />
+    <Style Selector="TextBlock.logo">
+      <Setter Property="FontSize" Value="26" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="TextBlock.ok">
       <Setter Property="Foreground" Value="{DynamicResource StatusCompleteBrush}" />
@@ -177,6 +178,63 @@
       <Setter Property="Opacity" Value="0.5" />
     </Style>
 
+    <!-- First-run pages sit centered under the header; inside the app they line up with the tabs.
+         Margin and width live in styles only, since a value set on the element would beat the in-app style. -->
+    <Style Selector=":is(Control).page">
+      <Setter Property="Margin" Value="24,20,24,16" />
+      <Setter Property="MaxWidth" Value="540" />
+    </Style>
+    <Style Selector="ContentControl.inApp :is(Control).page">
+      <Setter Property="MaxWidth" Value="Infinity" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="StackPanel.page">
+      <Setter Property="Spacing" Value="24" />
+    </Style>
+    <Style Selector="StackPanel.chapters">
+      <Setter Property="Spacing" Value="24" />
+    </Style>
+    <Style Selector="StackPanel.inline">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="4" />
+    </Style>
+    <Style Selector="StackPanel.heading">
+      <Setter Property="Spacing" Value="4" />
+    </Style>
+    <Style Selector="StackPanel.section">
+      <Setter Property="Spacing" Value="8" />
+    </Style>
+    <Style Selector="StackPanel.field">
+      <Setter Property="Spacing" Value="4" />
+    </Style>
+    <Style Selector="StackPanel.buttons">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="8" />
+    </Style>
+    <!-- Buttons in grid columns fill their column, so a shared column width gives them one size. -->
+    <Style Selector="Grid.buttons">
+      <Setter Property="ColumnSpacing" Value="8" />
+    </Style>
+    <Style Selector="Grid.buttons > Button">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Grid.row">
+      <Setter Property="ColumnSpacing" Value="12" />
+    </Style>
+    <Style Selector="StackPanel.buttons > TextBlock, StackPanel.buttons > Button, Grid.row > TextBlock, Grid.row > Button">
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.badge.ok">
+      <Setter Property="Background" Value="{DynamicResource StatusCompleteFillBrush}" />
+    </Style>
+
     <Style Selector="ProgressBar">
       <Setter Property="MinHeight" Value="3" />
       <Setter Property="Height" Value="3" />
@@ -186,17 +244,30 @@
   </Application.Styles>
 
   <Application.Resources>
+    <ItemsPanelTemplate x:Key="CardList">
+      <StackPanel Spacing="8" />
+    </ItemsPanelTemplate>
+    <ItemsPanelTemplate x:Key="CardGrid">
+      <UniformGrid Columns="2" ColumnSpacing="8" RowSpacing="8" />
+    </ItemsPanelTemplate>
+
     <Color x:Key="Surface0">#1F1F1F</Color>
     <Color x:Key="Surface1">#111111</Color>
     <Color x:Key="Surface2">#1C1C1C</Color>
     <Color x:Key="CardBackground">#2E2E2E</Color>
     <Color x:Key="AppAccentColor">#58A6FF</Color>
+    <Color x:Key="AppAccentLight">#6CB0FF</Color>
+    <Color x:Key="AppAccentDark">#4C94E6</Color>
     <Color x:Key="TextPrimary">#D4D4D4</Color>
     <Color x:Key="TextSecondary">#6E6E6E</Color>
     <Color x:Key="TextMuted">#3A3A3A</Color>
     <Color x:Key="BorderSubtle">#2A2A2A</Color>
+    <Color x:Key="WindowOutline">#313131</Color>
     <Color x:Key="ButtonHover">#383838</Color>
     <Color x:Key="ButtonPressed">#424242</Color>
+    <Color x:Key="ButtonRest">#3A3A3A</Color>
+    <Color x:Key="ButtonRestHover">#474747</Color>
+    <Color x:Key="ButtonRestPressed">#525252</Color>
     <Color x:Key="StatusRunning">#58A6FF</Color>
     <Color x:Key="StatusPending">#6E6E6E</Color>
     <Color x:Key="StatusAwaiting">#E3A53E</Color>
@@ -217,6 +288,8 @@
     <SolidColorBrush x:Key="AccentRedFillBrush" Color="#1AF85149" />
     <SolidColorBrush x:Key="AccentRedHoverBrush" Color="#33F85149" />
     <SolidColorBrush x:Key="AccentRedPressedBrush" Color="#4DF85149" />
+    <SolidColorBrush x:Key="AccentGreenHoverBrush" Color="#333FB950" />
+    <SolidColorBrush x:Key="AccentGreenPressedBrush" Color="#4D3FB950" />
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
@@ -224,12 +297,14 @@
     <SolidColorBrush x:Key="AppDimmedBrush" Color="{StaticResource TextSecondary}" />
 
     <SolidColorBrush x:Key="Border0Brush" Color="{StaticResource BorderSubtle}" />
+    <SolidColorBrush x:Key="WindowOutlineBrush" Color="{StaticResource WindowOutline}" />
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="{StaticResource ButtonHover}" />
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="{StaticResource ButtonPressed}" />
 
     <!-- Fluent's own hover and press brushes flash white on this palette. -->
-    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource ButtonHover}" />
-    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource ButtonPressed}" />
+    <SolidColorBrush x:Key="ButtonBackground" Color="{StaticResource ButtonRest}" />
+    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource ButtonRestHover}" />
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource ButtonRestPressed}" />
     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource TextPrimary}" />
     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{StaticResource TextPrimary}" />
     <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource TextMuted}" />
@@ -237,15 +312,15 @@
 
 
     <!-- The dark theme fills an on switch and a checked box with a lighter shade of the accent; they take the palette's blue itself. -->
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#58A6FF" />
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#6CB0FF" />
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#4C94E6" />
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#58A6FF" />
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#6CB0FF" />
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#4C94E6" />
-    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#58A6FF" />
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#6CB0FF" />
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#4C94E6" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{StaticResource AppAccentColor}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{StaticResource AppAccentLight}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{StaticResource AppAccentDark}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{StaticResource AppAccentColor}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="{StaticResource AppAccentLight}" />
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="{StaticResource AppAccentDark}" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{StaticResource AppAccentColor}" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{StaticResource AppAccentLight}" />
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{StaticResource AppAccentDark}" />
 
     <SolidColorBrush x:Key="StatusRunningBrush" Color="{StaticResource StatusRunning}" />
     <SolidColorBrush x:Key="StatusAwaitingBrush" Color="{StaticResource StatusAwaiting}" />

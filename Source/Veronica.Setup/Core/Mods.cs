@@ -32,7 +32,7 @@ public enum HookState
     NotHooked,
     Hooked,
     // Veronica.dll is loaded from a folder that is not this install's Runtime (a development build, another
-    // or a moved install); Veronica.exe leaves it alone.
+    // or a moved install); Veronica.exe only removes it.
     Foreign,
 }
 
@@ -68,6 +68,14 @@ public static class VrgProj
     {
         RemoveWhere(Array(data, Assemblies), IsVeronica);
         RemoveWhere(Array(data, SearchPaths), p => SamePath(p, runtime));
+    });
+
+    // Another build's or install's entries: Veronica.dll, and the search paths whose folder holds a Veronica.dll
+    // (holdsVeronica gets the path as written, relative paths included). The mod's other paths stay.
+    public static string UnhookAny(string text, string runtime, Func<string, bool> holdsVeronica) => Edit(text, data =>
+    {
+        RemoveWhere(Array(data, Assemblies), IsVeronica);
+        RemoveWhere(Array(data, SearchPaths), p => SamePath(p, runtime) || holdsVeronica(p));
     });
 
     private static bool IsVeronica(string name) => string.Equals(name.Trim(), Assembly, StringComparison.OrdinalIgnoreCase);

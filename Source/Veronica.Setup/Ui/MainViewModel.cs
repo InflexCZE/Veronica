@@ -44,7 +44,11 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
 
     private bool FirstRun => !host.Files.FileExists(host.Layout.SettingsFile) || host.Record.Version == null;
 
-    public void Start(bool update, bool selfUpdated)
+    public Func<Task<string?>> PickFolder { get; set; } = () => Task.FromResult<string?>(null);
+
+    public Func<Task<string?>> PickEditor { get; set; } = () => Task.FromResult<string?>(null);
+
+    public void Start(bool update, bool selfUpdated, bool install)
     {
         _selfUpdated = selfUpdated;
         Safe(() =>
@@ -53,9 +57,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             host.Log($"Started {host.RunningExe} {host.Version}");
             if (FirstRun)
             {
-                if (TakeOwnName())
-                    return;
-                ShowSetup();
+                ShowSetup(install);
                 return;
             }
             ShowApp(update ? AppTab.Updates : AppTab.Mods);
@@ -73,26 +75,6 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         RunUpdate();
     }
 
-    // A browser may save the download as "Veronica (1).exe"; the panel and self-update look for Veronica.exe.
-    // The running exe cannot be renamed safely, so a copy takes over and deletes the original.
-    private bool TakeOwnName()
-    {
-        if (string.Equals(Path.GetFileName(host.RunningExe), Release.ExeAsset, StringComparison.OrdinalIgnoreCase) || host.Files.FileExists(host.Layout.Exe))
-            return false;
-        try
-        {
-            File.Copy(host.RunningExe, host.Layout.Exe, overwrite: false);
-            host.Log($"Copied {host.RunningExe} to {host.Layout.Exe}, restarting from it");
-            host.PrepareRestart(host.Layout.Exe, [Program.ReplacesArgument, host.RunningExe])();
-            return true;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            host.Log($"Taking the name {Release.ExeAsset} failed: {e.Message}");
-            return false;
-        }
-    }
-
     // Startup and app-mode refreshes read files the user may have broken; show the error instead of dying.
     private void Safe(Action work)
     {
@@ -103,11 +85,12 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         catch (Exception e)
         {
             host.Log($"Failed: {e}");
-            Page = new ErrorPage(e.Message, () => Start(update: false, _selfUpdated), shutdown);
+            Page = new ErrorPage(e.Message, () => Start(update: false, _selfUpdated, install: false), shutdown);
         }
     }
 
-    private void ShowSetup()
+    // install: this exe was just copied into the folder Welcome chose, so it goes on where Welcome left off.
+    private void ShowSetup(bool install)
     {
         // A previous run that installed and was closed before the brain was set up needs no second install.
         _filesReady = host.Record.Version != null;
@@ -115,10 +98,12 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         _setupConnect = new ConnectSlide();
         Slides slides = null!;
         ChooseSlide choose = null!;
-        var welcome = new WelcomeSlide(host.Layout.Root, ForeignWarning(), () =>
+        // The settings file marks a folder Welcome already chose: the copy writes it there before restarting.
+        bool locked = install || _filesReady || host.Files.FileExists(host.Layout.SettingsFile);
+        var welcome = new WelcomeSlide(locked || !SingleFile ? host.Layout.Root : DefaultFolder, locked, ForeignWarning, () => PickFolder(), w =>
         {
-            StartInstall();
-            slides.Open(1);
+            if (InstallInto(w))
+                slides.Open(1);
         });
         choose = new ChooseSlide(kind =>
         {
@@ -129,13 +114,109 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         }, ProviderKind.Local);
         slides = new Slides(welcome, choose, _setupConnect);
         Page = new SetupFlow(slides, _strip);
+        if (install)
+        {
+            StartInstall();
+            slides.Open(1);
+        }
     }
 
-    private string ForeignWarning()
+    // A development build's exe is only a launcher for the DLLs beside it, so a copy of it alone cannot start.
+    // The empty Location that IL3000 warns about is exactly what marks the single-file build.
+#pragma warning disable IL3000
+    private static bool SingleFile => string.IsNullOrEmpty(typeof(MainViewModel).Assembly.Location);
+#pragma warning restore IL3000
+
+    private static string DefaultFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Veronica");
+
+    private string ForeignWarning(string folder)
     {
-        var foreign = InstallLayout.ForeignEntries(host.Files.Entries(host.Layout.Root), Path.GetFileName(host.RunningExe));
-        return foreign.Count == 0 ? ""
-            : $"This folder also holds {string.Join(", ", foreign.Take(5))}{(foreign.Count > 5 ? ", ..." : "")}. Veronica installs its folders beside them. To keep it apart, close this window, move Veronica.exe into an empty folder and start it there.";
+        try
+        {
+            return InstallLayout.ForeignEntries(host.Files.Entries(folder), Path.GetFileName(host.RunningExe)).Count == 0 ? ""
+                : "This folder holds other files. Veronica's folders go beside them.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return $"This folder cannot be read: {e.Message}";
+        }
+    }
+
+    // Installs here when this exe already is the chosen folder's Veronica.exe; otherwise copies itself there and
+    // restarts from the copy, leaving the original where it is. Returns whether the flow goes on in this process.
+    private bool InstallInto(WelcomeSlide welcome)
+    {
+        if (_installing || _filesReady)
+            return true;
+        if (welcome.Locked)
+        {
+            StartInstall();
+            return true;
+        }
+        string folder = Path.GetFullPath(welcome.Folder);
+        string exe = Path.Combine(folder, Release.ExeAsset);
+        bool here = string.Equals(Path.GetFullPath(host.RunningExe), exe, StringComparison.OrdinalIgnoreCase);
+        if (!here && !SingleFile)
+        {
+            welcome.Error = "A development build installs only into its own folder.";
+            return false;
+        }
+        try
+        {
+            if (!here)
+            {
+                host.Files.CreateDirectory(folder);
+                File.Copy(host.RunningExe, exe, overwrite: true);
+                string settings = Path.Combine(folder, Settings.FileName);
+                if (!host.Files.FileExists(settings))
+                    host.Files.WriteAllText(settings, SettingsFile.Empty.Serialize());
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            host.Log($"Copying {host.RunningExe} to {exe} failed: {e}");
+            welcome.Error = $"Veronica.exe could not be copied to {folder}: {e.Message}";
+            return false;
+        }
+        CreateShortcuts(welcome, exe);
+        welcome.Locked = true;
+        if (here)
+        {
+            StartInstall();
+            return true;
+        }
+        host.Log($"Copied {host.RunningExe} to {exe}, restarting from it");
+        try
+        {
+            host.PrepareRestart(exe, [Program.InstallArgument])();
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException)
+        {
+            host.Log($"Starting {exe} failed: {e}");
+            welcome.Error = $"Veronica.exe was copied to {folder} but could not be started there: {e.Message}";
+        }
+        return false;
+    }
+
+    // A missing shortcut does not stop the install.
+    private void CreateShortcuts(WelcomeSlide welcome, string exe)
+    {
+        var links = new List<string>();
+        if (welcome.StartMenuShortcut)
+            links.Add(Shortcut.StartMenu);
+        if (welcome.DesktopShortcut)
+            links.Add(Shortcut.Desktop);
+        foreach (var link in links)
+        {
+            try
+            {
+                Shortcut.Create(link, exe);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or System.Runtime.InteropServices.COMException)
+            {
+                host.Log($"Creating the shortcut {link} failed: {e.Message}");
+            }
+        }
     }
 
     // First run fetches Veronica's files while the modder sets up a brain. Veronica.exe does not update itself
@@ -237,7 +318,9 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             {
                 result = new CheckResult(false, e.Message);
             }
-            host.Log($"Provider check: {result.Ok} {result.Message}");
+            host.Log($"Provider check: {result.Ok} {result.Message} {result.Url}");
+            if (result.Url != null && page is OpenAiConnectPage openAi)
+                openAi.Url = result.Url;
             page.Show(result);
             if (!result.Ok)
                 return;
@@ -259,7 +342,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     private Func<Task<CheckResult>> OpenAiCheck(OpenAiConnectPage page)
     {
         string? url = Blank(page.Url), model = Blank(page.Model), key = Blank(page.ApiKey);
-        return () => ProviderCheck.OpenAiAsync(host.Http, url, model, key, CancellationToken.None);
+        return () => ProviderCheck.OpenAiAsync(host.OpenAiHttp, url, model, key, CancellationToken.None);
     }
 
     private Func<Task<CheckResult>> LocalCheck(LocalConnectPage page)
@@ -437,7 +520,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     {
         _filesReady = true;
         if (_app == null)
-            _app = new AppShell(new ModsPane(), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+            _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
         RefreshMods();
         RefreshUpdates();
         _app.Tab = tab;
@@ -474,6 +557,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         var pane = _app!.Mods;
         // A card still waiting for the Editor keeps its own state, Cancel included.
         var running = pane.Mods.Where(m => m.Activity.Running).ToDictionary(m => m.Folder, StringComparer.OrdinalIgnoreCase);
+        pane.Editor = host.Settings.GetTrimmed(Settings.VERONICA_EDITOR_EXE) ?? "";
         var mods = ReadMods(pane).Select(m => running.GetValueOrDefault(m.Folder) ?? m).ToList();
         pane.Mods.Clear();
         foreach (var mod in mods)
@@ -514,47 +598,125 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                     name = VrgProj.Name(text) ?? name;
                     state = VrgProj.State(text, host.Layout.Runtime);
                 }
-                mods.Add(new ModCard(name, entry.Folder, project, state, ToggleMod));
+                mods.Add(new ModCard(name, entry.Folder, project, state, mod => _ = StartEditorAsync(mod), (mod, hook) => _ = ChangeModAsync(mod, hook)));
             }
             catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
             {
                 host.Log($"Reading mod {entry.Folder} failed: {e}");
-                mods.Add(new ModCard(name, entry.Folder, null, HookState.NotHooked, ToggleMod) { Note = $"Cannot be read: {e.Message}" });
+                mods.Add(new ModCard(name, entry.Folder, null, HookState.NotHooked, _ => { }, (_, _) => { }) { Note = $"Cannot be read: {e.Message}" });
             }
         }
         return mods;
     }
 
-    private void ToggleMod(ModCard mod, bool hook)
+    // Returns whether the .vrgproj was changed; the card is replaced by a fresh one either way.
+    private async Task<bool> ChangeModAsync(ModCard mod, bool hook)
     {
-        if (mod.Project == null || mod.Activity.Running)
-            return;
+        if (mod.Project is not { } project || mod.Activity.Running)
+            return false;
         var activity = mod.Activity;
         activity.Begin(hook ? "Adding Veronica to this mod..." : "Removing Veronica from this mod...");
         mod.Touch();
-        _ = Run(async () =>
+        string? error = null;
+        bool changed = false;
+        try
         {
-            string? error = null;
-            try
-            {
-                await WaitForEditorAsync(activity, EditorWaitMod, activity.Cancellation.Token);
-                string text = host.Files.ReadAllText(mod.Project);
-                host.Files.WriteAllText(mod.Project, hook ? VrgProj.Hook(text, host.Layout.Runtime) : VrgProj.Unhook(text, host.Layout.Runtime));
-                host.Log($"{(hook ? "Hooked" : "Unhooked")} {mod.Project}");
-            }
-            catch (OperationCanceledException) when (activity.Cancellation.IsCancellationRequested)
-            {
-            }
-            catch (Exception e)
-            {
-                host.Log($"{(hook ? "Hooking" : "Unhooking")} {mod.Project} failed: {e}");
-                error = e.Message;
-            }
-            activity.End();
-            Safe(RefreshMods);
-            if (error != null && _app!.Mods.Mods.FirstOrDefault(m => m.Folder == mod.Folder) is { } fresh)
-                fresh.Activity.Error = error;
-        });
+            await WaitForEditorAsync(activity, EditorWaitMod, activity.Cancellation.Token);
+            string text = host.Files.ReadAllText(project);
+            host.Files.WriteAllText(project, hook ? VrgProj.Hook(text, host.Layout.Runtime)
+                : VrgProj.UnhookAny(text, host.Layout.Runtime, path => HoldsVeronica(project, path)));
+            host.Log($"{(hook ? "Hooked" : "Unhooked")} {project}");
+            changed = true;
+        }
+        catch (OperationCanceledException) when (activity.Cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception e)
+        {
+            host.Log($"{(hook ? "Hooking" : "Unhooking")} {project} failed: {e}");
+            error = e.Message;
+        }
+        activity.End();
+        Safe(RefreshMods);
+        if (error != null)
+            ShowModError(mod, error);
+        return changed;
+    }
+
+    private bool HoldsVeronica(string project, string searchPath)
+    {
+        try
+        {
+            string folder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(project)!, searchPath));
+            return host.Files.FileExists(Path.Combine(folder, VrgProj.Assembly));
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    private void ShowModError(ModCard mod, string error)
+    {
+        var card = _app!.Mods.Mods.FirstOrDefault(m => string.Equals(m.Folder, mod.Folder, StringComparison.OrdinalIgnoreCase)) ?? mod;
+        card.Activity.Error = error;
+    }
+
+    // A mod without Veronica gets it first, so the Editor opens with the chat.
+    private async Task StartEditorAsync(ModCard mod)
+    {
+        if (mod.Project is not { } project || mod.Activity.Running)
+            return;
+        mod.Activity.Error = "";
+        if (await EditorExeAsync() is not { } exe)
+            return;
+        var dirs = EditorLaunch.GlobalProjectDirs(exe, host.Files.DirectoryExists);
+        if (dirs.Count == 0)
+        {
+            ShowModError(mod, $"No folder above {exe} holds Game2\\GameData and VRage\\GameData, so the Editor would not find the game's projects.");
+            return;
+        }
+        if (mod.State == HookState.NotHooked && !await ChangeModAsync(mod, hook: true))
+            return;
+        var info = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
+        foreach (var argument in EditorLaunch.Arguments(project, dirs))
+            info.ArgumentList.Add(argument);
+        try
+        {
+            System.Diagnostics.Process.Start(info)?.Dispose();
+            host.Log($"Started {exe} on {project}");
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException)
+        {
+            host.Log($"Starting {exe} failed: {e}");
+            ShowModError(mod, $"The Editor could not be started: {e.Message}");
+        }
+    }
+
+    // The saved Editor, or the user's pick when none is saved or the saved one is gone.
+    private async Task<string?> EditorExeAsync()
+    {
+        if (host.Settings.GetTrimmed(Settings.VERONICA_EDITOR_EXE) is { } saved && host.Files.FileExists(saved))
+            return saved;
+        return await PickEditorExeAsync();
+    }
+
+    private async Task<string?> PickEditorExeAsync()
+    {
+        if (await PickEditor() is not { Length: > 0 } exe)
+            return null;
+        try
+        {
+            host.SaveSettings(new Dictionary<string, string?> { [Settings.VERONICA_EDITOR_EXE] = exe });
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            host.Log($"Saving the Editor path failed: {e}");
+        }
+        if (_app != null)
+            _app.Mods.Editor = exe;
+        host.Log($"Editor set to {exe}");
+        return exe;
     }
 
     private void RefreshUpdates()

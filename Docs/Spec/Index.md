@@ -14,7 +14,7 @@ Veronica is a modding assistant integrated into the VRage3 / Space Engineers 2 E
 
 ## Distribution
 
-- The modder downloads `Veronica.exe` and puts it in a folder of their choice. Veronica installs into that folder.
+- The modder downloads `Veronica.exe` and starts it. Its Welcome page picks the install folder (`%APPDATA%\Veronica` by default) and offers Start menu and Desktop shortcuts; `Veronica.exe` copies itself there and carries on from the copy.
 - On first start `Veronica.exe` welcomes the modder and installs in the background while they pick a provider (local model, Claude, OpenAI-compatible server), set it up and test it.
 - For the local model it measures the GPU, shows every model with whether it fits, recommends one and downloads the chosen ones. A model that does not fit can still be installed.
 - Afterwards `Veronica.exe` manages the provider, the mods and the versions. It lists the modder's local mods; switching one on adds Veronica to it, switching it off removes it.

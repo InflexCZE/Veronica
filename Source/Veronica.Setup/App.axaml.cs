@@ -12,6 +12,8 @@ public sealed class App : Application
 
     public static bool SelfUpdated { get; set; }
 
+    public static bool StartInstall { get; set; }
+
     public static SingleInstance? Instance { get; set; }
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
@@ -22,6 +24,8 @@ public sealed class App : Application
         {
             var main = new MainViewModel(SetupHost.ForThisProcess(), () => desktop.Shutdown());
             var window = new MainWindow { DataContext = main };
+            main.PickFolder = window.PickFolderAsync;
+            main.PickEditor = window.PickEditorAsync;
             desktop.MainWindow = window;
             Instance?.Listen(
                 () => Dispatcher.UIThread.Post(() => window.Bring()),
@@ -30,7 +34,7 @@ public sealed class App : Application
                     window.Bring();
                     main.RequestUpdate();
                 }));
-            main.Start(StartUpdate, SelfUpdated);
+            main.Start(StartUpdate, SelfUpdated, StartInstall);
         }
         base.OnFrameworkInitializationCompleted();
     }

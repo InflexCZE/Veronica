@@ -5,6 +5,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
@@ -36,6 +37,22 @@ public sealed partial class MainWindow : Window
         if (WindowState == WindowState.Minimized)
             WindowState = WindowState.Normal;
         Activate();
+    }
+
+    public async Task<string?> PickFolderAsync()
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Install folder" });
+        return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+    }
+
+    public async Task<string?> PickEditorAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Find VRage.Editor.exe",
+            FileTypeFilter = [new FilePickerFileType("VRage.Editor.exe") { Patterns = ["VRage.Editor.exe"] }],
+        });
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
     private void OnMainChanged(object? sender, PropertyChangedEventArgs e)

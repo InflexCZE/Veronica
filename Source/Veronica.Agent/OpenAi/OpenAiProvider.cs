@@ -38,7 +38,7 @@ public sealed class OpenAiProvider : IProvider, IDisposable
     public void Dispose() => _http.Dispose();
 
     // Locally hosted servers typically use self-signed certificates.
-    private static SocketsHttpHandler AnyCertificateHandler() => new()
+    public static SocketsHttpHandler AnyCertificateHandler() => new()
     {
         SslOptions = { RemoteCertificateValidationCallback = (_, _, _, _) => true },
     };

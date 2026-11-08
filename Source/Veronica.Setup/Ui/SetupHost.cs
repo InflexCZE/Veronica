@@ -15,6 +15,9 @@ public sealed class SetupHost
 
     public required HttpClient Http { get; init; }
 
+    // The provider check trusts what the plugin's OpenAI provider trusts, so a server it can use passes.
+    public HttpClient OpenAiHttp { get; init; } = new(Agent.OpenAi.OpenAiProvider.AnyCertificateHandler());
+
     public required IEditorProbe Editor { get; init; }
 
     public required string RunningExe { get; init; }
@@ -100,7 +103,7 @@ public sealed class SetupHost
     // load anything new: the restart is prepared before the rename and the process exits right after.
     public Action PrepareRestart(string exe, IEnumerable<string> arguments)
     {
-        var info = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Layout.Root };
+        var info = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
         foreach (var argument in arguments)
             info.ArgumentList.Add(argument);
         return () =>

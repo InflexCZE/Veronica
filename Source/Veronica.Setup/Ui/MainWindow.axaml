@@ -17,6 +17,7 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="3" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -40,6 +41,9 @@
     </Style>
     <Style Selector="Button.arrow Path">
       <Setter Property="Stroke" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="StrokeThickness" Value="1.6" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
     </Style>
     <Style Selector="Button.arrow:disabled Path">
       <Setter Property="Stroke" Value="{DynamicResource TextMutedBrush}" />
@@ -74,58 +78,85 @@
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="Margin" Value="2,8,0,0" />
     </Style>
-
-    <!-- First-run pages sit centered under the header; inside the app they line up with the other tabs.
-         Margin and width live in styles only, since a value set on the element would beat the in-app style. -->
-    <Style Selector="StackPanel.page">
-      <Setter Property="Margin" Value="24,0" />
-      <Setter Property="MaxWidth" Value="560" />
-    </Style>
-    <Style Selector="ContentControl.inApp StackPanel.page">
-      <Setter Property="MaxWidth" Value="Infinity" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="Margin" Value="24,18,24,0" />
+    <Style Selector="Ellipse.badgeDot">
+      <Setter Property="Width" Value="6" />
+      <Setter Property="Height" Value="6" />
+      <Setter Property="Fill" Value="{DynamicResource AppAccentBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <Style Selector="TextBlock.label">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-      <Setter Property="Margin" Value="0,0,0,2" />
+    <!-- The fixed first-run header, the download strip under it and the page dots. -->
+    <Style Selector="StackPanel.greeting">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Spacing" Value="14" />
+      <Setter Property="Margin" Value="0,54,0,20" />
+    </Style>
+    <Style Selector="Border.logo">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="CornerRadius" Value="28" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource AccentFillBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+    </Style>
+    <Style Selector="Border.strip">
+      <Setter Property="Background" Value="{DynamicResource Surface1Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border0Brush}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="Padding" Value="16,8" />
+    </Style>
+    <Style Selector="StackPanel.pager">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Spacing" Value="10" />
+      <Setter Property="Margin" Value="0,10,0,14" />
+    </Style>
+
+    <!-- The window outline: sides and bottom around the page, with a short tick past the tab bar's line. -->
+    <Style Selector="Border.outline">
+      <Setter Property="BorderBrush" Value="{DynamicResource WindowOutlineBrush}" />
+      <Setter Property="BorderThickness" Value="1,0,1,1" />
+    </Style>
+    <Style Selector="Border.outlineTick">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="0,-12,0,0" />
+      <Setter Property="Background" Value="{DynamicResource WindowOutlineBrush}" />
     </Style>
   </Window.Styles>
 
   <Window.Resources>
-    <!-- Below every provider's fields: the check's result and Continue. -->
-    <!-- The page's one button: it spins while connecting, shows the pass for a moment, then the flow moves on. -->
+    <!-- Below every provider's fields: the check's failure, then the page's one button, which spins while
+         connecting, shows the pass for a moment, then the flow moves on. -->
     <DataTemplate x:Key="ContinueRow" x:DataType="ui:ConnectPage">
-      <StackPanel Spacing="8" Margin="0,4,0,0">
-        <Button Classes="accent big" Classes.accentGreen="{Binding IsConnected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                IsEnabled="{Binding ButtonEnabled}" Command="{Binding Continue}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <fa:ProgressRing Width="16" Height="16" IsIndeterminate="True" Foreground="{DynamicResource AppAccentBrush}"
-                             IsVisible="{Binding IsConnecting}" />
-            <fa:SymbolIcon Symbol="Checkmark" FontSize="16" IsVisible="{Binding IsConnected}" />
-            <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{Binding $parent[ContentPresenter].Foreground}" Text="{Binding ContinueText}" />
-          </StackPanel>
-        </Button>
+      <StackPanel Classes="section">
         <Border Classes="callout error" IsVisible="{Binding IsFailed}">
-          <StackPanel Spacing="2">
-            <TextBlock Classes="error cardTitle" Text="Could not connect" />
+          <StackPanel Classes="heading">
+            <TextBlock Classes="error title" Text="Could not connect" />
             <TextBlock Text="{Binding Error}" />
           </StackPanel>
         </Border>
+        <Button Classes="accent big" Classes.accentGreen="{Binding IsConnected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                IsEnabled="{Binding ButtonEnabled}" Command="{Binding Continue}">
+          <StackPanel Classes="buttons">
+            <fa:ProgressRing Width="16" Height="16" IsIndeterminate="True" Foreground="{DynamicResource AppAccentBrush}"
+                             IsVisible="{Binding IsConnecting}" />
+            <fa:SymbolIcon Symbol="Checkmark" FontSize="16" IsVisible="{Binding IsConnected}" />
+            <TextBlock Foreground="{Binding $parent[ContentPresenter].Foreground}" Text="{Binding ContinueText}" />
+          </StackPanel>
+        </Button>
         <TextBlock Classes="ok" HorizontalAlignment="Center" IsVisible="{Binding HasSaved}" Text="{Binding Saved}" />
       </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="ActivityView" x:DataType="ui:Activity">
-      <StackPanel Spacing="6">
-        <StackPanel Spacing="4" IsVisible="{Binding Progressing}">
+      <StackPanel Classes="section">
+        <StackPanel Classes="field" IsVisible="{Binding Progressing}">
           <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" IsIndeterminate="{Binding Indeterminate}" />
-          <TextBlock Classes="caption" Text="{Binding Status}" />
+          <TextBlock Classes="dim" Text="{Binding Status}" />
         </StackPanel>
         <Border Classes="callout warning" IsVisible="{Binding IsWaiting}">
-          <StackPanel Spacing="6">
+          <StackPanel Classes="section">
             <TextBlock Classes="warning" Text="{Binding Waiting}" />
             <ProgressBar IsIndeterminate="True" />
           </StackPanel>
@@ -140,13 +171,11 @@
 
     <DataTemplate DataType="ui:SetupFlow">
       <Grid RowDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="14" Margin="0,18,0,20">
-          <Border Width="56" Height="56" CornerRadius="28" BorderThickness="1"
-                  Background="{DynamicResource AccentFillBrush}" BorderBrush="{DynamicResource AppAccentBrush}">
-            <TextBlock Text="V" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource AppAccentBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <StackPanel Classes="greeting">
+          <Border Classes="logo">
+            <TextBlock Classes="logo" Text="V" />
           </Border>
-          <StackPanel VerticalAlignment="Center" Spacing="2">
+          <StackPanel Classes="heading" VerticalAlignment="Center">
             <TextBlock Classes="h1" Text="Hi, I'm Veronica" />
             <TextBlock Classes="dim" Text="Your Space Engineers 2 modding Co-Engineer" />
           </StackPanel>
@@ -154,22 +183,21 @@
 
         <ContentControl Grid.Row="1" Content="{Binding Slides}" />
 
-        <Border Grid.Row="2" IsVisible="{Binding Files.Visible}" Background="{DynamicResource Surface1Brush}"
-                BorderBrush="{DynamicResource Border0Brush}" BorderThickness="0,1,0,0" Padding="16,8">
-          <StackPanel Spacing="4">
-            <StackPanel Spacing="4" IsVisible="{Binding Files.Activity.Progressing}">
-              <TextBlock Classes="caption" Text="{Binding Files.Activity.Status}" />
+        <Border Grid.Row="2" Classes="strip" IsVisible="{Binding Files.Visible}">
+          <StackPanel Classes="field">
+            <StackPanel Classes="field" IsVisible="{Binding Files.Activity.Progressing}">
+              <TextBlock Classes="dim" Text="{Binding Files.Activity.Status}" />
               <ProgressBar Minimum="0" Maximum="100" Value="{Binding Files.Activity.Percent}" IsIndeterminate="{Binding Files.Activity.Indeterminate}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Files.Activity.IsWaiting}">
-              <TextBlock Classes="warning" FontSize="12" VerticalAlignment="Center" Text="{Binding Files.Activity.Waiting}" />
-              <Button Classes="link" FontSize="12" VerticalAlignment="Center" Content="Stop" Command="{Binding Files.Activity.Cancel}" />
+            <StackPanel Classes="buttons" IsVisible="{Binding Files.Activity.IsWaiting}">
+              <TextBlock Classes="warning" Text="{Binding Files.Activity.Waiting}" />
+              <Button Classes="link" Content="Stop" Command="{Binding Files.Activity.Cancel}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Files.Activity.HasError}">
-              <TextBlock Classes="error" FontSize="12" VerticalAlignment="Center" Text="{Binding Files.Activity.Error, StringFormat='Installation failed: {0}'}" />
-              <Button Classes="link" FontSize="12" VerticalAlignment="Center" Content="Try again" Command="{Binding Files.Retry}" />
+            <StackPanel Classes="buttons" IsVisible="{Binding Files.Activity.HasError}">
+              <TextBlock Classes="error" Text="{Binding Files.Activity.Error, StringFormat='Installation failed: {0}'}" />
+              <Button Classes="link" Content="Try again" Command="{Binding Files.Retry}" />
             </StackPanel>
-            <TextBlock Classes="ok" FontSize="12" IsVisible="{Binding Files.Done}" Text="Installed." />
+            <TextBlock Classes="ok" IsVisible="{Binding Files.Done}" Text="Installed." />
           </StackPanel>
         </Border>
       </Grid>
@@ -182,71 +210,70 @@
             <PageSlide Duration="0:0:0.28" Orientation="Horizontal" />
           </ui:SlideCarousel.PageTransition>
         </ui:SlideCarousel>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,10,0,14">
+        <StackPanel Grid.Row="1" Classes="pager">
           <Button Classes="arrow" Command="{Binding Previous}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Previous page">
-            <Path Data="M 6,1 L 1,6 L 6,11" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round" />
+            <Path Data="M 6,1 L 1,6 L 6,11" />
           </Button>
           <ItemsControl ItemsSource="{Binding Dots}" VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="4" />
+                <StackPanel Classes="inline" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate DataType="ui:Dot">
-                <Button Classes="bare" Command="{Binding Go}" IsEnabled="{Binding IsReachable}" VerticalAlignment="Center">
+                <Button Classes="bare" Command="{Binding Go}" IsEnabled="{Binding IsReachable}">
                   <Border Classes="dotBar" Classes.active="{Binding IsActive}" Classes.reachable="{Binding IsReachable}" />
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <Button Classes="arrow" Command="{Binding Next}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Next page">
-            <Path Data="M 1,1 L 6,6 L 1,11" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round" />
+            <Path Data="M 1,1 L 6,6 L 1,11" />
           </Button>
         </StackPanel>
       </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="ui:WelcomeSlide">
-      <ScrollViewer>
-        <StackPanel Spacing="14" MaxWidth="540" Margin="24,0">
-          <TextBlock Text="I help you mod Space Engineers 2 right inside the Editor, no programming needed." />
-          <StackPanel Spacing="6">
-            <TextBlock Text="Together we can:" />
-            <Grid ColumnDefinitions="16,*">
-              <Ellipse Classes="bullet" />
-              <TextBlock Grid.Column="1" Text="Find any content in the game and explain how it works" />
-            </Grid>
-            <Grid ColumnDefinitions="16,*">
-              <Ellipse Classes="bullet" />
-              <TextBlock Grid.Column="1" Text="Turn your idea into new blocks, prefabs and definitions, step by step" />
-            </Grid>
-            <Grid ColumnDefinitions="16,*">
-              <Ellipse Classes="bullet" />
-              <TextBlock Grid.Column="1" Text="Tweak what is already there, from a single value to a whole set of blocks" />
-            </Grid>
+      <Grid Classes="page" RowDefinitions="*,Auto">
+        <ScrollViewer>
+          <StackPanel Classes="chapters">
+            <StackPanel Classes="section">
+              <TextBlock Classes="h2" Text="Install folder" />
+              <Grid Classes="row" ColumnDefinitions="*,Auto">
+                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Folder}" ToolTip.Tip="{Binding Folder}" />
+                <Button Grid.Column="1" Content="Change..." Command="{Binding Change}" IsVisible="{Binding !Locked}" />
+              </Grid>
+              <TextBlock Classes="dim warning" IsVisible="{Binding HasWarning}" Text="{Binding Warning}" />
+            </StackPanel>
+            <StackPanel Classes="section" IsVisible="{Binding !Locked}">
+              <TextBlock Classes="h2" Text="Shortcuts" />
+              <CheckBox Content="Start menu" IsChecked="{Binding StartMenuShortcut}" />
+              <CheckBox Content="Desktop" IsChecked="{Binding DesktopShortcut}" />
+            </StackPanel>
           </StackPanel>
-          <Border Classes="callout warning" IsVisible="{Binding HasWarning}">
-            <TextBlock Classes="warning" Text="{Binding Warning}" />
-          </Border>
-          <Button Classes="accent big" HorizontalAlignment="Center" Margin="0,6,0,0" Content="Let's get started" Command="{Binding Start}" />
-          <TextBlock Classes="caption" HorizontalAlignment="Center" TextAlignment="Center" Text="{Binding Root}" />
-          <TextBlock Classes="caption" TextAlignment="Center"
-                     Text="Files download in the background while you set up the brain. After that, you choose the mods Veronica helps with." />
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Classes="section">
+          <TextBlock Classes="error" HorizontalAlignment="Center" TextAlignment="Center" IsVisible="{Binding HasError}" Text="{Binding Error}" />
+          <Button Classes="accent big" HorizontalAlignment="Center" Content="Let's get started" Command="{Binding Start}" />
         </StackPanel>
-      </ScrollViewer>
+      </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="ui:ChooseSlide">
       <ScrollViewer>
-        <StackPanel Classes="page" Spacing="10">
-          <TextBlock Text="Where does my brain run? You can switch any time." Margin="0,0,0,4" />
-          <ItemsControl ItemsSource="{Binding Cards}">
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
+            <TextBlock Classes="h2" Text="Where does my brain run?" />
+            <TextBlock Classes="dim" Text="You can switch any time." />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding Cards}" ItemsPanel="{StaticResource CardList}">
             <ItemsControl.ItemTemplate>
               <DataTemplate DataType="ui:ProviderCard">
-                <Button Classes="cardButton" Classes.selected="{Binding Selected}" Command="{Binding Choose}" Margin="0,0,0,8">
-                  <StackPanel Spacing="3">
-                    <TextBlock Classes="cardTitle" Text="{Binding Name}" />
+                <Button Classes="cardButton" Classes.selected="{Binding Selected}" Command="{Binding Choose}">
+                  <StackPanel Classes="heading">
+                    <TextBlock Classes="title" Text="{Binding Name}" />
                     <TextBlock Classes="dim" Text="{Binding Pitch}" />
                   </StackPanel>
                 </Button>
@@ -263,13 +290,13 @@
 
     <DataTemplate DataType="ui:LocalConnectPage">
       <ScrollViewer>
-        <StackPanel Classes="page" Spacing="14">
-          <StackPanel Spacing="3">
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
             <TextBlock Classes="h2" Text="{Binding Name}" />
             <TextBlock Classes="dim" Text="{Binding Pitch}" />
           </StackPanel>
           <Border Classes="card">
-            <StackPanel Spacing="6">
+            <StackPanel Classes="section">
               <Grid ColumnDefinitions="16,*">
                 <Ellipse Classes="bullet" />
                 <TextBlock Grid.Column="1">
@@ -279,43 +306,37 @@
               </Grid>
               <Grid ColumnDefinitions="16,*">
                 <Ellipse Classes="bullet" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <StackPanel Grid.Column="1" Classes="inline">
                   <TextBlock Text="If its answers don't satisfy you, pick a" />
-                  <Button Classes="link" FontSize="13" Content="different brain." Command="{Binding Back}" />
+                  <Button Classes="link" Content="different brain." Command="{Binding Back}" />
                 </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="16,*">
                 <Ellipse Classes="bullet" />
                 <TextBlock Grid.Column="1" Text="The local model is heavy on your graphics card. Applications holding graphics memory slow it down." />
               </Grid>
-              <CheckBox Content="I understand" IsChecked="{Binding Understood}" Margin="0,4,0,0" />
+              <CheckBox Content="I understand" IsChecked="{Binding Understood}" />
             </StackPanel>
           </Border>
 
-          <StackPanel Spacing="8">
-            <TextBlock Classes="cardTitle" Text="Model" />
+          <StackPanel Classes="section">
+            <TextBlock Classes="h2" Text="Model" />
             <TextBlock Classes="dim" IsVisible="{Binding !FilesReady}" Text="Models appear once installation finishes." />
-            <ItemsControl ItemsSource="{Binding Models}" IsEnabled="{Binding Understood}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="2" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
+            <ItemsControl ItemsSource="{Binding Models}" ItemsPanel="{StaticResource CardGrid}" IsEnabled="{Binding Understood}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="ui:ModelCard">
-                  <Button Classes="cardButton" Classes.selected="{Binding Chosen}" Command="{Binding Choose}" Margin="0,0,8,8" VerticalAlignment="Stretch" VerticalContentAlignment="Top">
-                    <StackPanel Spacing="4">
-                      <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="h2" Text="{Binding Name}" />
-                        <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="3" Padding="6,2" IsVisible="{Binding Installed}"
-                                Background="{DynamicResource StatusCompleteFillBrush}">
-                          <TextBlock Classes="caption ok" Text="Downloaded" />
+                  <Button Classes="cardButton" Classes.selected="{Binding Chosen}" Command="{Binding Choose}" VerticalAlignment="Stretch" VerticalContentAlignment="Top">
+                    <StackPanel Classes="section">
+                      <Grid Classes="row" ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="title" Text="{Binding Name}" />
+                        <Border Grid.Column="1" Classes="badge ok" IsVisible="{Binding Installed}">
+                          <TextBlock Classes="ok" Text="Downloaded" />
                         </Border>
                       </Grid>
                       <TextBlock Classes="dim" IsVisible="{Binding HasDescription}" Text="{Binding Description}" />
-                      <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="caption" VerticalAlignment="Center" Text="{Binding Requirements}" />
-                        <Button Grid.Column="1" Classes="link" FontSize="11" Content="Delete" Command="{Binding Delete}">
+                      <Grid Classes="row" ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="dim" Text="{Binding Requirements}" />
+                        <Button Grid.Column="1" Classes="link" Content="Delete" Command="{Binding Delete}">
                           <Button.IsVisible>
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                               <Binding Path="Installed" />
@@ -332,67 +353,66 @@
             </ItemsControl>
           </StackPanel>
 
-          <TextBlock Classes="caption" Text="One large download, then it works offline. Nothing you type leaves your machine. Needs a graphics card with enough memory for the model." />
-          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" Margin="0,0,0,8" />
+          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" />
         </StackPanel>
       </ScrollViewer>
     </DataTemplate>
 
     <DataTemplate DataType="ui:ClaudeConnectPage">
       <ScrollViewer>
-        <StackPanel Classes="page" Spacing="14">
-          <StackPanel Spacing="3">
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
             <TextBlock Classes="h2" Text="{Binding Name}" />
             <TextBlock Classes="dim" Text="{Binding Pitch}" />
           </StackPanel>
           <TextBlock Text="Install Claude Code and sign in by running claude once in a terminal. Then test the connection here." />
           <Expander Header="Advanced" HorizontalAlignment="Stretch">
-            <StackPanel Spacing="10">
-              <StackPanel>
-                <TextBlock Classes="label" Text="Model" />
+            <StackPanel Classes="section">
+              <StackPanel Classes="field">
+                <TextBlock Classes="dim" Text="Model" />
                 <TextBox Text="{Binding Model}" Watermark="sonnet" />
               </StackPanel>
-              <StackPanel>
-                <TextBlock Classes="label" Text="Effort" />
+              <StackPanel Classes="field">
+                <TextBlock Classes="dim" Text="Effort" />
                 <TextBox Text="{Binding Effort}" Watermark="Claude Code's default" />
               </StackPanel>
             </StackPanel>
           </Expander>
-          <TextBlock Classes="caption" Text="Your requests go to Anthropic through your Claude Code, under your subscription's terms." />
-          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" Margin="0,0,0,8" />
+          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" />
         </StackPanel>
       </ScrollViewer>
     </DataTemplate>
 
     <DataTemplate DataType="ui:OpenAiConnectPage">
       <ScrollViewer>
-        <StackPanel Classes="page" Spacing="14">
-          <StackPanel Spacing="3">
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
             <TextBlock Classes="h2" Text="{Binding Name}" />
             <TextBlock Classes="dim" Text="{Binding Pitch}" />
           </StackPanel>
-          <StackPanel>
-            <TextBlock Classes="label" Text="Server URL, including the API prefix" />
-            <TextBox Text="{Binding Url}" Watermark="http://localhost:8080/v1" />
-          </StackPanel>
-          <StackPanel>
-            <TextBlock Classes="label" Text="API key (optional, stored encrypted for your Windows user)" />
-            <TextBox Text="{Binding ApiKey}" PasswordChar="*" Watermark="API key" />
+          <StackPanel Classes="section">
+            <StackPanel Classes="field">
+              <TextBlock Classes="dim" Text="Server address (empty for this computer)" />
+              <TextBox Text="{Binding Url}" Watermark="localhost" />
+            </StackPanel>
+            <StackPanel Classes="field">
+              <TextBlock Classes="dim" Text="API key (optional, stored encrypted for your Windows user)" />
+              <TextBox Text="{Binding ApiKey}" PasswordChar="*" Watermark="API key" />
+            </StackPanel>
           </StackPanel>
           <Expander Header="Advanced" HorizontalAlignment="Stretch">
-            <StackPanel Spacing="10">
-              <StackPanel>
-                <TextBlock Classes="label" Text="Model" />
+            <StackPanel Classes="section">
+              <StackPanel Classes="field">
+                <TextBlock Classes="dim" Text="Model" />
                 <TextBox Text="{Binding Model}" Watermark="The first model the server lists" />
               </StackPanel>
-              <StackPanel>
-                <TextBlock Classes="label" Text="Reasoning effort" />
+              <StackPanel Classes="field">
+                <TextBlock Classes="dim" Text="Reasoning effort" />
                 <TextBox Text="{Binding Effort}" Watermark="The server's default" />
               </StackPanel>
             </StackPanel>
           </Expander>
-          <TextBlock Classes="caption" Text="Requests go straight from your machine to this server. Nothing is sent anywhere else." />
-          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" Margin="0,0,0,8" />
+          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" />
         </StackPanel>
       </ScrollViewer>
     </DataTemplate>
@@ -402,44 +422,62 @@
     </DataTemplate>
 
     <DataTemplate DataType="ui:ModsPane">
-      <DockPanel Margin="24,18,24,0">
-        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,14">
-          <TextBlock Classes="h2" Text="Which mods should I help with?" />
-          <TextBlock Classes="dim" Text="A mod switched on loads Veronica the next time you open it in the Editor. A collaborator without Veronica in this same folder can't open it." />
-          <TextBlock Classes="warning" Margin="0,8,0,0" IsVisible="{Binding HasMessage}" Text="{Binding Message}" />
-        </StackPanel>
-        <ScrollViewer>
-          <ItemsControl ItemsSource="{Binding Mods}" Margin="0,0,0,16">
+      <ScrollViewer>
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
+            <TextBlock Classes="h2" Text="Which mods should I help with?" />
+            <TextBlock Classes="dim" Text="Installed in a mod, Veronica loads the next time you open it in the Editor." />
+          </StackPanel>
+          <TextBlock Classes="warning" IsVisible="{Binding HasMessage}" Text="{Binding Message}" />
+          <ItemsControl ItemsSource="{Binding Mods}" ItemsPanel="{StaticResource CardList}" Grid.IsSharedSizeScope="True">
             <ItemsControl.ItemTemplate>
               <DataTemplate DataType="ui:ModCard">
-                <Border Classes="card" Margin="0,0,0,8">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="3">
-                      <TextBlock Classes="cardTitle" Text="{Binding Name}" />
-                      <TextBlock Classes="caption" Text="{Binding Folder}" />
-                      <TextBlock Classes="caption warning" IsVisible="{Binding HasNote}" Text="{Binding Note}" />
-                      <ContentControl Content="{Binding Activity}" ContentTemplate="{StaticResource ActivityView}" Margin="0,4,0,0" />
+                <Border Classes="card">
+                  <Grid Classes="row" ColumnDefinitions="*,Auto">
+                    <StackPanel Classes="heading">
+                      <TextBlock Classes="title" Text="{Binding Name}" />
+                      <TextBlock Classes="dim" Text="{Binding Folder}" />
+                      <TextBlock Classes="dim warning" IsVisible="{Binding HasNote}" Text="{Binding Note}" />
+                      <ContentControl Content="{Binding Activity}" ContentTemplate="{StaticResource ActivityView}" />
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" VerticalAlignment="Top" IsChecked="{Binding On}" IsEnabled="{Binding CanToggle}"
-                                  OnContent="" OffContent="" Margin="12,0,0,0" />
+                    <!-- Shared column widths line the buttons up across the cards, Install as wide as Uninstall. -->
+                    <Grid Grid.Column="1" Classes="buttons" VerticalAlignment="Top" IsEnabled="{Binding CanAct}">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="ModStart" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="ModInstall" />
+                      </Grid.ColumnDefinitions>
+                      <Button Content="Start Editor" Command="{Binding Start}" />
+                      <Button Grid.Column="1" Classes="accent" Content="Install" Command="{Binding Install}" IsVisible="{Binding !Installed}" />
+                      <Button Grid.Column="1" Classes="accentRed" Content="Uninstall" Command="{Binding Uninstall}" IsVisible="{Binding Installed}" />
+                    </Grid>
                   </Grid>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-        </ScrollViewer>
-      </DockPanel>
+          <StackPanel Classes="section">
+            <StackPanel Classes="heading">
+              <TextBlock Classes="h2" Text="Editor" />
+              <TextBlock Classes="dim" Text="Start Editor opens a mod in this Editor." />
+            </StackPanel>
+            <Grid Classes="row" ColumnDefinitions="*,Auto">
+              <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding EditorText}" ToolTip.Tip="{Binding Editor}" />
+              <Button Grid.Column="1" Content="Change..." Command="{Binding ChangeEditor}" />
+            </Grid>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
     </DataTemplate>
 
     <DataTemplate DataType="ui:UpdatesPane">
       <ScrollViewer>
-        <StackPanel Spacing="14" Margin="24,18,24,16">
+        <StackPanel Classes="page">
           <TextBlock Classes="h2" Text="Updates" />
           <Border Classes="card">
-            <StackPanel Spacing="8">
+            <StackPanel Classes="section">
               <TextBlock Text="{Binding Installed}" />
               <TextBlock Classes="dim" Classes.ok="{Binding UpToDate}" Text="{Binding Latest}" />
-              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !Activity.Running}">
+              <StackPanel Classes="buttons" IsVisible="{Binding !Activity.Running}">
                 <Button Classes="accent" Content="Update" IsVisible="{Binding CanUpdate}" Command="{Binding Update}" />
                 <Button Content="Check again" Command="{Binding Check}" />
               </StackPanel>
@@ -449,20 +487,22 @@
           <Border Classes="callout warning" IsVisible="{Binding HasWarning}">
             <TextBlock Classes="warning" Text="{Binding Warning}" />
           </Border>
-          <StackPanel Spacing="8" IsVisible="{Binding HasConflicts}">
-            <TextBlock Classes="cardTitle" Text="Files you changed" />
-            <TextBlock Classes="dim" Text="You edited these skill or wiki files. The new version of each waits beside it as name.new.md until you choose." />
+          <StackPanel Classes="section" IsVisible="{Binding HasConflicts}">
+            <StackPanel Classes="heading">
+              <TextBlock Classes="h2" Text="Files you changed" />
+              <TextBlock Classes="dim" Text="You edited these skill or wiki files. The new version of each waits beside it as name.new.md until you choose." />
+            </StackPanel>
             <TextBlock Classes="error" IsVisible="{Binding HasConflictsMessage}" Text="{Binding ConflictsMessage}" />
-            <ItemsControl ItemsSource="{Binding Conflicts}">
+            <ItemsControl ItemsSource="{Binding Conflicts}" ItemsPanel="{StaticResource CardList}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="ui:ConflictCard">
-                  <Border Classes="card" Margin="0,0,0,8">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel Spacing="3" VerticalAlignment="Center">
-                        <TextBlock Classes="cardTitle" Text="{Binding Name}" />
-                        <TextBlock Classes="caption" Text="{Binding Note}" />
+                  <Border Classes="card">
+                    <Grid Classes="row" ColumnDefinitions="*,Auto">
+                      <StackPanel Classes="heading" VerticalAlignment="Center">
+                        <TextBlock Classes="title" Text="{Binding Name}" />
+                        <TextBlock Classes="dim" Text="{Binding Note}" />
                       </StackPanel>
-                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
+                      <StackPanel Grid.Column="1" Classes="buttons" VerticalAlignment="Center">
                         <Button Content="Open" Command="{Binding Open}" />
                         <Button Content="Keep mine" Command="{Binding KeepMine}" />
                         <Button Classes="accent" Content="Use new version" Command="{Binding UseNew}" />
@@ -478,12 +518,12 @@
     </DataTemplate>
 
     <DataTemplate DataType="ui:ErrorPage">
-      <StackPanel Spacing="12" MaxWidth="540" Margin="24,40,24,0" HorizontalAlignment="Center">
+      <StackPanel Classes="page" HorizontalAlignment="Center">
         <TextBlock Classes="h1" Text="Something went wrong" />
         <Border Classes="callout error">
           <TextBlock Text="{Binding Message}" />
         </Border>
-        <StackPanel Orientation="Horizontal" Spacing="8">
+        <StackPanel Classes="buttons">
           <Button Classes="accent" Content="Try again" Command="{Binding Retry}" />
           <Button Content="Close" Command="{Binding Close}" />
         </StackPanel>
@@ -531,16 +571,21 @@
             <fa:NavigationViewItem.IconSource>
               <fa:SymbolIconSource Symbol="CloudDownload" />
             </fa:NavigationViewItem.IconSource>
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Classes="inline">
               <TextBlock Text="Updates" VerticalAlignment="Center" />
-              <Ellipse Width="6" Height="6" Fill="{DynamicResource AppAccentBrush}" VerticalAlignment="Center"
-                       IsVisible="{Binding App.Updates.NeedsAttention, FallbackValue=False}" />
+              <Ellipse Classes="badgeDot" IsVisible="{Binding App.Updates.NeedsAttention, FallbackValue=False}" />
             </StackPanel>
           </fa:NavigationViewItem>
         </fa:NavigationView.MenuItems>
       </fa:NavigationView>
-      <Border Height="2" Background="{DynamicResource Border0Brush}" />
+      <Panel Height="2">
+        <Border Background="{DynamicResource Border0Brush}" />
+        <Border Classes="outlineTick" HorizontalAlignment="Left" />
+        <Border Classes="outlineTick" HorizontalAlignment="Right" />
+      </Panel>
     </StackPanel>
-    <ContentControl Content="{Binding Page}" />
+    <Border Classes="outline">
+      <ContentControl Content="{Binding Page}" />
+    </Border>
   </DockPanel>
 </Window>

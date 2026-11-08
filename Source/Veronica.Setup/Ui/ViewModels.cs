@@ -249,15 +249,77 @@ public static class Providers
     };
 }
 
-public sealed class WelcomeSlide(string root, string warning, Action start) : ViewModel
+public sealed class WelcomeSlide : ViewModel
 {
-    public string Root => $"Install folder: {root}";
+    private readonly Func<string, string> _warningFor;
+    private string _folder = "";
+    private string _warning = "";
+    private string _error = "";
+    private bool _locked;
 
-    public string Warning => warning;
+    public WelcomeSlide(string folder, bool locked, Func<string, string> warningFor, Func<Task<string?>> pickFolder, Action<WelcomeSlide> start)
+    {
+        _warningFor = warningFor;
+        Folder = folder;
+        Locked = locked;
+        Change = new Command(async () =>
+        {
+            if (await pickFolder() is { Length: > 0 } picked)
+                Folder = picked;
+        });
+        Start = new Command(() => start(this));
+    }
 
-    public bool HasWarning => warning.Length > 0;
+    public string Folder
+    {
+        get => _folder;
+        private set
+        {
+            if (!Set(ref _folder, value))
+                return;
+            Warning = _warningFor(value);
+            Error = "";
+        }
+    }
 
-    public ICommand Start { get; } = new Command(start);
+    public string Warning
+    {
+        get => _warning;
+        private set
+        {
+            if (Set(ref _warning, value))
+                Changed(nameof(HasWarning));
+        }
+    }
+
+    public bool HasWarning => _warning.Length > 0;
+
+    public string Error
+    {
+        get => _error;
+        set
+        {
+            if (Set(ref _error, value))
+                Changed(nameof(HasError));
+        }
+    }
+
+    public bool HasError => _error.Length > 0;
+
+    // The install already belongs to this folder: it was copied here, started here, or the files are in.
+    public bool Locked
+    {
+        get => _locked;
+        set => Set(ref _locked, value);
+    }
+
+    public bool StartMenuShortcut { get; set; } = true;
+
+    public bool DesktopShortcut { get; set; } = true;
+
+    public ICommand Change { get; }
+
+    public ICommand Start { get; }
 }
 
 public sealed class ProviderCard(ProviderKind kind, Action<ProviderKind> choose) : ViewModel
@@ -465,7 +527,8 @@ public sealed class OpenAiConnectPage(string? url, string? apiKey, string? model
     private string _model = model ?? "";
     private string _effort = effort ?? "";
 
-    protected override bool Valid => !string.IsNullOrWhiteSpace(_url);
+    // An empty address looks for a server on this machine.
+    protected override bool Valid => true;
 
     public string Url
     {
@@ -650,20 +713,18 @@ public sealed class SetupFlow(Slides slides, FilesStrip files) : ViewModel
 
 public sealed class ModCard : ViewModel
 {
-    private readonly Action<ModCard, bool> _toggle;
-    private bool _on;
-
-    public ModCard(string name, string folder, string? project, HookState state, Action<ModCard, bool> toggle)
+    public ModCard(string name, string folder, string? project, HookState state, Action<ModCard> start, Action<ModCard, bool> change)
     {
         Name = name;
         Folder = folder;
         Project = project;
         State = state;
-        _toggle = toggle;
-        _on = state is HookState.Hooked or HookState.Foreign;
         Note = project == null ? "No .vrgproj file found."
-            : state == HookState.Foreign ? "Loads Veronica from another build or folder, so it is left as it is."
+            : state == HookState.Foreign ? "Loads Veronica from another build or folder."
             : "";
+        Start = new Command(() => start(this));
+        Install = new Command(() => change(this, true));
+        Uninstall = new Command(() => change(this, false));
     }
 
     public string Name { get; }
@@ -674,7 +735,9 @@ public sealed class ModCard : ViewModel
 
     public HookState State { get; }
 
-    public bool CanToggle => Project != null && State != HookState.Foreign && !Activity.Running;
+    public bool CanAct => Project != null && !Activity.Running;
+
+    public bool Installed => State != HookState.NotHooked;
 
     public string Note { get; init; }
 
@@ -682,24 +745,36 @@ public sealed class ModCard : ViewModel
 
     public Activity Activity { get; } = new();
 
-    public bool On
+    public ICommand Start { get; }
+
+    public ICommand Install { get; }
+
+    public ICommand Uninstall { get; }
+
+    public void Touch() => Changed(nameof(CanAct));
+}
+
+public sealed class ModsPane(Action changeEditor) : ViewModel
+{
+    private string _message = "";
+    private string _editor = "";
+
+    public ObservableCollection<ModCard> Mods { get; } = new();
+
+    // The saved VRage.Editor.exe; empty until the first Start Editor asks for it.
+    public string Editor
     {
-        get => _on;
+        get => _editor;
         set
         {
-            if (Set(ref _on, value))
-                _toggle(this, value);
+            if (Set(ref _editor, value))
+                Changed(nameof(EditorText));
         }
     }
 
-    public void Touch() => Changed(nameof(CanToggle));
-}
+    public string EditorText => _editor.Length > 0 ? _editor : "Not chosen yet. The first Start Editor asks for VRage.Editor.exe.";
 
-public sealed class ModsPane : ViewModel
-{
-    private string _message = "";
-
-    public ObservableCollection<ModCard> Mods { get; } = new();
+    public ICommand ChangeEditor { get; } = new Command(changeEditor);
 
     public string Message
     {

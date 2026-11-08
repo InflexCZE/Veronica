@@ -66,6 +66,44 @@ public class ModsTests
     }
 
     [Fact]
+    public void UnhookAny_RemovesAnotherBuildsEntries_KeepingTheModsOwnPaths()
+    {
+        const string devBuild = @"..\\..\\Source\\Veronica\\bin\\Debug";
+        string dev = Project.Replace("\"Mine.dll\"", "\"Mine.dll\",\r\n      \"Veronica.dll\"")
+            .Replace("\"..\\\\Plugins\"", "\"..\\\\Plugins\",\r\n      \"" + devBuild + "\"");
+
+        string unhooked = VrgProj.UnhookAny(dev, Runtime, path => path == @"..\..\Source\Veronica\bin\Debug");
+
+        Assert.Equal(Project, unhooked);
+    }
+
+    [Fact]
+    public void UnhookAny_RemovesThisInstallsRuntime_WhenNoFolderHoldsVeronica()
+    {
+        Assert.Equal(Project, VrgProj.UnhookAny(VrgProj.Hook(Project, Runtime), Runtime, _ => false));
+    }
+
+    [Fact]
+    public void EditorLaunch_FindsTheCheckoutsGameDataAboveADevEditor()
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData", @"R:\SE2\VRage\Sources\Editor\GameData" };
+
+        var dirs = EditorLaunch.GlobalProjectDirs(@"R:\SE2\VRage\Sources\Editor\VRage.Editor\bin\x64\Debug\VRage.Editor.exe", existing.Contains);
+
+        Assert.Equal([@"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData"], dirs);
+        Assert.Equal(["--project", @"C:\Mods\A\A.vrgproj", "--globalProjectDirs", @"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData"],
+            EditorLaunch.Arguments(@"C:\Mods\A\A.vrgproj", dirs));
+    }
+
+    [Fact]
+    public void EditorLaunch_FindsNothingWithoutBothGameDataFolders()
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"C:\Games\SE2\Game2\GameData" };
+
+        Assert.Empty(EditorLaunch.GlobalProjectDirs(@"C:\Games\SE2\Editor\VRage.Editor.exe", existing.Contains));
+    }
+
+    [Fact]
     public void LfProject_StaysLf()
     {
         string lf = Project.Replace("\r\n", "\n");
