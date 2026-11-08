@@ -14,7 +14,8 @@ public static class Prompts
         "1. Understand the task. Ask the user for what you cannot find in the project. " +
         "A question about how something works, what it takes or what went wrong is answered, not built: answer from actual read results or ask " + WikiTool.ToolName + "; the work starts when the user asks for it.\n" +
         "2. Read the skills that may cover it with skill(name).\n" +
-        "3. When the user wants the work done, activate the skill that fits it best with activate_skill(name), before you ask the user anything. The Editor then gives you its plan one item at a time.\n" +
+        "3. When the user wants the work done and a skill fits it, activate it with activate_skill(name) before anything else: before you explore the project or vanilla, create anything, or ask the user. " +
+        "A fitting skill is always activated, even when the task looks small; its plan names what to read. The Editor then gives you its plan one item at a time.\n" +
         "4. Work on the current item, using the skill's steps. When it needs something from the user, a choice that is theirs (a name or text players will see, a folder, a value they did not give) " +
         "or a step they do in the Editor. Ask for choices with " + AskUserTool.ToolName + ", all this item needs in one call; for a step in the Editor, describe it and call " + WaitForUserTool.ToolName + ". Then continue. " +
         "A new thing gets its own name and text from the user, even when something similar already has one; a skill's example folder is a suggestion to offer, not a choice made. " +
