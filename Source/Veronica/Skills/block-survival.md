@@ -1,6 +1,6 @@
 ---
 name: block-survival
-description: Use when a block should be buildable from the start of a survival game, without unlocking it first; it does not create the block.
+description: Use when a block should be buildable in a survival game with progression on, where a new block is otherwise locked for good; it does not create the block.
 ---
 Needs:
 - the block: its prefab binding or any of its files
