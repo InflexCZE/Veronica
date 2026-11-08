@@ -15,6 +15,13 @@ public sealed record ReferenceSpec(MemberReference Field, ReferenceKind Kind, IR
 
 public sealed record ContentLink(Guid Id, string Path);
 
+// An override merges into its original and names no definition of its own, so pointing at it can only mean the original.
+public static class OverrideLinks
+{
+    public static List<T> InPlaceOfOverrides<T>(IEnumerable<T> named, Func<T, T?> originalOf, Func<T, Guid> id) where T : class =>
+        named.Select(item => originalOf(item) ?? item).DistinctBy(id).ToList();
+}
+
 // The project's side of references: names to items and back. The model never sees an id.
 public interface IContentLinks
 {

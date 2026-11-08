@@ -15,16 +15,15 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
 
     public ContentLink Find(string name, ReferenceSpec spec)
     {
-        var named = Content.Pick(project.GetAvailableFiles().ToList(), name);
-        if (named.Count == 0)
+        var picked = Content.Pick(project.GetAvailableFiles().ToList(), name);
+        if (picked.Count == 0)
             throw new EditError(Content.NotFound(project, project.GetAvailableFiles(), name));
 
+        var named = OverrideLinks.InPlaceOfOverrides(picked, OriginalOf, f => f.AssetID);
         var fitting = named.Where(f => Fits(f, spec)).ToList();
         return fitting.Count switch
         {
             1 => new ContentLink(fitting[0].AssetID, fitting[0].ProjectRelativePath),
-            0 when named.Any(IsOverride) => throw new EditError(
-                $"'{name}' is an override: it changes the original in place, so fields that point at the original already get its values. Point at the original, or at a copy for a new thing."),
             0 => throw new EditError($"'{name}' cannot go in this field, which takes {Expected(spec)}. Found: {string.Join(", ", named.Take(Content.MaxCandidates).Select(Content.Describe))}."),
             _ => throw new EditError(Content.Ambiguous(name, fitting)),
         };
@@ -57,8 +56,10 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
         return definition.DefinitionType != typeof(object) && spec.DefinitionTypes.All(definition.DefinitionType.IsAssignableTo);
     }
 
-    private static bool IsOverride(ExplorerFile file) =>
-        file is ExplorerAssetFile { AssetInterface: PartialDefinitionAssetInterface { PartialDefinitionKind: PartialDefinitionKind.Override } };
+    private ExplorerFile? OriginalOf(ExplorerFile file) =>
+        file is ExplorerAssetFile { AssetInterface: PartialDefinitionAssetInterface { PartialDefinitionKind: PartialDefinitionKind.Override } partial }
+            ? project.GetItemByGuid(partial.BaseDefinition) as ExplorerFile
+            : null;
 
     private static string Expected(ReferenceSpec spec)
     {
