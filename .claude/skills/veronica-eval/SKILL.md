@@ -24,6 +24,17 @@ You are the master. Each batch is a fork of you, so everything here reaches the 
 - For a fact about the game, send a fork that reads the SE2 source only (`SE2Root` in `Directory.Build.local.props`), with no Editor or MCP while a batch runs.
 - After a batch, revert experimental context edits that did not hold, then propose context changes to the owner with the runs that support them. Commit only what the owner approves.
 
+## Unattended run
+
+- Settle the plan with the owner before they leave.
+- Goal: context that helps the model succeed across varied modding tasks, not just the eval task. No task-specific wording.
+- Commit right away: small Veronica bug fixes and context tweaks a batch confirmed, one per commit. Bigger redesigns, new tools, owner design forks: propose at the end with supporting runs.
+- Pause (report and wait): server not responding, build fails, Editor will not start twice, a fix needs a redesign.
+- Rotate forks every ~10 runs (as fits, not a hard limit), so a fork's context stays small.
+- A fork stops at 200 tool calls with no warning to itself; the master is told "stopped at its 200-turn limit". It can be resumed with SendMessage. A run it left open (Editor up, card open) is handed to the next fork with run folder, pid and transcript line.
+- Each fork tool call stays under 600 s: Wait-Ready, validation, send and status-wait are separate calls; a longer chain goes to the background.
+- Keep `.tmp/eval/findings.md` current after every fork.
+
 ## Fork: a batch of runs
 
 Wait in the foreground only: blocking tool calls with a timeout of up to 600000 ms, repeated as needed. Never run a command in the background or use Monitor. A fork that stops with background work running notifies the master each time, which floods the master's context. Leave files only in run folders and `.tmp/`. Do the runs one after another, each as below, and return to the master once, after the last.
