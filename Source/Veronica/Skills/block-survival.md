@@ -1,6 +1,6 @@
 ---
 name: block-survival
-description: Use when a block should be buildable in a survival game with progression on, where a new block is locked unless its kind is unlocked from the start; it does not create the block.
+description: Use when a block should be buildable in a survival game with progression on, where a new block is locked unless its kind is unlocked from the start; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files

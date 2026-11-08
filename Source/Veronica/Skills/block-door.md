@@ -1,6 +1,6 @@
 ---
 name: block-door
-description: Use when a block should be a door with leaves that slide open, one create-block just made from the Doors template or one that already exists; it does not create the block.
+description: Use when a block should be a door with leaves that slide open, one create-block just made from the Doors template or one that already exists; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, made from the Doors template

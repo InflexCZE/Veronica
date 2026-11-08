@@ -1,6 +1,6 @@
 ---
 name: block-connector
-description: Use when a block should dock to another ship or station and join their conveyor networks like a connector, one create-block just made or one that already exists; it does not create the block.
+description: Use when a block should dock to another ship or station and join their conveyor networks like a connector, one create-block just made or one that already exists; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, made from the Connectors template; a new block comes from create-block first, which also gives it its name and models

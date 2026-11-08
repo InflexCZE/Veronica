@@ -1,6 +1,6 @@
 ---
 name: block-button
-description: Use when a block should have buttons players press to run actions, like a button or button panel, one create-block just made or one that already exists; it does not create the block.
+description: Use when a block should have buttons players press to run actions, like a button or button panel, one create-block just made or one that already exists; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, made from the Buttons template; a new block comes from create-block first, which also gives it its name and models

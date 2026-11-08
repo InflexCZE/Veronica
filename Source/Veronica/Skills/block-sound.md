@@ -1,6 +1,6 @@
 ---
 name: block-sound
-description: Use when a block should play sounds players pick, like a sound block or speaker, one create-block just made or one that already exists; it does not create the block.
+description: Use when a block should play sounds players pick, like a sound block or speaker, one create-block just made or one that already exists; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, e.g. one made from the Sound Block template

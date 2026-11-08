@@ -1,6 +1,6 @@
 ---
 name: create-block
-description: Use when the user wants a new placeable block, whatever it does.
+description: Use when the user wants a new placeable block, whatever it does: a light, thruster, door or any other; the block-* skills then add its function to the block it makes.
 ---
 Needs:
 - name: the block's name as players see it

@@ -1,6 +1,6 @@
 ---
 name: block-weapon
-description: Use when a block should fire projectiles like a gatling gun, optionally with an ammo of its own, one create-block just made or one that already exists; it does not create the block.
+description: Use when a block should fire projectiles like a gatling gun, optionally with an ammo of its own, one create-block just made or one that already exists; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, made from the Gatling Cannon (Hit Scan) template

@@ -1,6 +1,6 @@
 ---
 name: block-cockpit
-description: Use when a block made from the Cockpit or Controllable Seat template should seat a pilot who flies the ship; it does not create the block.
+description: Use when a block made from the Cockpit or Controllable Seat template should seat a pilot who flies the ship; it does not create the block: a new one starts with create-block.
 ---
 Needs:
 - the block: its prefab binding or any of its files, made from the Cockpit or Controllable Seat template
