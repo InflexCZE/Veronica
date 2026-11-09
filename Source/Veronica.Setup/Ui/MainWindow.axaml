@@ -5,6 +5,7 @@
         x:Class="Veronica.Setup.Ui.MainWindow"
         x:DataType="ui:MainViewModel"
         Title="{Binding Title}"
+        Icon="/Assets/Veronica.ico"
         Width="1090" Height="664" MinWidth="720" MinHeight="520"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Surface0Brush}"
