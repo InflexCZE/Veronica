@@ -4,12 +4,15 @@
 param(
     [Parameter(Mandatory = $true)][string]$Tool,
     [string]$ArgsJson = '{}',
+    [string]$ArgsFile,
     [int]$Port = 47812
 )
 
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
+# Windows PowerShell drops the double quotes of a native argument, so JSON passed from bash or cmd arrives broken; a file keeps it intact.
+if ($ArgsFile) { $ArgsJson = [IO.File]::ReadAllText((Resolve-Path $ArgsFile)) }
 $arguments = $ArgsJson | ConvertFrom-Json
 $request = [ordered]@{
     jsonrpc = '2.0'
