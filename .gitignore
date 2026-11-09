@@ -9,3 +9,6 @@ Directory.Build.local.props
 
 # Editor-written caches of the dev mod
 Assets/VeronicaDevMod/.*cache*
+
+# Machine-specific VS launch profiles
+**/Properties/launchSettings.json
