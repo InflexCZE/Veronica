@@ -1,116 +1,65 @@
-# Agent: providers, tool loop, conversation
+# Agent
 
-`Veronica.Agent.dll` holds everything between the chat panel and a model: the provider abstraction, the tool loop, the conversation and the WebQwen client. It has no Editor references, so its tests run without the Editor. `Veronica.dll` references it and ships it beside itself.
+`Veronica.Agent.dll` holds everything between the chat panel and a model: the provider abstraction, the tool loop, the tool set, the conversation and questions to the user. It has no Editor or SE2 references, so it runs and is tested without the Editor. The plugin ships it beside itself; the Launcher shares its settings and release code.
 
 ## Providers
 
-- A provider opens sessions. A session runs one whole assistant turn, tool rounds included: `IProviderSession.RunTurnAsync(TurnRequest, ITurnHost, CancellationToken)`.
-- A session is one conversation's state; `OpenSession(name)` names whose: the chat's, or a kind of subagent's (`Wiki.md`, Subagents). `RunsSubagents` says whether a second session may run while the chat's turn waits in a tool call.
-- A provider states its context window. Every provider assumes 45K tokens for now (`Docs/TODOs/ContextWindow.md`).
-- The chat sees only `ITurnHost` callbacks, in model order: round start, text and reasoning deltas, round stats, tool calls, notices, transcript appends. Every provider drives the same host.
-- Providers whose wire protocol is one model request per round (WebQwen) implement a `StreamRound` function. `ClientToolLoop` wraps it into a session.
-- Providers that run their own loop (`claude -p`, `ClaudeProvider.md`) implement `RunTurnAsync` directly.
+- A provider opens sessions; a session runs one whole assistant turn, tool rounds included. A session is one conversation's state: the chat holds one for its lifetime, a subagent opens its own, runs one turn and disposes it, so two conversations never see each other's state.
+- A provider says whether it runs subagents: whether a second session may run a turn while the chat's turn waits inside a tool call. Wiki research and compaction exist only with providers that do.
+- A provider states its context window. It is assumed, not asked of the server ([ContextWindow](../TODOs/ContextWindow.md)).
+- The chat sees a turn only through host callbacks in model order: round start, text and reasoning deltas, round stats, tool calls, notices, transcript appends. Every provider drives the same host, so the panel and eval recording do not depend on the provider.
+- Two provider shapes:
+  - one model request per round on the wire (WebQwen, OpenAI-compatible): the provider streams a round and the shared client tool loop turns it into a session;
+  - a provider that runs its own loop (Claude Code) implements the turn directly and reaches the tools over MCP.
 
-## Tool loop
+## Client tool loop
 
-`ClientToolLoop` runs rounds: stream a reply, run its tool calls, stream again.
+Rounds: stream a reply, run its tool calls, stream again. Each round sends the system prompt followed by the transcript; the system prompt is not part of the transcript.
 
-- Each round sends the system prompt followed by the transcript. The system prompt is not part of the transcript.
-- Tool-call fragments merge by index: each fragment carries part of the id, name or arguments.
-- Each round appends the assistant message (content, reasoning, tool calls) to the transcript, followed by one tool message per call, in order.
-- A round without tool calls ends the turn, except for the nudges below.
-- **Round budget:** `MaxRounds` (default 20) rounds per turn. Rounds that call only `FreeRoundTools` are not counted. A hard cap of three times `MaxRounds` bounds every turn. When the budget runs out, the turn ends with a notice that tells the user to send "continue". The last round's tools are told it is the last.
-- **Reward:** a tool result with `EarnedReward` refunds half the budget. The model is never told.
-- **Length nudge:** a round that hits the token cap with no answer text (cut off while thinking) gets an automatic user message and another round, up to `MaxNudges`. A round cut off mid-answer is not nudged, since the model would start its answer over.
-- **Cut tool call:** a round that hits the token cap while writing a tool call keeps that call in the history with `{}` as its arguments, does not run it, and answers it with a result saying it was cut off, to send it again with fewer calls per reply. The round's complete calls run and the turn goes on. Kept as it was, the half-written arguments made the server refuse every later request of the conversation.
-- **End nudge:** when the model ends its turn, a callback can send it back with a message, once. It re-arms only after a tool call outside `BookkeepingTools`.
-- **Turn-ending tools:** a round that calls one of `TurnEndingTools` runs all its calls, in order, then ends the turn: no further round, no end nudge, and no budget notice even on the last round, since the user's answer starts a fresh budget. It lets the model stop on purpose through a tool call, the way small models act. A round with no text of its own does not end through `wait_for_user`: the tool's result is replaced by one saying nothing was written for the user and the question belongs in the same reply, and the loop goes on. Only the waiting round's text counts, since models narrate their work in earlier rounds; a wait with no question leaves the user nothing to answer. A round that also calls `ask_user` ends without text: the card is what the user answers.
-- Nudges count against the round budget.
-- **Stop:** a stopped round keeps what it generated. Its tool calls are not run: each gets a "stopped by the user" result, so the transcript never carries dangling calls. A tool that returns null (stopped while it ran) also ends the turn this way, for every call left in the round.
-- A failed round appends nothing and fails the turn. There are no retries.
-- **Context wall:** a round whose reply ran into the end of the context window, reported by the provider, fails the turn with a `ContextFullException` before any nudge or cut-call handling: it is not a token-cap cut. A prompt the server refuses as too long fails the same way. The conversation compacts on it (`Compaction.md`).
+- **Round budget:** rounds that call only free-round tools (skill, plan, wiki) are free. A hard cap of three times the budget bounds every turn, free rounds included. When the budget runs out the turn ends with a notice that the user can send "continue"; the last round's tools are told it is the last. Nudges count against the budget.
+- **Reward:** a tool result that earns a reward refunds half the budget, and the model is never told. No tool earns one yet ([ToolRewards](../TODOs/ToolRewards.md)).
+- **Length nudge:** a round cut at its token cap with no answer text (cut while thinking) gets an automatic user message and another round. A round cut mid-answer is not nudged: the model would start its answer over.
+- **Cut tool call:** a round cut while writing a tool call keeps that call in the history with empty arguments, does not run it, and answers it as cut off. The round's complete calls run and the turn goes on. Half-written arguments kept in the history made the server refuse every later request of the conversation.
+- **End nudge:** when the model ends its turn, a callback may send it back once, for an open plan item. It re-arms only after a call to a tool outside its bookkeeping set, the skill and plan tools; a `wiki` call re-arms it.
+- **Turn-ending tools** (`ask_user`, `wait_for_user`): a round that calls one runs all its calls, then ends the turn with no further round, end nudge or budget notice. Small models stop on purpose through a tool call more reliably than by ending a reply.
+  - A wait in a round with no text of its own is refused, and the loop goes on. Models narrate in earlier rounds, so only the waiting round's text can be the question; a wait with nothing written leaves the user nothing to answer. A call to `ask_user` counts as the round's text, since its card is what the user answers.
+  - A refused call never ends the turn.
+- **Stop:** a stopped round keeps what it generated. Its tool calls are not run and each gets a stopped result, so the transcript never carries a dangling call into the next turn. A tool stopped while it ran ends the turn the same way for every call left in the round.
+- **Failure:** a failed round appends nothing and fails the turn. There are no retries.
+- **Context wall:** a reply that ran into the end of the context window, or a prompt the server refuses as too long, fails the turn with a context-full error before any nudge or cut-call handling: it is not a token-cap cut. The conversation compacts on it ([Compaction](Compaction.md)).
 
-## Tools
+## Tool set
 
-- A tool is an `ITool`: name, description, JSON Schema parameters, and `ExecuteAsync` over the parsed arguments.
-- `ToolSet` holds a conversation's tools. It supplies their definitions to every turn and runs each call by name.
-- Every failure becomes a tool result the model can act on, never an exception:
-  - a call the engine could not parse (empty name, raw text as arguments) asks the model to write the call again;
-  - an unknown tool lists the tools there are;
-  - arguments that are not a JSON object;
-  - an exception thrown by the tool.
-- Tools run on a worker thread, one at a time, whichever source calls them: the chat's turn or an MCP client (`McpEndpoint.md`). Concurrent tools are never wanted; a call waits for the running one. A blocking `ask_user` waits outside this queue (Questions to the user).
-- The tools are the Editor tools in `EditorTools.md`. Their descriptions say only what the model would not guess; the system prompt carries no tool guidance.
+- A tool has a name, a description, a JSON Schema for its parameters, and runs on the parsed arguments. Descriptions say only what the model would not guess; the system prompt carries no tool guidance.
+- Every failure becomes a result the model can act on, never an exception: an unparsable call, an unknown tool (the result lists the real ones), arguments that are not a JSON object, an exception in the tool. Such results are marked refused, so a turn-ending tool does not end the turn on them.
+- Each result carries a one-line summary for the chat; the model never sees it.
+- Tools run one at a time on a worker thread, whoever calls: the chat's turn, an MCP client, or both at once ([McpEndpoint](McpEndpoint.md)). Concurrent tools are never wanted. A tool that waits on the user runs outside this queue, so it does not stall other callers.
 
 ## Questions to the user
 
-- `ask_user(questions)` asks the user questions, each with optional short answers to pick. It is for every question to the user; `wait_for_user` is left for steps the user does in the Editor (`Skills.md`).
-- The questions travel as arguments, so the user always sees them whole. A question written as reply text before a wait was sometimes cut to its lead-in.
-- The schema says 1-4 questions. It is guidance: more are shown, never dropped, since the model would wait for answers it never gets.
-- The panel shows the questions as a card (`EditorUi.md`). The user picks an option, types an answer or skips, per question. The answers reach the model as one `Q: <question>` / `A: <answer>` pair per question, `(skipped)` for one without an answer.
-- The `ask_user` calls of one round merge into one card.
-- The description says the tool waits for the answers by itself, so the model neither ends its turn nor calls `wait_for_user` after it.
-- A call with no usable question gets a result asking to send it again, and the turn goes on.
-- **Client tool loop:** `ask_user` is a turn-ending tool. Its result says the questions are shown; the answers are the next user message, which starts a turn with a fresh budget. The turn ends instead of waiting so that the Editor's VRAM is free (`VramSharing.md`) while the user answers or works in the Editor. Closing the card sends nothing: the user's next message is what the model sees. A message sent while the card is open closes it unanswered.
-- **Over MCP** (the Claude provider and any other client): the call blocks until the card is answered or closed, and the answers are its result. A closed card's result says the user closed the questions without answering. The wait runs outside the one-at-a-time tool queue, so other calls run while the card is open.
-- `/clear` and Stop close an open card. A blocked call whose wait is cancelled otherwise (its Claude turn ended) takes back only its own questions.
-- Answers given while the asking turn still winds down are sent as soon as it ends; questions asked after them stay open. The eval channel never reports idle in between.
-- A call the tool set could not run (arguments not JSON, an exception) is refused like a malformed one, so a turn-ending tool does not end the turn on it.
+- `ask_user` carries every question to the user, each with optional short answers to pick; `wait_for_user` is left for steps the user does in the Editor ([Skills](Skills.md)).
+- The questions travel as arguments, so the user always sees them whole: a question written as reply text before a wait was sometimes cut to its lead-in.
+- The 1-4 limit in the schema is guidance: more questions are shown, never dropped. A call with any unreadable entry is refused whole and asked again, because a dropped question would be waited for forever. The `ask_user` calls of one round merge into one card.
+- **Client tool loop:** `ask_user` ends the turn, and the answers are the user's next message, which starts a turn with a fresh budget. The turn ends instead of waiting so the Editor gets its VRAM back while the user answers or works in the Editor ([VramSharing](VramSharing.md)).
+- **Over MCP:** the call blocks until the card is answered or closed, and the answers are its result. The wait runs outside the tool queue.
+- A blocked call whose wait is cancelled otherwise (its Claude Code turn ended) takes back only its own questions.
+- Answers given while the asking turn still winds down are sent as soon as it ends.
 
 ## Conversation
 
-- `Conversation` holds the transcript and the session. It sends one turn at a time: the user message is appended, then the turn's messages as the loop reports them.
-- The transcript lives in memory only and is lost when the Editor exits. Eval runs also record every session to a file (`Eval.md`).
-- `/clear` empties it and resets the session.
-- A turn that hits the end of the context window is compacted: the transcript is replaced by a summary and the turn goes on (`Compaction.md`).
-- Assistant messages keep their reasoning. Thinking models need their own earlier reasoning: their chat template otherwise renders an empty think block, and the model stops closing `</think>`. WebQwen also reuses its KV cache only when every earlier reply comes back exactly as it was generated.
+- A conversation holds the chat's transcript and its provider session, and sends one turn at a time.
+- The transcript lives in memory only; eval runs also record every session to a file ([Eval](Eval.md)).
+- `/clear` empties the transcript, resets the session and builds the system prompt anew, so edited skill files take effect without an Editor restart.
+- Assistant messages keep their reasoning. A thinking model's chat template otherwise renders an empty think block for its earlier replies, after which the model stops closing `</think>`; and WebQwen reuses its KV cache only when every earlier reply comes back exactly as generated.
 
-## Chat settings
+## Chat turn limits
 
-| setting | value |
+| limit | value |
 |---|---|
-| system prompt | who Veronica is and that `<harness>` messages come from the Editor and the user has not seen them, then a "How we work" section and the skill index (`Skills.md`). The section is the procedure in four steps: understand the task and ask the user for what the project lacks (a question about how something works, what it takes or what went wrong is answered, not built), read the skills that may cover it, once the user wants the work done activate the one that fits best before asking the user anything (a small model that asked first often never activated), then work its current item, asking the user for what that item needs from them (their choices, such as names players see or a folder, with `ask_user`; steps they do in the Editor, described in the reply, with `wait_for_user`), and mark it with proof or a reason. Models told to work the item "only, yourself" went straight to work and invented the user's choices. The step also says a new thing gets its own name and text from the user even when a similar one exists, that a skill's example folder is a suggestion to offer, and to ask when unsure: left to judge, a model argued itself out of asking, reused a block's name for its new tile and picked folders silently. Small models skipped activation or worked from memory when the procedure was spread over separate hints. A paragraph after the procedure says that game knowledge comes from a read in the session or from the wiki, not memory, and when to ask the wiki (`Wiki.md`), and that an answer about how items connect is also shown with `present_graph`, beside the text (`EditorTools.md`). Without skills, only the ask-the-user rule is left. |
 | thinking | on |
-| rounds per turn | 50, until tool rewards exist (`Docs/TODOs/ToolRewards.md`) |
-| max tokens per round | 4000 for the answer and tool calls. With the OpenAI provider, thinking has its own budget of 4000 on top (`thinking_budget_tokens`, llama.cpp; `max_tokens` is the sum): a reply of 30 writes after long thinking hit a shared 4000 cap mid-call. The server closes the thinking at the budget and the model still answers. OpenAI's own API refuses unknown request fields, so it would refuse this one. |
-| length nudge | up to 2 per turn |
-| tools | the Editor tools (`EditorTools.md`), `skill` and the plan tools, `wait_for_user` among them (`Skills.md`), `wiki` (`Wiki.md`), `ask_user` |
-| free rounds | rounds that call only `skill`, the plan tools and `wiki` |
-| end nudge | when an item of the active skill's plan is open (`Skills.md`, Plan); `skill` and the plan tools are its bookkeeping tools |
-| turn-ending tools | `ask_user`, `wait_for_user`. The Claude provider gets them over MCP like every tool, but its own loop decides when a turn ends |
-
-## WebQwen provider
-
-- WebQwen.exe starts with the first round of the first turn and stays up. See `WebQwenProtocol.md`.
-- Stop while WebQwen.exe is starting or loading the model ends the turn, and the load continues. The user's message stays in the transcript.
-- When WebQwen.exe exits or breaks the protocol, the running round fails, the turn shows the error, and the next round starts a new process. A failed request (an `error` event with an id) fails the round but keeps the process. One with the code `context_full`, and a reply that ended as `length` short of its `max_tokens`, are reported as the context wall (`Compaction.md`).
-- The strip above the input shows the start, the load progress and a stopped process, and hides once the model is ready (`EditorUi.md`, Chat). Speeds show in the turn's stats footer.
-- The provider holds the Editor's VRAM (`IGpuShare`, `VramSharing.md`) for each whole turn and for each model load until it completes. `GpuShare` counts the holds: the first one frees the Editor's VRAM, the last one gives it back. A hold that cannot free the VRAM fails the turn.
-
-## OpenAI-compatible provider
-
-- Any server that speaks OpenAI chat completions; the target is a local llama.cpp server. It uses one streamed request per round, run by `ClientToolLoop`.
-- It is selected by settings (`Distribution.md`), which `Veronica.exe` writes and environment variables override. Without them, WebQwen is the provider.
-
-| setting | value |
-|---|---|
-| `VERONICA_PROVIDER` | `openai` |
-| `VERONICA_OPENAI_URL` | base URL including the API prefix, e.g. `http://localhost:8080/v1` |
-| `VERONICA_OPENAI_MODEL` | optional; unset takes the first model the server lists |
-| `VERONICA_OPENAI_API_KEY` | optional bearer token |
-| `VERONICA_OPENAI_EFFORT` | optional reasoning effort, sent as the chat template's `reasoning_effort`; unset leaves the template's default |
-
-- The request body is plain chat completions plus `max_tokens`, which llama.cpp takes and OpenAI's own reasoning models reject. Thinking stays at the server's default, which is on for thinking models, unless the request turns it off (the summarizer, `Compaction.md`): then `chat_template_kwargs` carries `enable_thinking: false` and no effort.
-- The effort goes in `chat_template_kwargs`, so it reaches models whose template reads it (the Qwen 27B templates default to `xhigh`) and is ignored by others. It is the one generation setting the client sends: it is compared per run in evals, which would otherwise need a server restart per value.
-- A prompt refused as too long for the context, and a reply that ended as `length` short of the `max_tokens` it was sent, are reported as the context wall (`Compaction.md`).
-- Reasoning is read from `reasoning_content` or `reasoning`. Each assistant message sends its reasoning back as `reasoning_content` (see Conversation).
-- Round stats come from llama.cpp's `timings`; other servers show none.
-- Any server certificate is accepted: locally hosted servers are typically self-signed.
-- The Editor keeps its VRAM: the server may be remote or on another GPU.
-
-## Testing
-
-- `Veronica.Tests` covers `ClientToolLoop` with scripted rounds, and the editing layer behind the Editor tools (see `EditorTools.md`).
-- It also runs WebQwen.exe's `Server` and the plugin's `WebQwenConnection` against each other over in-memory pipes, with a scripted engine in place of the model.
-- The OpenAI-compatible provider runs against a scripted HTTP handler.
-- Process lifetime and the live model are tested by hand in the Editor.
+| round budget | 50, so a whole block build fits in one turn until tools earn rewards |
+| tokens per round | 4000 for the answer and tool calls, plus a separate 4000 thinking budget where the provider supports one: under a shared cap, long thinking cut writes off mid-call |
+| length nudges | 2 per turn |
+| free rounds | rounds calling only `skill`, the plan tools and `wiki` |
+| end nudge | while an item of the active plan is open ([Skills](Skills.md)) |
+| turn-ending tools | `ask_user`, `wait_for_user`. Claude Code gets them over MCP like every tool, but its own loop decides when a turn ends |

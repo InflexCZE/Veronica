@@ -1,7 +1,7 @@
 ---
 name: overrides-and-copies
 title: Partial definitions: overrides and copies
-source: Veronica's create_partial tool (Docs/Tech/EditorTools.md); SE2 source PartialDefinitionHelper, ProjectDefinitionSerializationContext, SharedPartialDefinitionGraph, DefinitionLoadingData (PartialDefinitionKind), Definition, DefinitionLoader, ResourceHandleValidator, BlockModelComponentDefinition, ModelAssetData; vanilla Assets/Blocks/RSS_Scanner/100 (OreDetector100 partialdefs)
+source: Veronica's create_partial tool (Docs/Tech/Tools_Creators.md); SE2 source PartialDefinitionHelper, ProjectDefinitionSerializationContext, SharedPartialDefinitionGraph, DefinitionLoadingData (PartialDefinitionKind), Definition, DefinitionLoader, ResourceHandleValidator, BlockModelComponentDefinition, ModelAssetData; vanilla Assets/Blocks/RSS_Scanner/100 (OreDetector100 partialdefs)
 description: How a mod changes a definition it does not own: an override versus a copy, what values follow the original, how overrides from several mods combine, overriding a shared base definition versus a block's own copy, a new block or new looks from a vanilla one, an override that already exists, and load errors after copying definition files.
 ---
 Vanilla and other read-only projects are never written. A mod changes their definitions through a partial definition, made with create_partial(def, kind, folder):

@@ -1,6 +1,6 @@
 # describe: gaps
 
-**Exists:** `describe` lists a type's members from the doc comments the serialization generator bakes into `AccessibleTypeInfo`, with relations and units (`Docs/Tech/EditorTools.md`, describe).
+**Exists:** `describe` lists a type's members from the doc comments the serialization generator bakes into `AccessibleTypeInfo`, with relations and units (`Docs/Tech/Tools_Readers.md`, describe).
 
 **Missing:**
 - **Doc files in a shipped Editor:** component summaries come from the XML doc files beside the game's assemblies, as the inspector's Documentation section does. Whether a released Editor carries those files is unchecked; without them a component has relations and fields but no summary.

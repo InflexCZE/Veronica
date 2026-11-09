@@ -1,7 +1,7 @@
 ---
 name: block-components
 title: A block's components and their definitions
-source: SE2 source RuntimeComponentInfo, ToolDamageComponent (its DamageEntityDetector tag) and the Editor prefab layer (BoundEntitiesNode, EntityPrefabNode); Veronica's component tools (Docs/Tech/EditorTools.md)
+source: SE2 source RuntimeComponentInfo, ToolDamageComponent (its DamageEntityDetector tag) and the Editor prefab layer (BoundEntitiesNode, EntityPrefabNode); Veronica's component tools (Docs/Tech/Tools_Writers.md, Docs/Tech/Tools_Creators.md)
 description: How a block's function is made of components and what they cannot do (new behaviour), how to add a missing one, what an Unsatisfied dependency error means, and which definition a component should point at (its own, an existing one, a copy, a new one).
 ---
 A block does its job through components. read(block) lists them, one line each: type, sides, tags, definition.

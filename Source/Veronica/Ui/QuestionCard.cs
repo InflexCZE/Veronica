@@ -5,7 +5,7 @@ namespace Veronica.Ui;
 
 public sealed record QuestionOption(string Text, UiCommand Pick);
 
-// The open question card, one question at a time (Docs/Tech/EditorUi.md, Question card).
+// The open question card, one question at a time (Docs/Spec/Chat.md).
 public sealed class QuestionCard : ChatItem
 {
     private readonly Action<IReadOnlyList<string?>> _answer;

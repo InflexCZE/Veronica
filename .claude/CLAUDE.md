@@ -1,17 +1,27 @@
 # Veronica agent rules
 
-- Entry points: `Docs/Spec/Index.md` (user behaviours and scenarios) and `Docs/Tech/Index.md` (architecture decisions). Read them before working.
+Veronica is an AI assistant for modding Space Engineers 2 inside the VRage3 Editor: it reads and edits a mod's content through tools, guided by skills and a wiki, driven by a local model or a hosted AI provider.
+
+## Repository
+
+| path | holds |
+|---|---|
+| `Docs/Spec`, `Docs/Tech` | feature spec and architecture, indexes below |
+| `Docs/TODOs` | known missing or unfinished work |
+| `Source` | the code: plugin, agent, editing layer, Launcher (`Veronica.Setup`), WebQwen runtime, tests |
+| `Source/Veronica/Skills`, `Source/Veronica/Wiki` | shipped skills and wiki pages |
+| `Eval` | eval run scripts; `Eval/Tasks` the eval tasks |
+| `Assets/VeronicaDevMod` | the dev mod for live runs |
+| `Build` | dependency fetch and release publish scripts |
+
+## Rules
+
 - `Docs/TODOs/Index.md` lists known missing or unfinished work, one file per item. When work leaves something undone (a deferred piece, a known gap, a review finding not fixed), add or update its file in the same commit, without asking; delete the file when the item is done.
-- The docs cover architecture and why. They do not restate what the code does; implementation details belong in the code.
 - The docs hold only decisions the owner approved. A design fork found during implementation goes to the owner as options with a recommendation; it is not decided in code.
 
-## Tests
+@../Docs/Spec/Index.md
 
-- Tests are deterministic and reproducible: no web and no disk writes. Reading committed repo files (shipped skills, wiki) is allowed.
-- Decisions live in pure code tested on data. Disk goes through a file interface with an in-memory version for tests; HTTP goes through `HttpClient` over an in-memory `HttpMessageHandler`.
-- Recorded external formats (GitHub, Hugging Face, `.vrgproj`, `ModIndex`) are inline strings in the tests.
-- What only the real machine can show is checked by hand: a live run, or a checklist in the doc that owns it.
-- Agree which parts get unit tests and which are left to a live run with the owner before writing them.
+@../Docs/Tech/Index.md
 
 ## Commit style
 

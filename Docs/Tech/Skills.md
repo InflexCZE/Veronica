@@ -1,104 +1,81 @@
-# Skills and wiki: what the model knows about modding
+# Skills and plans
 
-The model has tools that act on the project (`EditorTools.md`). How to reach a goal with them, and what the Editor's concepts mean, comes from two kinds of data.
+The tools act on the project (`Tools_Overview.md`). How to reach a goal with them comes from skills; what the game's concepts mean comes from the wiki (`Wiki.md`). The rules for what either may say are in `Context.md`.
 
-## The split
+## Skills and the wiki
 
 | | skill | wiki |
 |---|---|---|
-| holds | how: which tool calls, in which order, plus the facts every run of the skill needs (which definition holds a field, a value to copy from vanilla) | what and why: concepts (prefab, definition, partial copy and override, template), the G-Screen hierarchy, art rules (LODs, mount points, texture naming), the vanilla folder layout; knowledge a skill needs only sometimes |
-| reaches the model | the model loads it by name before working on a task | a researcher subagent reads it and answers the model's question (`Wiki.md`) |
+| holds | how: which tool calls, in which order, plus the facts every run needs | what and why: concepts, hierarchies, art rules, layouts; knowledge a task needs only sometimes |
+| reaches the model | the model reads it by name and activates it | a researcher reads it and answers the model's question |
 | refers to the other | a step may say "ask the wiki about X" where X matters only sometimes | never |
 
 ## Composition
 
-- Skills are cut so the model combines them, not one per finished thing.
-  - Procedures: a task's steps, e.g. `create-block`, `override-definition`, `add-to-gscreen`.
-  - Appendices: what one function adds to a procedure, e.g. `block-thruster` for a block that thrusts. A procedure names, at the step where they apply, the appendices to activate.
-  - A function without an appendix is built by reading a comparable vanilla block's definitions and mirroring them. This step is in `create-block`.
-  - Knowledge several skills need is in the wiki. A step keeps a short form of what every run needs; the rest is asked of the wiki. A skill without a Plan section cannot be activated.
-- Behaviour every task needs, such as never writing vanilla files and treating values from a template as a starting point, is in the system prompt, not repeated in skills.
-- A skill guides the model to read a value and write what does not fit what the user wants; it does not name the values a task checks.
-- Each skill is its own file and its own index line. The model loads only what the task needs.
+Skills are cut so the model combines them, not one per finished thing.
 
-## Files
+- Procedures: a task's steps (`create-block`, `override-definition`, `add-to-gscreen`).
+- Appendices: what one function adds to a procedure (`block-thruster`). A procedure names, at the step where they apply, the appendices to activate.
+- A function without an appendix is built by mirroring a comparable vanilla block's definitions; that step lives in `create-block`.
+- A skill guides the model to read a value and write what does not fit the user's wish; it does not name the values a task checks.
+- Each skill is its own file and index line, so the model loads only what the task needs.
 
-- One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence. It carries no instructions.
-- Body sections, in order:
-  - **Needs**: the inputs. Each is a file or value the user provides. The system prompt already says to ask for what cannot be found.
-  - **Plan**: one-line items, what each part of the work is about ("Fill block name"), not the tool calls. See Plan below.
-  - **Steps**: numbered, written as the real tool calls. A step that only some tasks need says when.
-  - **Show**: the last step shows the result in the Editor (`show`), with one line on what the user should look at. Testing in game is the user's call.
-- No read-back check of the edits: the model sees each change's reply, and the user works alongside it.
+## Skill files
+
+- One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence, no instructions.
+- Body sections, in order: Needs (inputs the user provides), Plan (one-line items, see Plan), Steps (numbered, written as real tool calls, a conditional step says when), Show (the last step shows the result in the Editor with what to look at; testing in game is the user's call).
+- No read-back check of edits: the model sees each change's reply, and the user works alongside it.
+- Lean, not bare: a skill holds what every run needs and leaves the rest to the wiki, because it shares the context with the tool schemas and the transcript.
+- Steps say what to do. A fact belongs in a step only when the step goes wrong without it.
+- Definitions are named by type, never by a file name a template generates, since those vary per template.
+- No lists of what is supported and no general gotchas: they go stale, and the tools' errors already name the valid choices.
+- Importing files is the user's job in the Editor. A skill lists the imported items it needs, not how to import them.
+- Source material: the official SE2 modding guides, rewritten from clicks into tool calls. Art, audio and other work outside the Editor is left to the user.
 - ASCII only.
-- Lean, not bare: a skill holds what every run of it needs and leaves what only some runs need to the wiki. It shares the context with the tool schemas and the transcript.
-
-## Writing a skill
-
-- Steps say what to do. Facts belong in a step only when the step goes wrong without them.
-- Name definitions by their type (`ThrusterDefinition`), never by a file name a template generates: names vary per template.
-- No lists of what is supported, and no general gotchas: they go stale, and the tools' own errors already name the valid choices.
-- Importing files is the user's job, done in the Editor. A skill lists the imported items it needs; it does not describe the import.
-- Source material: the official SE2 modding guides on Steam, rewritten from clicks into tool calls. Art, FMOD and other work outside the Editor is left to the user.
-
-## Context engineering
-
-Rules for everything the model reads: skills, the system prompt, tool descriptions and tool errors.
-
-- Add only what a modder doing a variation of the task would also need. Facts about the game qualify (where a value lives, which side of a link is authored, how entries sort). Steering towards one task's answer does not: no task values, no "look it up in vanilla" where real mods bring their own assets.
-- A fact is checked against the game source before it is added. A wrong fact misleads more than a missing one.
-- State a convention with its reason, not as a bare order.
-- Behaviour common to all skills lives in the system prompt, not in each skill.
-- Where the right action depends on the situation, the context names what to observe and both branches.
-- Strong imperatives suppress other behaviour (asking, steps done together with the user). Describe the work; keep hard rules for what must never happen.
-- The user's choices are asked for: text players see, folders, values the user did not give, steps done in the Editor. Anything readable in the project is looked up. An example value in a skill is a suggestion to offer.
-- When the model fights a tool, the tool changes, not the wording: one form per value, errors that do not lead into a wrong field, results that survive a cut-off reply. A hint in an error must be unambiguous.
-- Skipped work is countered with required proof, not with emphasis.
-- When wording stops moving a failure across batches, the levers left are mechanics and knowledge delivery (the wiki).
 
 ## Delivery
 
-- The system prompt ends with the skill index, one line per skill, so the model knows which skills exist without paying for their bodies.
-- `skill(name)` returns a skill's overview: everything but its Plan section, so what it needs and its steps. Rounds that call only `skill` or the plan tools are free: loading guidance must not cost the task its budget.
-- A broken skill file is skipped and logged, so one bad edit does not take the other skills down.
-- Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. During development they are read straight from `Source/Veronica/Skills`; an installed Veronica keeps them in the install folder's `Skills` (`Distribution.md`).
+- The system prompt ends with the skill index (`Context.md`).
+- `skill(name)` returns the overview: the skill without its Plan section.
+- A broken file is skipped and logged, so one bad edit does not take the other skills down.
+- Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. They load from the source tree in a development build and from the install folder otherwise (`Distribution.md`), where the modder may edit and add them.
 
 ## Plan
 
-Small models drop steps: after a failed write, or after handing off to an appendix skill, they forget the procedure's remaining steps and report the work as done. A plan the harness tracks keeps the remaining work in front of the model.
+Small models drop steps: after a failed write, or after handing off to an appendix skill, they forget the remaining steps and report the work done. A plan the harness tracks keeps the remaining work in front of the model.
 
-- Plan items and Steps are separate sections with no link between them. They are written to match. The model reads the Steps, and gets the items from the Editor one at a time. The items are a tuning surface of their own, and the place for deterministic checks later (`Docs/TODOs/PlanChecks.md`).
-- A skill read shows no plan, and activating a skill names only its current item. Small models seeing the whole list mixed plan item numbers up with step numbers and worked ahead of the item they were on; each item is named when it becomes current, which is when it matters.
-- Items are actionable and lead the model without naming tool calls. A step that only some tasks need has an item that says when ("..., only when the user asks"). The model skips it otherwise.
-- Tools:
+- Plan items and Steps are separate sections, written to match, with no link between them. The model reads the Steps and gets the items from the Editor one at a time. The items are a tuning surface of their own and the place for deterministic checks later.
+- The overview shows no plan, and activation names only the current item: seeing the whole list, small models mixed item numbers up with step numbers and worked ahead.
+- Items lead the model without naming tool calls. An item for a conditional step says when; otherwise the model skips it.
+- A skill without a Plan section cannot be activated.
+- `activate_skill` on a skill not read yet returns its overview too, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen.
 
-| tool | does |
-|---|---|
-| `skill(name)` | reads a skill's overview; the harness remembers it was read |
-| `activate_skill(name)` | makes the skill the active one and starts its plan; the result names the first item. An open plan pauses under it. A skill not read yet comes with its overview, as a fallback: the model is meant to read first, since it cannot judge a skill it has not seen. |
-| `mark_completed(proof)` | marks the current item completed, with one line on what was done; names the next |
-| `mark_skipped(reason)` | marks the current item skipped, with the reason it does not apply; names the next |
-| `wait_for_user()` | ends the turn to wait while the user does a step in the Editor that the reply described; questions go through `ask_user` (`Agent.md`, Questions to the user) |
+### Nesting
 
-- One active skill at a time, on a stack of plans. Activating another skill pauses the open plan at its current item; when the new skill's plan is done, the paused plan resumes at that same item. An item that names the next skill is done by activating it, and the model closes it after the nested plan, with proof of work that happened. Closing an item before the activation it asks for made small models write proof of work not done yet, and a plan replaced on activation lost its remaining items.
-- The resume result tells the model to close the item if its work is done, not to redo it: the item text still asks for the work the nested skill just did. If it needs another skill (a block that does two things), the model activates that one from the same item.
-- A resumed skill whose overview is no longer in the context comes with it, as on activation: after a compaction the transcript holds only the active skill's overview (`Compaction.md`), and a parent resumed without its steps works from the item text alone.
-- Activating a skill that is already paused lower on the stack is refused, naming the active skill's current item and how to close it; the paused skill resumes on its own. A second copy of a plan would leave two lists of the same items.
+- One active skill at a time, on a stack of plans. Activating another skill pauses the open plan at its current item; when the new plan is done, the paused one resumes at that item.
+- An item that names the next skill is done by activating it, and closed after the nested plan with proof of work that happened. Closing it before the activation made small models write proof of work not done yet, and replacing the plan on activation lost its remaining items.
+- The resume result says to close the item if its work is done, not to redo it, since the item text still asks for that work. If it needs another skill, the model activates that one from the same item.
+- A resumed skill whose overview is no longer in context comes with it, as on activation: after a compaction only the active skill's overview is carried over, and a parent resumed without its steps works from the item text alone.
+- Activating a skill already paused lower on the stack is refused, naming the active item and how to close it: a second copy would leave two lists of the same items.
 - The stack has no depth cap: chains are a few skills deep.
-- Strict order: marking takes no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so the strict order does not deadlock on an item that does not fit.
-- Marking an item completed needs proof: one line on what the model did. Ticking an item whose work never happened, or skipping one that applies, is a form of hallucination; small models did both, as if marking handed the work to the Editor. Stating what was done makes such a claim visible in the transcript, and the tool says that marking does none of the work.
-- The tools are named as marks in the past tense: they are called after the work, not to do it.
-- The next item is named only in the plan tools' results, not on every tool result: a reminder everywhere is noise the model learns to ignore. The two places a model loses its step also name it: the end gate below, and the length nudge, since a model cut off while thinking has lost track of where it was.
-- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it; `/clear` drops it, the paused plans and what was read.
-- The current item named anywhere (end gate, length nudge, wiki research brief) is the active plan's only; paused plans are named when they pause and when they resume. The compaction summarizer is the exception: it sees every open plan with the items still to come, since it has to tell open work from finished (`Compaction.md`).
-- Rounds that call only the skill and plan tools are free, so bookkeeping does not eat the task's budget.
-- End gate: ending a turn with an item open sends the model back once (the loop's end nudge), naming the open item and the choices. The message is marked as coming from the Editor, and the system prompt says so: unmarked, a model takes it for the user turning down its question. A deliberate stop for the user is a call to `ask_user` or `wait_for_user`, which ends the turn without the reminder; the reminder names both. Small models act through tool calls: offered skipping and a reply marker side by side, the 9B skipped item after item to wait for an answer. The reminder says skipping is only for items that do not apply, never for waiting. Ending again is let through, so no model loops. The reminder re-arms only after a tool call outside the skill and plan tools.
-- `wait_for_user` in a reply with no text, and no `ask_user` call, does not end the turn: its result says the question belongs in the same reply. Only that reply's text counts, because models narrate their work in earlier rounds; a model once waited with nothing written, leaving the user nothing to answer.
-- While no plan is open, the results of editing tools (`write`, `element_add`, `element_remove`, `create_folder`, `create_prefab`, `create_partial`, `create_definition`, `create_asset`) carry a gentle hint to activate a skill that fits the work: on the first edit, then on every tenth after it, and again from the first edit after the chat is cleared. After a plan ends, the first hint comes on the tenth edit: a follow-up to finished work is often a few edits, and on the first edit the hint led the model to activate a whole plan again for a one-step change. Small models sometimes read a skill and worked from its steps without activating it, and nothing then kept the remaining items in front of them. A hint on every edit would be noise the model learns to ignore; reads never carry it.
-- The end gate and the free rounds belong to the client tool loop. The Claude provider runs its own loop, so it gets the plan tools without them (`ClaudeProvider.md`).
+
+### Marking
+
+- Strict order: marking takes no item number, so the model cannot skip ahead, close several items at once or name the wrong one. Skipping needs a reason, so strict order does not deadlock on an item that does not fit.
+- Completing needs proof, one line on what was done. Ticking undone work or skipping applicable work is a form of hallucination; stating what was done makes it visible, and the tool says marking does none of the work.
+- The tools are named as past-tense marks (`mark_completed`, `mark_skipped`): they are called after the work, not to do it.
+
+### Reminders
+
+- The next item is named in the plan tools' results, not on every tool result: a reminder everywhere is noise the model learns to ignore. The two places a model loses its step also name it: the end gate and the length nudge.
+- Only the active plan's item is named anywhere (end gate, length nudge, research brief); paused plans are named when they pause and resume. The compaction summarizer is the exception and sees every open plan, since it must tell open work from finished (`Compaction.md`).
+- End gate: ending a turn with an item open sends the model back once, through the tool loop's end nudge (`Agent.md`), naming the item and the choices. A deliberate stop for the user is `ask_user` or `wait_for_user`, which end the turn without it; the reminder names both and says skipping is never a way to wait, because small models act through tool calls and skipped item after item to get an answer. A second end is let through, so no model loops. It re-arms only after a tool call outside the skill and plan tools.
+- `wait_for_user` is for steps the user does in the Editor, never questions (`Agent.md`, Questions to the user). It is a tool, not a reply marker, since beside the plan tools a marker read to small models as one more way to close an item.
+- While no plan is open, editing tools' results carry a hint to activate a fitting skill: on the first edit, then every tenth. After a plan ends, the first hint waits for the tenth edit, because a follow-up to finished work is often a few edits and an early hint made the model restart a whole plan for a one-step change. Reads never carry it. Without the hint, small models read a skill and worked its steps without activating it.
+
+### State
+
+- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it. `/clear` drops the plans and what was read.
+- Rounds that call only the skill and plan tools (or `wiki`) are free, so bookkeeping does not cost the task its round budget.
+- The end gate and free rounds belong to the client tool loop. The Claude provider runs its own loop and gets the plan tools without them (`ClaudeProvider.md`).
 - Completion is the model's word and its proof; no item is checked yet.
-
-## Testing
-
-- `Veronica.Tests` covers the skill files and the `skill` tool, and checks that every shipped skill loads. The plan tools, the refused activation of a skill without a plan, the proof and reason, pausing and resuming nested plans, the refused activation of a paused skill, the read tracking with the overview on resume, the open plans list, the free rounds, the end gate and the activation hint are covered too.
-- A skill itself is tested by hand in the Editor: the model runs it on the dev mod against a user prompt, reverted with git.

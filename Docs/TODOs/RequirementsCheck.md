@@ -1,6 +1,6 @@
 # Machine requirements check
 
-**Exists:** `Docs/Tech/Distribution.md` decides that `Veronica.exe` asks WebQwen.exe, for every model in the manifest, whether the machine meets its requirements, and shows the results before downloading weights. Manifest records carry `required_features`, `required_limits`, `subgroup_min_size` / `subgroup_max_size` and `vram_required_MB`. The engine bundle exports `checkAdapter` and `combineRequirements`. Nothing calls them yet.
+**Exists:** `Docs/Tech/Distribution.md` (Requirements check) decides that `Veronica.exe` asks WebQwen.exe, for every model in the manifest, whether the machine meets its requirements, and shows the results before downloading weights. Manifest records carry `required_features`, `required_limits`, `subgroup_min_size` / `subgroup_max_size` and `vram_required_MB`. The engine bundle exports `checkAdapter` and `combineRequirements`. Nothing calls them yet.
 
 **Missing:**
 - Until this lands, `Veronica.exe`'s model list shows each model's download size and the manifest's `vram_required_MB` only: no GPU measurement, no fit or recommendation, no override of a failed requirement (`Source/Veronica.Setup/Ui/MainViewModel.cs`, `LoadModels`). The "help me pick a model" guidance waits for this check too.

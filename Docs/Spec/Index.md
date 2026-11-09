@@ -1,29 +1,32 @@
-# Veronica: Spec
+# Spec
 
-Veronica is a modding assistant integrated into the VRage3 / Space Engineers 2 Editor.
+What the user gets from each feature.
 
-## Components
+## Belongs here
 
-- **Editor plugin** (`Veronica.dll`): runs inside the Editor process (.NET, Avalonia), provides the UI and exposes MCP tools.
-- **Providers**: the model that drives the MCP tools. The plugin works with any of them through the same tools.
-  - `WebQwen.exe`: local model runtime. The plugin starts it and interoperates with it.
-  - `claude -p`: Claude Code CLI.
-  - Any OpenAI-compatible server, local or remote.
+- The objective of each feature: what the user gets out of it and why it exists.
+- Behaviour the user sees and relies on.
+- Scope: what the feature covers and what it deliberately leaves out.
+- One file per feature, or per group of features that refer to each other too tightly to read apart.
 
-- [Context.md](Context.md): rules for what the model is told.
+## Does not belong here
 
-## Distribution
+- Components, processes, protocols, classes, file names, binary names: `Docs/Tech` and the code.
+- How a behaviour is achieved: `Docs/Tech` when it is a decision, the code otherwise.
+- UI labels as feature names. Features are named by what they technically are.
+- Literals that go out of sync: exact messages, defaults, paths. A number stays when the feature depends on it.
+- History of how a behaviour came about.
+- Filler. A feature with little to say has a short file.
 
-- The modder downloads `Veronica.exe` and starts it. Its Welcome page picks the install folder (`%APPDATA%\Veronica` by default) and offers Start menu and Desktop shortcuts; `Veronica.exe` copies itself there and carries on from the copy.
-- On first start `Veronica.exe` welcomes the modder and installs in the background while they pick a provider (local model, Claude, OpenAI-compatible server), set it up and test it.
-- For the local model it measures the GPU, shows every model with whether it fits, recommends one and downloads the chosen ones. A model that does not fit can still be installed.
-- Afterwards `Veronica.exe` manages the provider, the mods and the versions. It lists the modder's local mods; switching one on adds Veronica to it, switching it off removes it.
-- The panel tells the modder when a newer Veronica exists; its button runs `Veronica.exe`, which updates once the Editor is closed.
-- Skill and wiki files the modder edited survive an update: `Veronica.exe` lists them next to the new versions, to keep either.
+## Files
 
-| artifact | source |
+| file | feature |
 |---|---|
-| `Veronica.exe`; `Veronica.zip` (plugin, `WebQwen.exe`, skills, wiki) | GitHub releases of this repo |
-| model weights, model runtime library | Hugging Face, at the revisions WebQwen pins |
-
-## Scenarios
+| [Chat.md](Chat.md) | Conversation with the assistant in the Editor |
+| [Board.md](Board.md) | Content items and their relations shown to the user |
+| [ContentEditing.md](ContentEditing.md) | What the assistant can find, read, change and create in a mod |
+| [Skills.md](Skills.md) | Guided modding tasks |
+| [Wiki.md](Wiki.md) | Answers about the game from shipped knowledge |
+| [AiProviders.md](AiProviders.md) | The models that can drive the assistant |
+| [McpEndpoint.md](McpEndpoint.md) | The assistant's tools for external MCP clients |
+| [Launcher.md](Launcher.md) | Install, provider setup, enabling Veronica per mod, updates |

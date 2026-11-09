@@ -5,7 +5,7 @@ description: Run Veronica eval tasks in the Editor with the local model, one for
 
 # Veronica eval
 
-Read first: `Docs/Tech/Eval.md` (roles, control channel, transcript, run lifecycle, tasks, method) and the Context engineering rules in `Docs/Tech/Skills.md`.
+Read first: `Docs/Tech/Eval.md` (roles, control channel, transcript, run lifecycle, tasks, method) and the context rules in `Docs/Tech/Context.md`.
 You are the master. Each batch is a fork of you, so everything here reaches the fork too.
 
 ## Before a batch

@@ -1,18 +1,60 @@
-# Veronica: Tech
+# Tech
 
-| doc | scope |
+Architecture and the decisions the code cannot tell.
+
+## Belongs here
+
+- Components, their boundaries, and how they connect.
+- Decisions a reader could not recover from the code, with their reasons. Above all reasons that stop a future change from bringing a solved problem back.
+- Constraints of the engine, the Editor, the GPU or a provider that shape the design.
+- A constant when the feature depends on it or the decision makes sense only with it.
+- The testing rules, in [Testing.md](Testing.md).
+
+## Does not belong here
+
+- What the user sees: `Docs/Spec`.
+- How the code works: algorithms, schemas, message texts, defaults, paths. The code holds them and docs restating them go out of sync.
+- Per-feature test lists: the tests are the record.
+- History, dates, eval narratives. A reason earned in an eval stays as the reason, in one clause.
+- Filler. A component with little to decide has a short file.
+
+## Components
+
+```mermaid
+flowchart LR
+  Editor[VRage3 Editor] -->|loads per mod| Plugin[Veronica.dll]
+  Plugin --> Agent[Veronica.Agent.dll]
+  Plugin --> Editing[Veronica.Editing.dll]
+  Agent -->|stdio, child process| WebQwen[WebQwen.exe]
+  WebQwen --> Native[wq.dll + Dawn]
+  Agent -->|HTTP| OpenAi[OpenAI-compatible server]
+  Agent -->|child process per turn| Claude[claude -p]
+  Claude -->|MCP| Plugin
+  Clients[external MCP clients] -->|MCP| Plugin
+  Launcher[Launcher] --> Agent
+  Launcher -->|edits .vrgproj| Editor
+```
+
+## Files
+
+| file | scope |
 |---|---|
-| [WebQwen.md](WebQwen.md) | `WebQwen.exe`, the local model runtime provider |
-| [VramSharing.md](VramSharing.md) | Editor and WebQwen taking turns on one GPU's VRAM |
-| [Distribution.md](Distribution.md) | Release, `Veronica.exe`, install folder, settings, provider and model setup, hooking into a mod, updates |
-| [EditorPlugin.md](EditorPlugin.md) | `Veronica.dll` as an Editor plugin: loading, build, dev mod |
-| [EditorUi.md](EditorUi.md) | Veronica's panel, the Board, menu, fonts and theme inside the Editor |
-| [Agent.md](Agent.md) | `Veronica.Agent.dll`: providers, tool loop, conversation |
-| [EditorTools.md](EditorTools.md) | Agent tools for content authoring: find, read, write, create prefab, partial and definition, prefab components, show, present_graph |
-| [ClaudeProvider.md](ClaudeProvider.md) | The `claude -p` provider and how it routes Veronica's tools into its turns |
-| [McpEndpoint.md](McpEndpoint.md) | Veronica's tools over MCP for any local client, with any provider |
-| [Skills.md](Skills.md) | Skills and wiki: how the model learns to reach modding goals |
-| [Wiki.md](Wiki.md) | The wiki's pages, the researcher that reads them, and subagents |
-| [Compaction.md](Compaction.md) | The chat going on past a full context window: the wall, the summarizer, what the turn goes on from |
-| [WebQwenProtocol.md](WebQwenProtocol.md) | How `Veronica.dll` runs `WebQwen.exe` and talks to it |
-| [Eval.md](Eval.md) | Eval runs in the Editor: control channel, transcripts, run lifecycle, tasks |
+| [Testing.md](Testing.md) | How any feature is tested |
+| [Agent.md](Agent.md) | Provider abstraction, tool loop, conversation, questions to the user |
+| [WebQwen.md](WebQwen.md) | The local model runtime and its provider |
+| [OpenAiProvider.md](OpenAiProvider.md) | The OpenAI-compatible server provider |
+| [ClaudeProvider.md](ClaudeProvider.md) | The Claude Code provider |
+| [McpEndpoint.md](McpEndpoint.md) | The tools served over MCP |
+| [Tools_Overview.md](Tools_Overview.md) | The tool contract and the editing layer under every Editor tool |
+| [Tools_Readers.md](Tools_Readers.md) | Tools that find and read content |
+| [Tools_Writers.md](Tools_Writers.md) | Tools that change existing content |
+| [Tools_Creators.md](Tools_Creators.md) | Tools that create content |
+| [Board.md](Board.md) | Showing items and graphs to the user |
+| [Context.md](Context.md) | General rules for what the model is told; the system prompt |
+| [Skills.md](Skills.md) | Skills and plans |
+| [Wiki.md](Wiki.md) | Wiki pages, the researcher, subagents |
+| [Compaction.md](Compaction.md) | The conversation going on past a full context window |
+| [VramSharing.md](VramSharing.md) | The Editor and the local model taking turns on one GPU |
+| [EditorPlugin.md](EditorPlugin.md) | The plugin inside the Editor: loading, build, UI |
+| [Distribution.md](Distribution.md) | Release, the Launcher, install layout, settings, updates |
+| [Eval.md](Eval.md) | Eval runs of the assistant in the Editor |
