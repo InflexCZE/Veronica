@@ -50,8 +50,11 @@ public static class Settings
     /// <summary>The releases/latest API URL updates come from; unset is this repo's GitHub releases.</summary>
     public const string VERONICA_RELEASES_URL = nameof(VERONICA_RELEASES_URL);
 
-    /// <summary>The Editor <c>Veronica.exe</c> starts on a mod: the path of <c>VRage.Editor.exe</c>, picked by the user on first use.</summary>
+    /// <summary>The Editor <c>Veronica.exe</c> starts on a mod: the path of <c>VRage.Editor.exe</c>, found in Steam's Mod SDK or picked by the user.</summary>
     public const string VERONICA_EDITOR_EXE = nameof(VERONICA_EDITOR_EXE);
+
+    /// <summary>The game the Editor runs a mod with: the path of <c>SpaceEngineers2.exe</c>, found beside the Editor or picked by the user; unset starts the Editor without it.</summary>
+    public const string VERONICA_GAME_EXE = nameof(VERONICA_GAME_EXE);
 
     public const string DefaultReleasesUrl ="https://api.github.com/repos/InflexCZE/Veronica/releases/latest";
 
@@ -62,7 +65,7 @@ public static class Settings
         VERONICA_CLAUDE_MODEL, VERONICA_CLAUDE_EFFORT,
         VERONICA_MCP, VERONICA_MCP_PORT,
         VERONICA_RUN_DIR, VERONICA_CONTROL_PORT,
-        VERONICA_RELEASES_URL, VERONICA_EDITOR_EXE,
+        VERONICA_RELEASES_URL, VERONICA_EDITOR_EXE, VERONICA_GAME_EXE,
     ];
 
     public static bool IsSecret(string key) => key == VERONICA_OPENAI_API_KEY;

@@ -55,6 +55,16 @@ public sealed partial class MainWindow : Window
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
+    public async Task<string?> PickGameAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Find SpaceEngineers2.exe",
+            FileTypeFilter = [new FilePickerFileType("SpaceEngineers2.exe") { Patterns = ["SpaceEngineers2.exe"] }],
+        });
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
     private void OnMainChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(MainViewModel.App))

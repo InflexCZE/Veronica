@@ -26,6 +26,7 @@ public sealed class App : Application
             var window = new MainWindow { DataContext = main };
             main.PickFolder = window.PickFolderAsync;
             main.PickEditor = window.PickEditorAsync;
+            main.PickGame = window.PickGameAsync;
             desktop.MainWindow = window;
             Instance?.Listen(
                 () => Dispatcher.UIThread.Post(() => window.Bring()),

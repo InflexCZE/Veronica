@@ -22,6 +22,8 @@ public sealed class SetupHost
 
     public required string RunningExe { get; init; }
 
+    public Func<string?> SteamRoot { get; init; } = () => null;
+
     public SemVer? Version { get; init; }
 
     public static SetupHost ForThisProcess()
@@ -36,6 +38,7 @@ public sealed class SetupHost
             Http = ReleaseFeed.CreateClient(null, version),
             Editor = new EditorProbe(layout),
             RunningExe = exe,
+            SteamRoot = Steam.RootFromRegistry,
             Version = version,
         };
     }

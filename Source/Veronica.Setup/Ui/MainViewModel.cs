@@ -48,6 +48,8 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
 
     public Func<Task<string?>> PickEditor { get; set; } = () => Task.FromResult<string?>(null);
 
+    public Func<Task<string?>> PickGame { get; set; } = () => Task.FromResult<string?>(null);
+
     public void Start(bool update, bool selfUpdated, bool install)
     {
         _selfUpdated = selfUpdated;
@@ -520,7 +522,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     {
         _filesReady = true;
         if (_app == null)
-            _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+            _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
         RefreshMods();
         RefreshUpdates();
         _app.Tab = tab;
@@ -557,7 +559,9 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         var pane = _app!.Mods;
         // A card still waiting for the Editor keeps its own state, Cancel included.
         var running = pane.Mods.Where(m => m.Activity.Running).ToDictionary(m => m.Folder, StringComparer.OrdinalIgnoreCase);
-        pane.Editor = host.Settings.GetTrimmed(Settings.VERONICA_EDITOR_EXE) ?? "";
+        string? editor = FindEditorExe();
+        pane.Editor = editor ?? "";
+        pane.Game = FindGameExe(editor) ?? "";
         var mods = ReadMods(pane).Select(m => running.GetValueOrDefault(m.Folder) ?? m).ToList();
         pane.Mods.Clear();
         foreach (var mod in mods)
@@ -670,21 +674,23 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         mod.Activity.Error = "";
         if (await EditorExeAsync() is not { } exe)
             return;
-        var dirs = EditorLaunch.GlobalProjectDirs(exe, host.Files.DirectoryExists);
-        if (dirs.Count == 0)
+        if (EditorLaunch.Find(exe, host.Files.DirectoryExists, host.Files.FileExists) is not { } layout)
         {
-            ShowModError(mod, $"No folder above {exe} holds Game2\\GameData and VRage\\GameData, so the Editor would not find the game's projects.");
+            ShowModError(mod, $"{exe} is neither in the Space Engineers 2 Mod SDK nor in a development checkout, so the Editor would not find the game's projects.");
             return;
         }
+        string? game = FindGameExe(exe);
+        if (_app != null)
+            _app.Mods.Game = game ?? "";
         if (mod.State == HookState.NotHooked && !await ChangeModAsync(mod, hook: true))
             return;
-        var info = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
-        foreach (var argument in EditorLaunch.Arguments(project, dirs))
+        var info = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = EditorLaunch.WorkingDirectory(exe, game) };
+        foreach (var argument in EditorLaunch.Arguments(project, exe, layout, game))
             info.ArgumentList.Add(argument);
         try
         {
             System.Diagnostics.Process.Start(info)?.Dispose();
-            host.Log($"Started {exe} on {project}");
+            host.Log($"Started {exe} on {project}{(game == null ? " without the game" : $" with {game}")}");
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException)
         {
@@ -693,30 +699,68 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         }
     }
 
-    // The saved Editor, or the user's pick when none is saved or the saved one is gone.
-    private async Task<string?> EditorExeAsync()
+    private async Task<string?> EditorExeAsync() => FindEditorExe() ?? await PickEditorExeAsync();
+
+    // The saved Editor; when none is saved or the saved one is gone, the Mod SDK from Steam, saved once found.
+    private string? FindEditorExe()
     {
         if (host.Settings.GetTrimmed(Settings.VERONICA_EDITOR_EXE) is { } saved && host.Files.FileExists(saved))
             return saved;
-        return await PickEditorExeAsync();
+        if (Steam.EditorExe(host.Files, host.SteamRoot()) is not { } found)
+            return null;
+        SaveFound(Settings.VERONICA_EDITOR_EXE, found, "Editor");
+        return found;
     }
 
+    // The saved game; otherwise the one that belongs to the Editor, saved once found: the Steam game beside the
+    // Mod SDK's Editor, the checkout's own build beside a development Editor.
+    private string? FindGameExe(string? editorExe)
+    {
+        if (host.Settings.GetTrimmed(Settings.VERONICA_GAME_EXE) is { } saved && host.Files.FileExists(saved))
+            return saved;
+        if (editorExe == null || EditorLaunch.Find(editorExe, host.Files.DirectoryExists, host.Files.FileExists) is not { } layout)
+            return null;
+        if ((layout.FromSdk ? Steam.GameExe(host.Files, host.SteamRoot()) : layout.DevGameExe) is not { } found)
+            return null;
+        SaveFound(Settings.VERONICA_GAME_EXE, found, "game");
+        return found;
+    }
+
+    private void SaveFound(string key, string? path, string what)
+    {
+        try
+        {
+            host.SaveSettings(new Dictionary<string, string?> { [key] = path });
+            host.Log(path == null ? $"The {what} path is cleared" : $"The {what} is {path}");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            host.Log($"Saving the {what} path failed: {e}");
+        }
+    }
+
+    // The saved game was found for the previous Editor, so it is looked up again for the new one.
     private async Task<string?> PickEditorExeAsync()
     {
         if (await PickEditor() is not { Length: > 0 } exe)
             return null;
-        try
-        {
-            host.SaveSettings(new Dictionary<string, string?> { [Settings.VERONICA_EDITOR_EXE] = exe });
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            host.Log($"Saving the Editor path failed: {e}");
-        }
+        SaveFound(Settings.VERONICA_EDITOR_EXE, exe, "Editor");
+        SaveFound(Settings.VERONICA_GAME_EXE, null, "game");
         if (_app != null)
+        {
             _app.Mods.Editor = exe;
-        host.Log($"Editor set to {exe}");
+            _app.Mods.Game = FindGameExe(exe) ?? "";
+        }
         return exe;
+    }
+
+    private async Task PickGameExeAsync()
+    {
+        if (await PickGame() is not { Length: > 0 } exe)
+            return;
+        SaveFound(Settings.VERONICA_GAME_EXE, exe, "game");
+        if (_app != null)
+            _app.Mods.Game = exe;
     }
 
     private void RefreshUpdates()

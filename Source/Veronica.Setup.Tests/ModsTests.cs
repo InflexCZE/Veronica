@@ -83,24 +83,63 @@ public class ModsTests
         Assert.Equal(Project, VrgProj.UnhookAny(VrgProj.Hook(Project, Runtime), Runtime, _ => false));
     }
 
-    [Fact]
-    public void EditorLaunch_FindsTheCheckoutsGameDataAboveADevEditor()
+    private const string DevEditor = @"X:\Repo\VRage\Sources\Editor\VRage.Editor\bin\x64\Debug\VRage.Editor.exe";
+
+    private const string DevGame = @"X:\Repo\Game2\Sources\Game2\bin\x64\Debug\SpaceEngineers2.exe";
+
+    private static readonly HashSet<string> DevFolders = new(StringComparer.OrdinalIgnoreCase)
     {
-        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData", @"R:\SE2\VRage\Sources\Editor\GameData" };
+        @"X:\Repo\Game2\GameData", @"X:\Repo\VRage\GameData", @"X:\Repo\VRage\Sources\Editor\GameData",
+    };
 
-        var dirs = EditorLaunch.GlobalProjectDirs(@"R:\SE2\VRage\Sources\Editor\VRage.Editor\bin\x64\Debug\VRage.Editor.exe", existing.Contains);
+    [Fact]
+    public void EditorLaunch_FindsTheCheckoutsGameDataAndGameAboveADevEditor()
+    {
+        var layout = EditorLaunch.Find(DevEditor, DevFolders.Contains, f => f == DevGame)!;
 
-        Assert.Equal([@"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData"], dirs);
-        Assert.Equal(["--project", @"C:\Mods\A\A.vrgproj", "--globalProjectDirs", @"R:\SE2\Game2\GameData", @"R:\SE2\VRage\GameData"],
-            EditorLaunch.Arguments(@"C:\Mods\A\A.vrgproj", dirs));
+        Assert.False(layout.FromSdk);
+        Assert.Equal([@"X:\Repo\Game2\GameData", @"X:\Repo\VRage\GameData"], layout.GlobalProjectDirs);
+        Assert.Equal(DevGame, layout.DevGameExe);
+        Assert.Equal(["--project", @"Y:\Mods\A\A.vrgproj", "--globalProjectDirs", @"X:\Repo\Game2\GameData", @"X:\Repo\VRage\GameData",
+                "--globalAssemblyDirs", @"X:\Repo\VRage\Sources\Editor\VRage.Editor\bin\x64\Debug",
+                "--projectExecutableSearchPaths", @"X:\Repo\Game2\Sources\Game2\bin\x64\Debug"],
+            EditorLaunch.Arguments(@"Y:\Mods\A\A.vrgproj", DevEditor, layout, layout.DevGameExe));
+        Assert.Equal(@"X:\Repo\Game2\Sources\Game2\bin\x64\Debug", EditorLaunch.WorkingDirectory(DevEditor, layout.DevGameExe));
     }
 
     [Fact]
-    public void EditorLaunch_FindsNothingWithoutBothGameDataFolders()
+    public void EditorLaunch_DevEditorHasNoGame_WhenItsConfigurationIsNotBuilt()
     {
-        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"C:\Games\SE2\Game2\GameData" };
+        var layout = EditorLaunch.Find(DevEditor, DevFolders.Contains, f => f == DevGame.Replace(@"\Debug\", @"\Release\"))!;
 
-        Assert.Empty(EditorLaunch.GlobalProjectDirs(@"C:\Games\SE2\Editor\VRage.Editor.exe", existing.Contains));
+        Assert.Null(layout.DevGameExe);
+        Assert.Equal(["--project", @"Y:\Mods\A\A.vrgproj", "--globalProjectDirs", @"X:\Repo\Game2\GameData", @"X:\Repo\VRage\GameData",
+                "--globalAssemblyDirs", @"X:\Repo\VRage\Sources\Editor\VRage.Editor\bin\x64\Debug"],
+            EditorLaunch.Arguments(@"Y:\Mods\A\A.vrgproj", DevEditor, layout, null));
+        Assert.Equal(Path.GetDirectoryName(DevEditor), EditorLaunch.WorkingDirectory(DevEditor, null));
+    }
+
+    [Fact]
+    public void EditorLaunch_PassesTheModSdksGameDataLikeTheHub()
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"X:\Sdk\GameData\Vanilla", @"X:\Sdk\GameData\Engine" };
+
+        var layout = EditorLaunch.Find(@"X:\Sdk\Editor\VRage.Editor.exe", existing.Contains, _ => false)!;
+
+        Assert.True(layout.FromSdk);
+        Assert.Null(layout.DevGameExe);
+        Assert.Equal(["--project", @"Y:\Mods\A\A.vrgproj", "--globalProjectDirs", @"X:\Sdk\GameData", @"X:\Sdk\VRage\GameData",
+                "--globalAssemblyDirs", @"X:\Sdk\Editor",
+                "--projectExecutableSearchPaths", @"X:\Game\Game2"],
+            EditorLaunch.Arguments(@"Y:\Mods\A\A.vrgproj", @"X:\Sdk\Editor\VRage.Editor.exe", layout, @"X:\Game\Game2\SpaceEngineers2.exe"));
+    }
+
+    [Fact]
+    public void EditorLaunch_FindsNothing_ForAnEditorInNeitherLayout()
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"X:\Somewhere\Game2\GameData", @"X:\Somewhere\GameData" };
+
+        Assert.Null(EditorLaunch.Find(@"X:\Somewhere\Editor\VRage.Editor.exe", existing.Contains, _ => true));
     }
 
     [Fact]

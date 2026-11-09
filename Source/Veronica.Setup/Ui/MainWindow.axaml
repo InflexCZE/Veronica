@@ -465,6 +465,16 @@
               <Button Grid.Column="1" Content="Change..." Command="{Binding ChangeEditor}" />
             </Grid>
           </StackPanel>
+          <StackPanel Classes="section">
+            <StackPanel Classes="heading">
+              <TextBlock Classes="h2" Text="Game" />
+              <TextBlock Classes="dim" Text="The Editor runs the mod with this game." />
+            </StackPanel>
+            <Grid Classes="row" ColumnDefinitions="*,Auto">
+              <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding GameText}" ToolTip.Tip="{Binding Game}" />
+              <Button Grid.Column="1" Content="Change..." Command="{Binding ChangeGame}" />
+            </Grid>
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
     </DataTemplate>

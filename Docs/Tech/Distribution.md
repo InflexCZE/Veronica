@@ -77,8 +77,12 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 - `Veronica.exe` lists the local mods from the HUB's mod index (`%APPDATA%\SpaceEngineers2\Temp\LocalMods\ModIndex`, project GUID to folder), each with Start Editor and Install or Uninstall. Which mods are hooked is read from their `.vrgproj` files, not recorded.
 - Install adds `Veronica.dll` to the `.vrgproj`'s `EditorExtensionAssemblies` and this install's absolute `Runtime` path to `EditorExtensionAssembliesSearchPaths`. Uninstall removes `Veronica.dll`, this install's path and any search path whose folder holds a `Veronica.dll`; the mod's other paths stay.
 - A mod that loads `Veronica.dll` with any other search path (a development build, another install, an install that was moved) is another build: it says so and offers Uninstall, never Install over it.
-- Start Editor opens the mod in the Editor, installing Veronica first when the mod has none. The first use asks for `VRage.Editor.exe` and saves it (`VERONICA_EDITOR_EXE`); the Mods page shows it with Change, and a saved exe that is gone asks again.
-- The Editor gets only the arguments it needs to start: `--project` and `--globalProjectDirs` with the game's and the engine's `GameData`. These are found above the exe the way a development checkout lays them out (`Game2\GameData`, `VRage\GameData`); a retail layout is open (`Docs/TODOs/RetailEditorLaunch.md`).
+- Start Editor opens the mod in the Editor, installing Veronica first when the mod has none.
+- The Editor is the Space Engineers 2 Mod SDK (Steam app 3578990), found once in Steam's own files and saved (`VERONICA_EDITOR_EXE`): the Steam folder from the registry, its libraries from `libraryfolders.vdf`, the app's folder from its `appmanifest_<id>.acf`. Steam need not run. When Steam has no SDK, the first Start Editor asks for `VRage.Editor.exe`; a saved exe that is gone is looked up again.
+- The game is found once and saved the same way (`VERONICA_GAME_EXE`): beside the SDK's Editor it is Space Engineers 2 (Steam app 1133870); beside a development Editor it is the checkout's own build in the Editor's configuration. Without one, the Editor starts without the game. Picking another Editor drops the saved game, which belonged to the old one.
+- The Mods page shows the Editor and the game, each with Change.
+- The Editor gets the arguments the retail HUB passes: `--project`, `--globalProjectDirs` with the game's and the engine's `GameData`, `--globalAssemblyDirs` with the Editor's folder (the SDK keeps the game assemblies Vanilla references there; without it the Editor fails to start), and with a game `--projectExecutableSearchPaths` with its folder, which is then also the working folder. The `GameData` folders come from where the Editor sits: the SDK's `GameData` and `VRage\GameData` beside its `Editor` folder (the pair the HUB passes, though the SDK keeps Engine inside `GameData`), or a development checkout's `Game2\GameData` and `VRage\GameData` above it.
+- The game and Editor versions are not compared; a mismatch is left to the Editor.
 - A `.vrgproj` is edited only while the Editor is closed, since an open Editor may write the project back over the edit.
 - The Editor refuses to load a project whose extension assembly it cannot find. A collaborator without Veronica at the same path therefore cannot open the mod. This cost is accepted.
 
@@ -96,7 +100,7 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 
 ## Testing
 
-- Unit tests touch no web and no disk. The decisions are pure: the skill and wiki merge plan (installed record, disk snapshot and new release in, actions out), `.vrgproj` add and remove as text, the `ModIndex` parse, version comparison, the settings layering over a given environment, model fit and recommendation.
+- Unit tests touch no web and no disk. The decisions are pure: the skill and wiki merge plan (installed record, disk snapshot and new release in, actions out), `.vrgproj` add and remove as text, the `ModIndex` parse, Steam's KeyValues files and the app lookup over them (the registry read is left to a live run), the Editor's arguments per layout, version comparison, the settings layering over a given environment, model fit and recommendation.
 - Effects sit behind seams with in-memory test versions: a file interface `Veronica.exe` owns, `HttpClient` over a test `HttpMessageHandler` (serving release and model bytes, honouring `Range`, cutting a stream short for resume and verification), the Editor-running check. Zips are read from memory.
 - Recorded GitHub and Hugging Face responses and sample `.vrgproj` and `ModIndex` files are inline strings in the tests.
 - The tests are `Veronica.Setup.Tests`, apart from `Veronica.Tests`, whose output carries the Editor's Avalonia build, which clashes with the public one `Veronica.exe` ships.
@@ -104,7 +108,7 @@ How Veronica reaches a modder's machine: the release, `Veronica.exe`, the instal
 - Before each release, by hand on a real machine:
   - a fresh install from the GitHub release: provider setup, a model download with an interruption, the provider check;
   - first run from Downloads: the default and a changed install folder, the busy-folder line, the copy and restart landing on the provider choice with the install running, both shortcuts, the original exe left in place;
-  - installing and uninstalling Veronica in a mod, also one hooked by a development build; Start Editor on a mod without Veronica, with the exe dialog on first use;
+  - installing and uninstalling Veronica in a mod, also one hooked by a development build; Start Editor on a mod without Veronica: with the Steam Mod SDK, with and without the Steam game, and with the exe dialog when Steam has no SDK;
   - an update with a changed skill: the conflict list and each of its buttons;
   - a self-update of `Veronica.exe`, and a second start while one runs;
   - the panel's update notice and its button;

@@ -29,7 +29,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ModelRecordFields.md](ModelRecordFields.md) | WebQwen: model record fields beyond Bonsai's |
 | [DeviceScopedCalls.md](DeviceScopedCalls.md) | WebQwen: GPU calls use the current device, not their own |
 | [ReleaseLayout.md](ReleaseLayout.md) | Distribution: no GitHub repo or release yet |
-| [RetailEditorLaunch.md](RetailEditorLaunch.md) | Distribution: Start Editor finds GameData only in a development checkout's layout |
 | [SplitLoad.md](SplitLoad.md) | Split model load: Editor live during shader compile (owner decision) |
 | [EditorResidency.md](EditorResidency.md) | Editor: freeze and evict around a turn, edge cases not yet tested live |
 | [ReloadDuringTurn.md](ReloadDuringTurn.md) | Editor: a project reload during a turn, untested with the commit job disabled |

@@ -754,14 +754,15 @@ public sealed class ModCard : ViewModel
     public void Touch() => Changed(nameof(CanAct));
 }
 
-public sealed class ModsPane(Action changeEditor) : ViewModel
+public sealed class ModsPane(Action changeEditor, Action changeGame) : ViewModel
 {
     private string _message = "";
     private string _editor = "";
+    private string _game = "";
 
     public ObservableCollection<ModCard> Mods { get; } = new();
 
-    // The saved VRage.Editor.exe; empty until the first Start Editor asks for it.
+    // Empty when neither the settings nor Steam know one; the first Start Editor then asks for it.
     public string Editor
     {
         get => _editor;
@@ -772,9 +773,23 @@ public sealed class ModsPane(Action changeEditor) : ViewModel
         }
     }
 
-    public string EditorText => _editor.Length > 0 ? _editor : "Not chosen yet. The first Start Editor asks for VRage.Editor.exe.";
+    public string EditorText => _editor.Length > 0 ? _editor : "Not found in Steam. The first Start Editor asks for VRage.Editor.exe.";
 
     public ICommand ChangeEditor { get; } = new Command(changeEditor);
+
+    public string Game
+    {
+        get => _game;
+        set
+        {
+            if (Set(ref _game, value))
+                Changed(nameof(GameText));
+        }
+    }
+
+    public string GameText => _game.Length > 0 ? _game : "Not found. The Editor starts without the game.";
+
+    public ICommand ChangeGame { get; } = new Command(changeGame);
 
     public string Message
     {
