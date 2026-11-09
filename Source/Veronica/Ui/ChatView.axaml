@@ -245,7 +245,7 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
           <Border Classes="quote" IsVisible="{Binding Expanded}">
-            <SelectableTextBlock Classes="dim small model" Text="{Binding Answer}" IsVisible="{Binding HasAnswer}" />
+            <ui:MarkupView Small="True" Opacity="0.65" Blocks="{Binding AnswerBlocks}" IsVisible="{Binding HasAnswer}" />
           </Border>
         </StackPanel>
       </Border>

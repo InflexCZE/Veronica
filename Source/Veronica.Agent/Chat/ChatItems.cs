@@ -243,8 +243,11 @@ public sealed class SubAgentPart : TurnPart
         {
             Set(ref _answer, value);
             Changed(nameof(HasAnswer));
+            Changed(nameof(AnswerBlocks));
         }
     }
+
+    public IReadOnlyList<MarkupBlock> AnswerBlocks => ChatMarkup.Parse(_answer);
 
     public bool HasAnswer => _answer.Length > 0;
 

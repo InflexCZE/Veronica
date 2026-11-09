@@ -11,8 +11,13 @@ The modder talks to the assistant in a panel inside the Editor. The assistant an
 
 ## Turns
 
-- One block per assistant turn: a live line of the model's thinking (expandable), one plain-language line per tool call (expandable to what the model got, marked when it failed), the answer in a small Markdown subset, and a footer with speed, tokens and context use.
-- A wiki lookup or other subagent shows as its own card with its steps and elapsed time.
+- One block per assistant turn: a live line of the model's thinking (expandable), one plain-language line per tool call (expandable to what the model got, marked when it failed), the answer as formatted text, and a footer with speed, tokens and context use.
+- A wiki lookup or other subagent shows as its own card with its steps and elapsed time, and its answer formatted like a reply.
+
+## Formatted text
+
+- Replies show the Markdown the models write: code blocks and inline code, bold, italic, links that open in the browser, bulleted and numbered lists with nesting, tables and headings. Anything else shows as typed, line breaks included.
+- Reading is tolerant, because local models drop a blank line or a table pipe now and then: a list or table right under a line of text still renders, and so does a construct the stream has not finished yet.
 - Enter sends, Shift+Enter starts a new line. During a turn the send button becomes Stop; Enter never stops.
 - Stop keeps what the model already wrote. Tool calls not yet run are not run, and the next turn knows it was interrupted.
 - A turn has a round budget. When it runs out the turn ends with a notice, and the modder resumes the work by asking to continue.
@@ -43,6 +48,7 @@ The modder talks to the assistant in a panel inside the Editor. The assistant an
 ## Out of scope
 
 - Conversation history across Editor sessions.
+- Block quotes and other Markdown the models almost never write: they show as typed.
 
 ## Not yet
 
