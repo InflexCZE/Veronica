@@ -239,7 +239,7 @@ public sealed class ActivateSkillTool(Func<IReadOnlyList<Skill>> skills, SkillPl
     public string Name => ToolName;
 
     public string Description =>
-        "Makes a skill the active one and starts its plan; the Editor then names its items one at a time. An open plan pauses at its current item and resumes when the new skill's plan is done.";
+        "Call this before doing a skill's work, as soon as the user wants it done: the Editor gives you the skill's plan one item at a time and keeps track of what is done, so no step is missed. Reading a skill with skill does not start it. An open plan pauses at its current item and resumes when the new skill's plan is done.";
 
     public string Parameters => """
         {"type":"object","properties":{"name":{"type":"string","description":"Skill name, e.g. create-block"}},"required":["name"]}

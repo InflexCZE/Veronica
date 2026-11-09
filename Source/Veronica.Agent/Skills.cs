@@ -73,7 +73,7 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
 
     public string Name => ToolName;
 
-    public string Description => "Returns a skill from the system prompt's skill list: what it needs and its steps.";
+    public string Description => "Shows what a skill from the system prompt's skill list needs and its steps, to decide whether it fits the task; to do its work, activate it with activate_skill.";
 
     public string Parameters => """
         {"type":"object","properties":{"name":{"type":"string","description":"Skill name, e.g. create-block"}},"required":["name"]}
