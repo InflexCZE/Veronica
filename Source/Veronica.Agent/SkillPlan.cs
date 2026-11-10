@@ -324,6 +324,7 @@ public sealed class MarkSkippedTool(SkillPlan plan) : ITool
 }
 
 // Small models act through tool calls; a reply marker beside the plan tools read to them as one more way to close an item.
+// Only the client tool loop can end a turn on it, so it is never offered over MCP.
 public sealed class WaitForUserTool : ITool
 {
     public const string ToolName = "wait_for_user";
@@ -335,7 +336,8 @@ public sealed class WaitForUserTool : ITool
     public string Parameters => """{"type":"object","properties":{}}""";
 
     public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken) =>
-        Task.FromResult(new ToolResult("Waiting for the user.") { Summary = "Waiting for you to do the step in the Editor" });
+        // The turn ends on this call, so the model reads the result only after the user's reply.
+        Task.FromResult(new ToolResult("Waited for the user.") { Summary = "Waiting for you to do the step in the Editor" });
 }
 
 // An editing tool whose results carry the plan's activation hint while no skill plan is open.

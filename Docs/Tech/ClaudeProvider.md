@@ -23,6 +23,7 @@ Claude sees Veronica's tools and nothing else from the user's Claude Code setup:
 - The single-flag isolation mode is not used: it refuses subscription sign-in. Safe mode is not used either: it also drops MCP servers given on the command line.
 - The MCP tool timeout is lifted: some Editor tools take minutes, and the user's Stop is the timeout.
 - Tool search is off: tools hidden behind a search need instructions that only Claude Code's own system prompt carries.
+- `wait_for_user` is not offered: it only ends a turn, and Claude Code's own loop decides that. It is left out of the MCP endpoint for every client, and out of the chat's tools while Claude is the provider, so a call by name finds no such tool.
 - Claude Code still adds the signed-in account's email address to the first message; no flag removes it.
 
 ## Tool calls

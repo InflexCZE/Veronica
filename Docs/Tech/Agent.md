@@ -62,4 +62,4 @@ Rounds: stream a reply, run its tool calls, stream again. Each round sends the s
 | length nudges | 2 per turn |
 | free rounds | rounds calling only `skill`, the plan tools and `wiki` |
 | end nudge | while an item of the active plan is open ([Skills](Skills.md)) |
-| turn-ending tools | `ask_user`, `wait_for_user`. Claude Code gets them over MCP like every tool, but its own loop decides when a turn ends |
+| turn-ending tools | `ask_user`, `wait_for_user`. Claude Code's own loop decides when a turn ends: `ask_user` blocks for the answers instead, `wait_for_user` is not offered over MCP ([ClaudeProvider](ClaudeProvider.md)) |

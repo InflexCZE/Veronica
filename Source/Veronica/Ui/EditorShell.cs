@@ -104,7 +104,6 @@ public sealed class EditorShell
         new ActivateSkillTool(() => Skills.Current, Plan),
         new MarkCompletedTool(Plan),
         new MarkSkippedTool(Plan),
-        new WaitForUserTool(),
         new FindContentTool(),
         new FindReferencesTool(),
         new ListFolderTool(),
@@ -133,8 +132,11 @@ public sealed class EditorShell
         var questions = new QuestionBoard();
         // The Claude provider's turn runs in its own loop, which only a blocking call keeps waiting for the answers.
         var tools = new ToolSet([.. Tools, new AskUserTool(questions, waitsForAnswers: ModelProvider.NeedsEndpoint)]);
+        if (!ModelProvider.NeedsEndpoint)
+            tools = tools.With(new WaitForUserTool());
         // The researcher reads the chat's transcript, so an MCP client has nothing to ask it about.
-        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).With(new AskUserTool(questions, waitsForAnswers: true)));
+        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).Without(WaitForUserTool.ToolName)
+            .With(new AskUserTool(questions, waitsForAnswers: true)));
         ProviderStatus? early = null;
         var gate = new Lock();
         var provider = EvalHook.Record(ModelProvider.Create(status =>
