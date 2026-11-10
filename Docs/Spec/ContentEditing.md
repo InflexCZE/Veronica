@@ -21,6 +21,7 @@ What the assistant can do to the content of the mod open in the Editor.
 
 - Folders.
 - Blocks from the Editor's prefab templates. Where a vanilla template itself fails validation, the block comes out fixed.
+- Blocks of a vanilla family the Editor has no template for, such as atmospheric thrusters, offered among the templates as if the Editor had one.
 - Partial overrides of a definition (changes it everywhere) and copies (a new thing).
 - New definitions of a type, with its defaults.
 - Skyboxes from six face images.

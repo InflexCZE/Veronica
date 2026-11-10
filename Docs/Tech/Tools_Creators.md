@@ -24,6 +24,14 @@ Tools that create content: `create_folder`, `find_template`, `create_prefab`, `c
 - The reply lists files a repair created among the generated files and never mentions the repair: the model can do nothing with it, and the skills describe the repaired block as what the template brings.
 - A defect found later follows the same recipe (`Tools_Overview.md`, Hand-kept corrections).
 
+## Synthetic templates
+
+- A vanilla family the Editor has no template for, whose vanilla blocks are copies of another template, gets a template that exists only in Veronica's tools.
+- It is the source template's generator followed by a hand-kept recipe in the template repairs, after the source template's own repairs. The recipe sets only what every vanilla block of the family shares; values that differ per size stay as the source template has them, as in the Editor's own templates.
+- Generated files named after the source template's family get the family's own vanilla names before they are written: a model reading the file list would take the source family's name for the block's.
+- It is listed, matched and named like an Editor template, with no marker: the model could do nothing different with one. `component_upgrade` takes it as a base standing for its source template.
+- Parts that work only with a model of their own are left out; the skills add them once the mod has the model.
+
 ## create_partial
 
 - The Editor's Create Partial Definition: an **override** changes its source wherever it is used; a **copy** is a new definition that starts as its source. Unchanged values follow the source in both.

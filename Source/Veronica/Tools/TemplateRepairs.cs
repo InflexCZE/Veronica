@@ -20,6 +20,8 @@ internal static class TemplateRepairs
     private static readonly Guid Drill350Effects = new("b34b2c70-f868-4379-81f3-b6ed6f4b2da9");
     private static readonly Guid DoorClientBase = new("51b06007-072f-43da-82ae-ac7c1f0a4e03");
     private static readonly Guid Pivot = new("b80cb7d1-126f-406e-a1c7-6410109f3c1d");
+    private static readonly Guid AtmosphericFlame = new("c3d8a15e-f0af-4c48-8718-7f09db3f6deb");
+    private static readonly Guid AtmosphericThrusterKind = new("93e882df-b11a-4379-97ec-4176d195480f");
 
     // Run before the abstract rule, so an abstract reference with a better vanilla value keeps that value.
     private static readonly Dictionary<string, Func<Repair, Task>> ByTemplate = new(StringComparer.OrdinalIgnoreCase)
@@ -32,11 +34,21 @@ internal static class TemplateRepairs
         ["Blocks/Breakable/Doors"] = Door,
     };
 
+    // What every vanilla block of the synthetic template's family sets over the template it is generated from.
+    private static readonly Dictionary<string, Func<Repair, Task>> Synthetic = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Blocks/Breakable/Atmospheric Thrusters"] = AtmosphericThruster,
+    };
+
     public static async Task ApplyAsync(GeneratedPrefab prefab, CancellationToken cancellationToken)
     {
         var repair = new Repair(prefab, cancellationToken);
-        if (ByTemplate.TryGetValue(prefab.Template, out var specific))
+        if (ByTemplate.TryGetValue(Templates.BaseOf(prefab.Template), out var specific))
             await specific(repair);
+        if (Synthetic.TryGetValue(prefab.Template, out var recipe))
+            await recipe(repair);
+        else if (Templates.Synthetic.ContainsKey(prefab.Template))
+            throw new InvalidOperationException($"The synthetic template {prefab.Template} has no recipe.");
         await CopyAbstractDefinitions(repair);
         await AddMissingPivot(repair);
     }
@@ -66,6 +78,16 @@ internal static class TemplateRepairs
         Content.Save(asset);
         return 0;
     });
+
+    // Vanilla atmospheric thrusters are the ion template with these class values; thrust, flame length and sound
+    // differ per size and stay as the template has them.
+    private static async Task AtmosphericThruster(Repair r)
+    {
+        await r.Write(r.Generated("ThrusterDefinition"), "ThrustClass", "Atmospheric");
+        await r.Write(r.Generated("ThrusterEffectsComponentDefinition"), "OnThrustPoweredParticleEffect", r.PathOf(AtmosphericFlame));
+        await r.Write(r.Generated("PowerableBlockDefinition"), "UIData.Name", "ThrusterAtmo");
+        await r.Write(r.Generated("PowerableBlockDefinition"), "BlockKind", r.PathOf(AtmosphericThrusterKind));
+    }
 
     // SlidingDoorNarrow250's values.
     private static async Task Door(Repair r)

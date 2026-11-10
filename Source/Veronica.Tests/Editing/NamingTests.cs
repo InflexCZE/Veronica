@@ -195,6 +195,34 @@ public sealed class NamingTests
         Assert.Equal(["Blocks/Breakable/Hydrogen Thrusters"], Templates.Filter(All, "hydro thrust"));
     }
 
+    [Fact]
+    public void Synthetic_template_lists_beside_its_source_and_resolves_alone()
+    {
+        var found = All.ToDictionary(t => t, t => t, StringComparer.OrdinalIgnoreCase);
+        Templates.AddSynthetic(found);
+        Assert.Equal("Blocks/Breakable/Ion Thrusters", found["Blocks/Breakable/Atmospheric Thrusters"]);
+        Assert.Equal(["Blocks/Breakable/Atmospheric Thrusters"], Templates.Resolve(found.Keys, "Atmospheric Thrusters"));
+        Assert.Equal(["Blocks/Breakable/Ion Thrusters"], Templates.Resolve(found.Keys, "Ion Thrusters"));
+        Assert.Equal(4, Templates.Filter(found.Keys, "Thrust").Count);
+        Assert.Equal("Blocks/Breakable/Ion Thrusters", Templates.BaseOf("blocks/breakable/atmospheric thrusters"));
+    }
+
+    [Theory]
+    [InlineData("Blocks/Breakable/Atmospheric Thrusters", "MyAtmo_IonThrusterDefinition", "MyAtmo_ThrusterDefinition")]
+    [InlineData("Blocks/Breakable/Atmospheric Thrusters", "MyAtmo_IonThrusters_ThrusterEffectsComponentDefinition", "MyAtmo_Thrusters_ThrusterEffectsComponentDefinition")]
+    [InlineData("Blocks/Breakable/Atmospheric Thrusters", "MyAtmo_ServerComposition", "MyAtmo_ServerComposition")]
+    [InlineData("Blocks/Breakable/Ion Thrusters", "MyIon_IonThrusterDefinition", "MyIon_IonThrusterDefinition")]
+    public void Synthetic_template_renames_its_source_family_files(string template, string generated, string expected) =>
+        Assert.Equal(expected, Templates.FileStem(template, generated));
+
+    [Fact]
+    public void Synthetic_template_needs_its_source()
+    {
+        var found = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Blocks/Armor/Ion"] = "" };
+        Templates.AddSynthetic(found);
+        Assert.Single(found);
+    }
+
     private sealed class BlockKindDefinition;
     private sealed class BlockGroupDefinition;
     private sealed class VoxelMaterialDefinition;

@@ -17,7 +17,7 @@ internal static class PrefabTemplates
             ?? throw new EditError("The Editor's prefab generator is not available.");
 
         var nodes = provider.GetGenerators(new AssetGeneratorProviderArguments([], [], project, RequireExactAssetsMatch: false));
-        var options = new Dictionary<string, AssetGeneratorOption>();
+        var options = new Dictionary<string, AssetGeneratorOption>(StringComparer.OrdinalIgnoreCase);
         foreach (var node in nodes)
         {
             // The menu's own top group is not part of a template's path.
@@ -27,6 +27,7 @@ internal static class PrefabTemplates
             else
                 Collect(node, "", options);
         }
+        Templates.AddSynthetic(options);
         return options;
     }
 

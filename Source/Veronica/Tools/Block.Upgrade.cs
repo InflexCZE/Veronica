@@ -197,6 +197,7 @@ internal sealed partial class Block
             return found;
         foreach (var (file, template) in feature.Templates)
             found.TryAdd(template.TemplatePath.Replace('\\', '/'), file);
+        Templates.AddSynthetic(found);
         return found;
     }
 

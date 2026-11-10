@@ -63,7 +63,7 @@ public sealed class CreatePrefabTool : ITool
             throw new EditError("The template generated no files.");
 
         var files = output.FilesToGenerate;
-        var names = FileNames(files.Select(f => f.FileName).ToList(), answer.Asked ? null : name);
+        var names = FileNames(templatePath, files.Select(f => f.FileName).ToList(), answer.Asked ? null : name);
         var taken = names.Select(n => FileStem.Taken(folder, Path.GetFileNameWithoutExtension(n))?.Name).OfType<string>().Distinct().ToList();
         if (taken.Count > 0)
             throw new EditError($"{string.Join(", ", taken)} already {(taken.Count == 1 ? "exists" : "exist")} in {Content.Shown(folder)} under the names this prefab's files would get; reuse that prefab, or pick another name or folder.");
@@ -84,7 +84,7 @@ public sealed class CreatePrefabTool : ITool
     }
 
     // Templates that never ask for a name get it anyway: their shared file name prefix becomes the name.
-    private static List<string> FileNames(List<string> generated, string? rename)
+    private static List<string> FileNames(string template, List<string> generated, string? rename)
     {
         var stems = generated.Select(n => FreeVariant.Replace(Path.GetFileNameWithoutExtension(n), "")).ToList();
         if (rename != null)
@@ -92,7 +92,7 @@ public sealed class CreatePrefabTool : ITool
             string prefix = stems.Aggregate((a, b) => a[..a.Zip(b).TakeWhile(p => p.First == p.Second).Count()]).TrimEnd('_', ' ', '-', '.');
             stems = stems.Select(s => rename + s[prefix.Length..]).ToList();
         }
-        return stems.Select((s, i) => s + Path.GetExtension(generated[i])).ToList();
+        return stems.Select((s, i) => Templates.FileStem(template, s) + Path.GetExtension(generated[i])).ToList();
     }
 
     // As the Editor's own create does: an asset written before the files it needs failed processing, so retry it.
