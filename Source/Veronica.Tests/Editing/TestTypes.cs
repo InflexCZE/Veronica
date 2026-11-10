@@ -173,8 +173,12 @@ public sealed class FakeLinks : IContentLinks
 
     public string? PathOf(Guid id) => _paths.GetValueOrDefault(id);
 
+    public const string ThrusterOverride = @"Mods\Red\Thruster.partialdef";
+
     public ContentLink Find(string name, ReferenceSpec spec)
     {
+        if (ContentNames.Matches(ThrusterOverride, name) && !ContentNames.Matches(_paths[Thruster], name))
+            return new ContentLink(Thruster, _paths[Thruster], ThrusterOverride);
         bool definition = spec.Kind == ReferenceKind.Definition;
         var matches = _paths.Where(p => ContentNames.Matches(p.Value, name) && p.Value.EndsWith(".def") == definition).ToList();
         return matches.Count == 1

@@ -367,6 +367,19 @@ public sealed class FieldEditTests
     }
 
     [Fact]
+    public void Write_names_an_override_it_pointed_past()
+    {
+        string reply = Write("DummyType", "\"Mods/Red/Thruster.partialdef\"");
+        Assert.StartsWith(@"DummyType: none -> System\DummyTypes\Thruster.def", reply);
+        Assert.Contains($"'{FakeLinks.ThrusterOverride}' is an override of", reply);
+        Assert.Contains("create_partial kind copy", reply);
+    }
+
+    [Fact]
+    public void Write_of_the_same_value_says_unchanged() =>
+        Assert.Equal("Power: 10000 (unchanged)", Write("Power", "10000"));
+
+    [Fact]
     public void Null_clears_to_the_default()
     {
         Write("DummyType", "\"Thruster\"");

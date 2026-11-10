@@ -58,11 +58,12 @@ public static class FieldWriter
             throw new EditError($"'{canonical}' is read-only.");
 
         string before = FieldReader.Describe(member, links);
+        ContentLink? link = null;
 
         if (value.ValueKind == JsonValueKind.Null)
             Clear(member, canonical);
         else if (Fields.GetReference(member) is { } reference)
-            SetReference(member, canonical, reference, value, links);
+            link = SetReference(member, canonical, reference, value, links);
         else if (member.MemberKind != MemberValueKind.Value)
             throw new EditError($"'{canonical}' is a {member.MemberKind.ToString().ToLowerInvariant()}; write its elements like '{canonical}[0]', or add one with element_add.");
         else if (Fields.IsScalar(Fields.ValueType(member)))
@@ -76,8 +77,16 @@ public static class FieldWriter
         else
             throw Composite(member, canonical);
 
-        string reply = $"{canonical}: {before} -> {FieldReader.Describe(member, links)}";
-        return ValueChecks.Hint(member, definitions) is { } hint ? $"{reply} (game validation: {hint})" : reply;
+        string hint = ValueChecks.Hint(member, definitions) is { } found ? $" (game validation: {found})" : "";
+        return Reply(canonical, before, FieldReader.Describe(member, links), link, hint);
+    }
+
+    public static string Reply(string path, string before, string after, ContentLink? link, string hint = "")
+    {
+        string reply = (after == before ? $"{path}: {after} (unchanged)" : $"{path}: {before} -> {after}") + hint;
+        if (link?.InPlaceOf is { } overridePath)
+            reply += $"\n'{overridePath}' is an override of {link.Path}; the field points at the original, which already gets the override's values, and so does everything else that uses it. For values only this one gets, point at a copy (create_partial kind copy).";
+        return reply;
     }
 
     // Null empties references and nullables and resets plain values; it never removes an object or a list.
@@ -128,7 +137,7 @@ public static class FieldWriter
             : new EditError($"'{path}' has fields of its own; write them one by one: {string.Join(", ", writable)}.");
     }
 
-    private static void SetReference(MemberReference member, string path, ReferenceSpec spec, JsonElement value, IContentLinks links)
+    private static ContentLink SetReference(MemberReference member, string path, ReferenceSpec spec, JsonElement value, IContentLinks links)
     {
         if (value.ValueKind != JsonValueKind.String || value.GetString()!.Trim().Length == 0)
             throw new EditError($"'{path}' is a reference; give the name or path of the item to point at, or null to clear it.");
@@ -141,6 +150,7 @@ public static class FieldWriter
             _ => link.Id,
         };
         member.SetValue<object?>(reference);
+        return link;
     }
 
     private static void WriteInline(string path, List<MemberReference> fields, JsonElement value)

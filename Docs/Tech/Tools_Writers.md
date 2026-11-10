@@ -6,7 +6,7 @@ Tools that change existing content: `write`, `element_add`, `element_remove`, `c
 
 - The value is JSON, coerced to the field's declared type. A struct that read prints inline takes the same form, and fields left out keep their value.
 - **References** point at an existing item, in the mod or a read-only project; nothing is copied or created. The description says so, because a small model otherwise made its own copies of an item it could point at.
-- **Reference to an override:** written as the override's original. An override merges into its original and its own id names no definition, so the reference would dangle, while the original already carries the override's values.
+- **Reference to an override:** written as the override's original. An override merges into its original and its own id names no definition, so the reference would dangle, while the original already carries the override's values. The reply names the override it went past and says when the value did not change: a model that wanted values for one block alone read the bare `original -> original` reply as a failed write and retried it.
 - **Clear** (`null`) resets a field to its type's default; it never removes an object or list that is not nullable.
 - **Null parents** on the path are created with their defaults first, and removed again when the write then fails.
 - Decimal numbers take a dot only: invariant parsing would read a comma as a thousands separator.

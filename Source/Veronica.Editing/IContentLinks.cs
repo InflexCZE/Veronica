@@ -13,7 +13,7 @@ public enum ReferenceKind
 // What a reference field accepts. Field is there for project-side rules this layer cannot see.
 public sealed record ReferenceSpec(MemberReference Field, ReferenceKind Kind, IReadOnlyList<Type> DefinitionTypes, IReadOnlyList<string> Extensions);
 
-public sealed record ContentLink(Guid Id, string Path);
+public sealed record ContentLink(Guid Id, string Path, string? InPlaceOf = null);
 
 // An override merges into its original and names no definition of its own, so pointing at it can only mean the original.
 public static class OverrideLinks

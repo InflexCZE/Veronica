@@ -23,7 +23,7 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
         var fitting = named.Where(f => Fits(f, spec)).ToList();
         return fitting.Count switch
         {
-            1 => new ContentLink(fitting[0].AssetID, fitting[0].ProjectRelativePath),
+            1 => new ContentLink(fitting[0].AssetID, fitting[0].ProjectRelativePath, OverrideNamed(picked, fitting[0])),
             0 => throw new EditError($"'{name}' cannot go in this field, which takes {Expected(spec)}. Found: {string.Join(", ", named.Take(Content.MaxCandidates).Select(Content.Describe))}."),
             _ => throw new EditError(Content.Ambiguous(name, fitting)),
         };
@@ -55,6 +55,12 @@ internal sealed class ProjectLinks(LoadedProject project, ExplorerAssetFile owne
             return false;
         return definition.DefinitionType != typeof(object) && spec.DefinitionTypes.All(definition.DefinitionType.IsAssignableTo);
     }
+
+    // When the name matched the original too, the model may have meant the original; only an override alone is named.
+    private string? OverrideNamed(List<ExplorerFile> picked, ExplorerFile chosen) =>
+        picked.Any(f => f.AssetID == chosen.AssetID)
+            ? null
+            : picked.FirstOrDefault(f => OriginalOf(f)?.AssetID == chosen.AssetID)?.ProjectRelativePath;
 
     private ExplorerFile? OriginalOf(ExplorerFile file) =>
         file is ExplorerAssetFile { AssetInterface: PartialDefinitionAssetInterface { PartialDefinitionKind: PartialDefinitionKind.Override } partial }

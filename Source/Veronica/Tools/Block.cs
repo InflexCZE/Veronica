@@ -52,14 +52,16 @@ internal sealed class Block
 
     private readonly LoadedProject _project;
     private readonly string? _soleSide;
+    private readonly ExplorerAssetFile _asked;
 
     // The binding, or the prefab when there is none; replies name it.
     public ExplorerAssetFile Item { get; }
     private IEntityNode Root { get; }
 
-    private Block(LoadedProject project, ExplorerAssetFile item, IEntityNode root, string? soleSide)
+    private Block(LoadedProject project, ExplorerAssetFile asked, ExplorerAssetFile item, IEntityNode root, string? soleSide)
     {
         _project = project;
+        _asked = asked;
         Item = item;
         Root = root;
         _soleSide = soleSide;
@@ -85,16 +87,16 @@ internal sealed class Block
         {
             var prefab = type == typeof(PrefabDefinition) ? asset
                 : project.TryGetPrefabGuidOfCompositeDefinition(asset.AssetID) is { } prefabId ? project.GetAssetFileByGuid(prefabId) : null;
-            return prefab == null ? null : new Block(project, prefab, Manipulator(project).LoadPrefab(prefab.AssetID), null);
+            return prefab == null ? null : new Block(project, asset, prefab, Manipulator(project).LoadPrefab(prefab.AssetID), null);
         }
 
         var pairing = bindingAsset.TryGetPairingAllowIncomplete();
         var client = pairing.clientPrefab is { } c ? project.GetAssetFileByGuid(c.Guid) : null;
         var server = pairing.serverPrefab is { } s ? project.GetAssetFileByGuid(s.Guid) : null;
         if (client != null && server != null)
-            return new Block(project, bindingAsset, Manipulator(project).LoadBinding(client.AssetID, server.AssetID), null);
+            return new Block(project, asset, bindingAsset, Manipulator(project).LoadBinding(client.AssetID, server.AssetID), null);
         if (client != null || server != null)
-            return new Block(project, bindingAsset, Manipulator(project).LoadPrefab((client ?? server)!.AssetID), client != null ? "Client" : "Server");
+            return new Block(project, asset, bindingAsset, Manipulator(project).LoadPrefab((client ?? server)!.AssetID), client != null ? "Client" : "Server");
         throw new EditError($"{Content.Shown(bindingAsset)} is a prefab binding with no client or server prefab set.");
     }
 
@@ -203,6 +205,9 @@ internal sealed class Block
         return lines.Count == 0 ? "(no components)" : string.Join("\n", lines);
     }
 
+    private static EditError ComponentAddPointer(string name) =>
+        new($"To add a component use component_add; element_add takes a list inside one, e.g. {ComponentNames.PathOf(name)}.<list>.");
+
     private EditError NotAComponentPath() => new(
         $"{Content.Shown(Item)} is a block; its fields are its components'. Use a path like {ComponentNames.PathOf("<name>")}.<field>. Components:\n{ComponentList()}");
 
@@ -255,7 +260,10 @@ internal sealed class Block
 
     public string Read(string path)
     {
-        string header = $"{Content.Describe(Item)}:";
+        // A model reading a composition took the block's header for a misresolved read and read it again and again.
+        string header = _asked.AssetID == Item.AssetID
+            ? $"{Content.Describe(Item)}:"
+            : $"{Content.Shown(_asked)} is part of block {Content.Describe(Item)}; the whole block is shown:";
         if (path.Trim().Length == 0 || ComponentNames.IsCollection(path))
             return $"{header}\n{ComponentList()}\nRead a component's fields with path {ComponentNames.PathOf("<name>")}.";
 
@@ -400,11 +408,13 @@ internal sealed class Block
 
     public string ElementAdd(string path, string? key, string? type, string? value = null)
     {
+        if (ComponentNames.IsCollection(path))
+            throw ComponentAddPointer("<name>");
         var (component, name, inner) = Locate(path);
         if (inner.Length > 0 && IsDefinition(inner, out _))
             throw new EditError($"'{FieldPath.Member(ComponentNames.PathOf(name), DefinitionField)}' is a reference, not a list.");
         if (inner.Length == 0)
-            throw new EditError($"To add a component use component_add; element_add takes a list inside one, e.g. {ComponentNames.PathOf(name)}.<list>.");
+            throw ComponentAddPointer(name);
         RequireWritable();
         if (IsTags(inner, out string? tagged))
         {
@@ -457,23 +467,26 @@ internal sealed class Block
     {
         string path = FieldPath.Member(ComponentNames.PathOf(name), DefinitionField);
         string before = DefinitionId(component) is { } old ? Links.PathOf(old) ?? "(missing item)" : "none";
+        ContentLink? link = null;
         if (value.ValueKind == JsonValueKind.Null)
             component.Definition.SetDefault();
         else if (value.ValueKind != JsonValueKind.String || value.GetString()!.Trim().Length == 0)
             throw new EditError($"'{path}' is a reference; give the name or path of the definition to point at, or null to clear it.");
         else
-            component.Definition.SetValue<object?>(DefinitionReference(component, value.GetString()!.Trim()));
+        {
+            link = DefinitionLink(component, value.GetString()!.Trim());
+            component.Definition.SetValue<object?>(Links.CreateDefinitionReference(link.Id));
+        }
         string after = DefinitionId(component) is { } id ? Links.PathOf(id) ?? "(missing item)" : "none";
-        return $"{path}: {before} -> {after}";
+        return FieldWriter.Reply(path, before, after, link);
     }
 
     // Resolved among items of the definition type the component's type takes, not any definition the field could hold.
-    private Definition DefinitionReference(IComponentNode component, string itemName)
+    private ContentLink DefinitionLink(IComponentNode component, string itemName)
     {
         var type = DefinitionTypeOf(component)
             ?? throw new EditError($"A {component.ComponentType.Name} takes no definition.");
-        var link = Links.Find(itemName, new ReferenceSpec(component.Definition, ReferenceKind.Definition, [type], []));
-        return Links.CreateDefinitionReference(link.Id);
+        return Links.Find(itemName, new ReferenceSpec(component.Definition, ReferenceKind.Definition, [type], []));
     }
 
     // A side keeps one component per tag, so a tag held elsewhere would be taken away from its holder.
