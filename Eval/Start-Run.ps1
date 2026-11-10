@@ -2,7 +2,7 @@
 # Prints RunDir, Port, Pid and McpPort as soon as the Editor is started; Wait-Ready.ps1 waits for it to load.
 param(
     [Parameter(Mandatory = $true)][string]$Task,
-    [string]$LlamaUrl = 'http://localhost:8080/v1',
+    [string]$OpenAiUrl = 'http://localhost:8080/v1',
     [string]$Model = '',
     [string]$Effort = '',
     [int]$Port = 47811,
@@ -76,14 +76,14 @@ finally {
 if ($Model -eq '') {
     # curl.exe, not Invoke-RestMethod: Windows PowerShell has no TLS 1.3. --insecure like the plugin's
     # provider, since locally hosted servers typically use self-signed certificates.
-    $models = curl.exe -s --insecure --max-time 10 "$($LlamaUrl.TrimEnd('/'))/models"
-    if ($LASTEXITCODE -ne 0) { throw "The model server at $LlamaUrl does not answer (curl exit code $LASTEXITCODE)." }
+    $models = curl.exe -s --insecure --max-time 10 "$($OpenAiUrl.TrimEnd('/'))/models"
+    if ($LASTEXITCODE -ne 0) { throw "The model server at $OpenAiUrl does not answer (curl exit code $LASTEXITCODE)." }
     $Model = ($models | Out-String | ConvertFrom-Json).data[0].id
-    if (-not $Model) { throw "The model server at $LlamaUrl lists no models." }
+    if (-not $Model) { throw "The model server at $OpenAiUrl lists no models." }
 }
 
 $env:VERONICA_PROVIDER = 'openai'
-$env:VERONICA_OPENAI_URL = $LlamaUrl
+$env:VERONICA_OPENAI_URL = $OpenAiUrl
 $env:VERONICA_OPENAI_MODEL = $Model
 $env:VERONICA_OPENAI_EFFORT = $Effort
 $env:VERONICA_CONTROL_PORT = "$Port"
