@@ -1,7 +1,8 @@
 # Builds one release (Docs/Tech/Distribution.md) into bin\dist\<version>\:
 #   Veronica.exe  self-contained single file
 #   Veronica.zip  Runtime\ (plugin, WebQwen.exe single file + native DLLs + manifest.json), Skills\, Wiki\
-# Creates no release anywhere; upload both files as the assets of release v<version>.
+#   THIRD-PARTY-NOTICES.txt
+# Creates no release anywhere; upload all three files as the assets of release v<version>.
 param(
     [Parameter(Mandatory)][string]$Version
 )
@@ -55,6 +56,7 @@ Invoke-Checked 'Veronica.exe publish' {
         "-p:Version=$Version" -o (Join-Path $stage 'setup')
 }
 Copy-Item (Join-Path $stage 'setup\Veronica.exe') $out
+Copy-Item (Join-Path $PSScriptRoot 'THIRD-PARTY-NOTICES.txt') $out
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = Join-Path $out 'Veronica.zip'

@@ -6,7 +6,8 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 
 - One GitHub release of this repo per version; only `/releases/latest` counts, pre-releases are ignored. The releases URL is a setting, and Gitea answers in the same shape, so a test release can come from a local Gitea.
 - Versions are SemVer. The tag `vX.Y.Z` and the assembly version of the plugin and the Launcher carry the same number, and every version comparison uses them.
-- Two assets: the Launcher exe, and a zip with the plugin, the runtime, the skills and the wiki. The zip versions as one unit, so the plugin-runtime protocol needs no version check.
+- Three assets: the Launcher exe, a zip with the plugin, the runtime, the skills and the wiki, and the third-party notices. The zip versions as one unit, so the plugin-runtime protocol needs no version check.
+- The notices cover what the exe and the zip ship, so they stay standalone beside them on the release page and the Launcher does not download them. `Build/THIRD-PARTY-NOTICES.txt` changes with every added or bumped dependency.
 - `WebQwen.exe` is a framework-dependent single-file publish with `wq.dll` and `webgpu_dawn.dll` beside it: packed inside, .NET would extract them to `%TEMP%` on the first start of every version.
 - `dxcompiler.dll` and `dxil.dll` are not shipped. The plugin copies them from the Editor's folder beside `WebQwen.exe` before starting it, when missing or older.
 - Model files are not in the release; they come from Hugging Face.
