@@ -149,7 +149,7 @@ public static class Fields
         || type == typeof(decimal)
         || type == typeof(Guid)
         || type == typeof(StringId)
-        || type == typeof(LocKey)
+        || Values.IsNameWrapper(type)
         || typeof(IResourceHandle).IsAssignableFrom(type)
         || typeof(Definition).IsAssignableFrom(type)
         || (type.IsValueType && Values.HasParse(type));

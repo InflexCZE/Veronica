@@ -13,7 +13,7 @@ Rules every feature's tests follow. The tests themselves are the record of what 
 
 ## Layering for testability
 
-- Logic that can run without the Editor lives in assemblies that do not need it: `Veronica.Agent.dll` has no SE2 references, and `Veronica.Editing.dll` references only the engine's library assemblies, so the editing rules are tested on engine types without a running Editor.
+- Logic that can run without the Editor lives in assemblies that do not need it: `Veronica.Agent.dll` has no SE2 references, and `Veronica.Editing.dll` references only engine assemblies that load without the Editor, so the editing rules are tested on engine types without a running Editor.
 - Thin glue over something only the real machine has (the Editor's project layer, Claude Code, the MCP transport, the UI) gets no unit tests and is checked live.
 - Test projects split where their builds clash or their toolchains differ:
   - `Veronica.Tests` builds against the Editor folder.

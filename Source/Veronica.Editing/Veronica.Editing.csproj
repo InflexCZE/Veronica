@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Reference Include="$(EditorDir)VRage.Library.dll" Private="false" />
+    <Reference Include="$(EditorDir)VRage.Core.dll" Private="false" />
     <Reference Include="$(EditorDir)VRage.UI.Shared.dll" Private="false" />
   </ItemGroup>
 

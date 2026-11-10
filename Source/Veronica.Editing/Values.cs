@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Keen.VRage.Core.Physics;
 using Keen.VRage.Library.Definitions;
 using Keen.VRage.Library.Extensions;
 using Keen.VRage.Library.Localization;
@@ -12,6 +13,15 @@ namespace Veronica.Editing;
 
 public static class Values
 {
+    // Engine structs that only wrap a name. Listed one by one as they turn up, not found by reflection.
+    private static readonly Dictionary<Type, Func<StringId, object>> NameWrappers = new()
+    {
+        [typeof(LocKey)] = id => new LocKey { TextId = id },
+        [typeof(FractureId)] = id => new FractureId(id),
+    };
+
+    public static bool IsNameWrapper(Type type) => NameWrappers.ContainsKey(type);
+
     public static object FromJson(JsonElement value, Type type) => value.ValueKind switch
     {
         JsonValueKind.String => FromText(value.GetString()!, type),
@@ -31,8 +41,8 @@ public static class Values
             return ParseEnum(trimmed, type);
         if (type == typeof(StringId))
             return StringId.Get(trimmed);
-        if (type == typeof(LocKey))
-            return new LocKey { TextId = StringId.Get(trimmed) };
+        if (NameWrappers.TryGetValue(type, out var wrap))
+            return wrap(StringId.Get(trimmed));
         if (type == typeof(Guid))
             return Guid.TryParse(trimmed, out var guid) ? guid : throw Invalid(text, type);
 
@@ -70,6 +80,8 @@ public static class Values
     {
         if (type == typeof(FixedPoint))
             return "A decimal number with up to 6 decimal places, in the unit of the field that holds it. read shows it and write takes it as a plain number, like 0.5 or 2150400.";
+        if (IsNameWrapper(type))
+            return "One name: read shows it, and write and element_add take it as the same plain text.";
         if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && HasParse(type))
             return "One value: read shows it and write takes it as plain text in the same form.";
         return null;

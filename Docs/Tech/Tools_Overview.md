@@ -54,5 +54,5 @@ Where the Editor or the game is wrong about something the tools rely on (a compo
 
 ## Assemblies
 
-- `Veronica.Editing.dll` holds the rules that need no running Editor: paths, field walking, visibility, value coercion, reads, writes, searches, name and template matching, component naming, graph validation and layout. It references only the engine's library assemblies, so it runs and is tested without the Editor; the project side (names to items, definition placeholders) comes in through an interface. The prefab visibility rule therefore recognises the prefab root by its type name.
+- `Veronica.Editing.dll` holds the rules that need no running Editor: paths, field walking, visibility, value coercion, reads, writes, searches, name and template matching, component naming, graph validation and layout. It references only engine assemblies that load without the Editor (`Testing.md`), so it runs and is tested without the Editor; the project side (names to items, definition placeholders) comes in through an interface. The prefab root's type is outside those assemblies, so the prefab visibility rule recognises it by its type name.
 - `Veronica.dll` holds what needs the loaded project: resolution over the project, read-only checks, saving, creation, blocks through the prefab layer, the type catalog, the tool wrappers and the Board.

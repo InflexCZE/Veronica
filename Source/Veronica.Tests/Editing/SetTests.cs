@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Keen.VRage.Core.Model;
+using Keen.VRage.Core.Physics;
 using Keen.VRage.Library.Serialization;
 using Veronica.Editing;
 using Xunit;
@@ -13,6 +14,7 @@ public partial class SetSample
     public HashSet<DummyTypeDefinition> Allowed = [];
     public HashSet<string>? Missing;
     public Dictionary<string, float> Speeds = [];
+    public HashSet<FractureId> Fractures = [];
 }
 
 public sealed class SetTests
@@ -95,6 +97,15 @@ public sealed class SetTests
     {
         Assert.StartsWith($"Added {ConveyorElement};", Add("Allowed", key: "Conveyor"));
         Assert.Equal([FakeLinks.Thruster, FakeLinks.Conveyor], AllowedIds.OrderBy(g => g));
+    }
+
+    [Fact]
+    public void Add_builds_a_name_wrapping_element_from_its_name()
+    {
+        Assert.Equal("Added Fractures[Fracture_01]; 1 in the set.", Add("Fractures", key: "Fracture_01"));
+        Assert.Contains("Fractures[Fracture_01]", Read("Fractures"));
+        Remove("Fractures[Fracture_01]");
+        Assert.Empty(_sample.Fractures);
     }
 
     [Fact]
