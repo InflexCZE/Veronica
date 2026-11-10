@@ -116,6 +116,7 @@ public sealed class EditorShell
         new PlanHintedTool(new ElementRemoveTool(), Plan),
         new PlanHintedTool(new ComponentAddTool(), Plan),
         new PlanHintedTool(new ComponentRemoveTool(), Plan),
+        new PlanHintedTool(new ComponentUpgradeTool(), Plan),
         new PlanHintedTool(new CreateFolderTool(), Plan),
         new FindTemplateTool(),
         new PlanHintedTool(new CreatePrefabTool(), Plan),

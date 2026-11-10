@@ -65,5 +65,4 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PrefabOutsidePlan.md](PrefabOutsidePlan.md) | Editor tools: create_prefab outside create-block leaves name and models unset with no hint |
 | [EditorStartupHang.md](EditorStartupHang.md) | Eval: an Editor start sometimes hangs after load (startup push never finishes) |
 | [SyntheticTemplates.md](SyntheticTemplates.md) | Editor tools: no template for a bound child model such as a door leaf (owner decision) |
-| [ReplaceBlockComponent.md](ReplaceBlockComponent.md) | Editor tools: a block's component cannot be replaced, e.g. made powerable (owner decision) |
 | [PrefabTagMove.md](PrefabTagMove.md) | Editor tools: a tag that dependents rely on cannot move to another component (owner decision) |

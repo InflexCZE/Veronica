@@ -13,6 +13,7 @@ What the assistant can do to the content of the mod open in the Editor.
 
 - Edit fields and collections of the mod's definitions.
 - Add and remove a block's components.
+- Upgrade a block's component to a more specific type, such as making a cargo container draw power, keeping every value the block had. The values only the new type has come from a template, block or definition the assistant picks as the closest fit.
 - Every change saves the way an inspector edit does; an open Property Inspector shows the new value.
 - A value outside the game's validation range is written anyway, with a warning in the reply.
 
@@ -37,7 +38,6 @@ What the assistant can do to the content of the mod open in the Editor.
 
 - Child entities of a prefab ([PrefabChildEntities](../TODOs/PrefabChildEntities.md)).
 - Partial prefabs ([PartialPrefabs](../TODOs/PartialPrefabs.md)).
-- Replacing a block's component ([ReplaceBlockComponent](../TODOs/ReplaceBlockComponent.md)).
 - Moving a tag other components depend on ([PrefabTagMove](../TODOs/PrefabTagMove.md)).
 - One query over a field across many items ([ContentQuery](../TODOs/ContentQuery.md)).
 - Asset kinds beyond definitions, cubemaps and skyboxes: kinds join as each is tested in the Editor.

@@ -22,7 +22,7 @@ Make my container able to thrust, like a small ion thruster.
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the nozzle instead, the user says it is on the back face, centred, small; exact numbers only when the model asks for exact values.
-- If the model says the block will thrust without drawing power, the user accepts it for now ("fine, leave the power as it is").
+- If the model asks whether the block should draw power like the thruster: yes.
 - Second turn: once the model has finished (shown the block, nozzle placed), the user sends "Nice. Can you make it twice as strong?". Answer follow-up questions in the same spirit (power use: "whatever fits", either is fine).
 - Does not know engine internals: component and definition types, tags, field names, file paths in vanilla.
 
@@ -36,8 +36,7 @@ Make my container able to thrust, like a small ion thruster.
 6. The storage is untouched: `InventoryComponent` (server, its definition with MaxMass 2000), `ConveyorComponent` and the `ConveyorBack` port dummy as in the fixture.
 7. After the second turn, the block's `ThrustPower` is twice the vanilla Ion Thruster 100's, in a definition in the dev mod; no vanilla file changed. `ResourcesRequiredToThrust` as vanilla or scaled, either accepted.
 8. The model called `show` on the block, no other block was created, and nothing outside the dev mod was changed.
-
-Reported, not judged (owner decision pending): whether the block draws power when thrusting. In the game a thruster draws power only when the block's main component is a `PowerableBlockComponent` (`ThrusterComponent.Init`); the container's is a `FunctionalBlockComponent`, so thrust there is free. Note whether the model noticed and what it did or told the user.
+9. The block draws power: its block component is a `PowerableBlockComponent` (a thruster draws power only through one, `ThrusterComponent.Init`) whose definition's `ConsumedResource` is electricity, and that definition keeps the fixture's block values (name, block kind, recipe, PCU, mount points).
 
 Not required, a plus: a `ThrusterEffectsComponent` on the client with a definition (the flame).
 

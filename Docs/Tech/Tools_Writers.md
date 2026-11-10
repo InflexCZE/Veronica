@@ -1,6 +1,6 @@
 # Editor tools: writers
 
-Tools that change existing content: `write`, `element_add`, `element_remove`, `component_remove`, and edits of a block's components. The shared contract is in `Tools_Overview.md`.
+Tools that change existing content: `write`, `element_add`, `element_remove`, `component_remove`, `component_upgrade`, and edits of a block's components. The shared contract is in `Tools_Overview.md`.
 
 ## write
 
@@ -31,4 +31,15 @@ Tools that change existing content: `write`, `element_add`, `element_remove`, `c
 - **Tags** are added and removed one at a time, never written as a whole. Both are refused when they would break the block: a side keeps one component per tag, so adding a tag held elsewhere would take it from its holder, and removing a tag another component requires breaks that dependency at load. Moving a tag that dependents rely on is not possible (`Docs/TODOs/PrefabTagMove.md`).
 - `component_remove` removes a component from every side it is on. It is refused when another component on the same side requires a tag it fills, since the block would break at load.
 - The removed component's definition file stays; the reply says when nothing references it any more.
-- Replacing a block's component is not a tool operation (`Docs/TODOs/ReplaceBlockComponent.md`).
+
+## component_upgrade
+
+Changes a block's component to a type derived from its own, such as a cargo container's FunctionalBlockComponent to a PowerableBlockComponent so it draws power. Nothing the block had is lost: losing data is worse than a stale file.
+
+- **Base:** a template, a prefab or block, or a definition, by template path or by item. The new type is the one the base offers that derives from the component's type: the base block's component, or the component types taking the definition's type, an exact match before an assignable one. None, several, or the component's own type is refused, naming what the base offers.
+- **Definition:** a partial copy of the base's definition, so the fields only the new type has hold the base's values, which a template sets for its family (a thruster template's resource and priority). Every field of the old definition, resolved through its partials, is then written over it where it differs, as the inspector's per-field copy and paste. The model picks the base, so no hand-kept defaults are needed.
+- The new definition is named after the old one with its type name swapped for the new one's, numbered when taken, and goes in the block's folder. There is no name argument: one thing fewer for the model to get wrong.
+- **Component:** removed and added again on each side it was on, with its id and tags, plus any default tag of the new type no other component holds. Its fields start as the base block's component has them, or the type's defaults for a bare definition, and every field of the old component, hidden ones included, is written over them.
+- Dependencies, interface dependencies and companions are filled as `component_add` fills them.
+- The reply names the fields the new type brought, with the values they got, so the model can change them.
+- The old definition file stays, and the reply says when nothing references it, through the same code as `component_remove`, so both always behave alike.

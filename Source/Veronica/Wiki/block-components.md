@@ -1,18 +1,21 @@
 ---
 name: block-components
 title: A block's components and their definitions
-source: SE2 source RuntimeComponentInfo, ToolDamageComponent (its DamageEntityDetector tag) and the Editor prefab layer (BoundEntitiesNode, EntityPrefabNode); Veronica's component tools (Docs/Tech/Tools_Writers.md, Docs/Tech/Tools_Creators.md)
-description: How a block's function is made of components and what they cannot do (new behaviour), how to add a missing one, what an Unsatisfied dependency error means, and which definition a component should point at (its own, an existing one, a copy, a new one).
+source: SE2 source RuntimeComponentInfo, ToolDamageComponent (its DamageEntityDetector tag), EntityCompositeDependencyOrderBuildStrategy (Malformed dependency) and the Editor prefab layer (BoundEntitiesNode, EntityPrefabNode); Veronica's component tools (Docs/Tech/Tools_Writers.md, Docs/Tech/Tools_Creators.md)
+description: How a block's function is made of components and what they cannot do (new behaviour), how to add a missing one or upgrade one to a more specific kind, what an Unsatisfied dependency error means, and which definition a component should point at (its own, an existing one, a copy, a new one).
 ---
 A block does its job through components. read(block) lists them, one line each: type, sides, tags, definition.
 
 What a block has:
 - A template brings the components of its own function with generated definitions. A block made from a template for another function lacks them: fill what is there and add what is missing.
-- One component does one job on a block; component_add refuses a type whose job another component already does.
+- One component does one job on a block; component_add refuses a type whose job another component already does. A more specific kind of a component the block has (a PowerableBlockComponent for its FunctionalBlockComponent) comes with component_upgrade instead.
 - A comparable vanilla block shows which components and values a function uses: read its prefab binding, then its definitions.
 - Components and definitions are data: a mod combines existing components and sets their fields, but cannot add a new behaviour or a field no component has. That takes a script mod, which Veronica's tools do not author.
 
 Adding a component: component_add(block, type, definition?) puts it on the sides its type needs and adds the components it depends on. Its reply names each component still without a definition; the block fails validation until each has one.
+
+Upgrading a component: component_upgrade(block, component, base) changes it to a more specific kind, such as a FunctionalBlockComponent to a PowerableBlockComponent so the block draws power. The block keeps every value it had; what only the new kind has comes from the base, a template, block or definition of the same function. The component gets a new definition in the block's folder, and the reply names the values the base brought.
+A component_add reply saying a component needs a <type> but another holds its tag as a different type means the block fails to load until that holder is upgraded.
 
 Tags: a component may find another on the same block by a tag, a name the other holds. A side keeps one component per tag. component_add gives a new component a tag of its own and fills the tags its dependencies look up; its reply names a tag it gave a component already on the block. Tags are added and removed with element_add and element_remove on Components[<type>].Tags.
 A validation error Unsatisfied dependency '<tag>' on <component> means no component on the block holds the tag that component looks up (e.g. ToolDamageComponent looks up a detector tagged DamageEntityDetector). Add the component that does that job (component_add fills the tags), or add the tag to the one already there.

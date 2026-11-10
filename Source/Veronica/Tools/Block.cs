@@ -27,7 +27,7 @@ namespace Veronica.Tools;
 // A block, or a prefab with no binding, edited as a whole through the Editor's own prefab layer, the one behind the
 // inspector's prefab view: client and server pairing, dependency filling and the shared components' mirroring are its.
 // Any file of the block opens it, so a model naming one of its prefabs edits the block the same way.
-internal sealed class Block
+internal sealed partial class Block
 {
     private const string DefinitionField = "Definition";
     private const string TagsField = "Tags";
@@ -562,17 +562,11 @@ internal sealed class Block
         }
         RequireWritable();
 
-        var before = Root.Components.Select(c => c.Id).ToHashSet();
-        var tagsBefore = Root.Components.ToDictionary(c => c.Id, c => TagTexts(c).ToHashSet(StringComparer.Ordinal));
-        var sharedBefore = Root.Components.Where(c => c is SharedComponent).Select(c => c.Id).ToHashSet();
+        var before = Capture();
         var id = Root is BoundEntitiesNode bound && SideOverrides.ContainsKey(type.FullName ?? "")
             ? bound.AddComponent(type, SideOf(type))
             : Root.AddComponent(type);
-        foreach (var component in Root.Components.ToList())
-            component.PopulateMissingDependencies();
-        KeepOverriddenSides(sharedBefore);
-        var unmet = FillInterfaceDependencies();
-        AddCompanions(choices);
+        var unmet = FillDependencies(choices, before);
 
         var added = Root.Components.First(c => c.Id == id);
         string? autoTag = null;
@@ -588,28 +582,87 @@ internal sealed class Block
         }
         Save();
 
-        var names = ComponentNames.Assign(Entries());
-        string Label(IComponentNode c) => ComponentNames.PathOf(names[c.Id]) + SideLabel(c);
         var lines = new List<string> { $"{Content.Shown(Item)}: added {Label(added)}{(autoTag != null ? $" with tag {autoTag}" : "")}." };
+        lines.AddRange(AddedNotes(id, before, unmet));
+        return string.Join("\n", lines);
+    }
 
-        var dependencies = Root.Components.Where(c => c.Id != id && !before.Contains(c.Id)).ToList();
+    private string Label(IComponentNode component) => ComponentNames.PathOf(ComponentNames.Assign(Entries())[component.Id]) + SideLabel(component);
+
+    private sealed record BlockState(HashSet<Guid> Ids, Dictionary<Guid, HashSet<string>> Tags, HashSet<Guid> Shared);
+
+    private BlockState Capture() => new(
+        Root.Components.Select(c => c.Id).ToHashSet(),
+        Root.Components.ToDictionary(c => c.Id, c => TagTexts(c).ToHashSet(StringComparer.Ordinal)),
+        Root.Components.Where(c => c is SharedComponent).Select(c => c.Id).ToHashSet());
+
+    // What the inspector's add fills after a component comes in, plus what its filling misses; returns the
+    // interface dependencies left unfilled.
+    private List<string> FillDependencies(IReadOnlyCollection<Type> choices, BlockState before)
+    {
+        foreach (var component in Root.Components.ToList())
+            component.PopulateMissingDependencies();
+        KeepOverriddenSides(before.Shared);
+        var unmet = FillInterfaceDependencies();
+        AddCompanions(choices);
+        return unmet;
+    }
+
+    // What the model did not ask for but got with the component: dependencies, tags given to others, missing definitions.
+    private List<string> AddedNotes(Guid id, BlockState before, List<string> unmet)
+    {
+        var lines = new List<string>();
+        var dependencies = Root.Components.Where(c => c.Id != id && !before.Ids.Contains(c.Id)).ToList();
         if (dependencies.Count > 0)
             lines.Add($"Added with it for its dependencies: {string.Join(", ", dependencies.Select(Label))}.");
 
-        foreach (var c in Root.Components.Where(c => c.Id != id && tagsBefore.ContainsKey(c.Id)))
+        foreach (var c in Root.Components.Where(c => c.Id != id && before.Tags.ContainsKey(c.Id)))
         {
-            var newTags = TagTexts(c).Where(t => !tagsBefore[c.Id].Contains(t)).ToList();
+            var newTags = TagTexts(c).Where(t => !before.Tags[c.Id].Contains(t)).ToList();
             if (newTags.Count > 0)
                 lines.Add($"{Label(c)} got tag {string.Join(", ", newTags)}, which the new component's dependencies look up.");
         }
 
+        var names = ComponentNames.Assign(Entries());
+        var added = Root.Components.First(c => c.Id == id);
         foreach (var c in dependencies.Prepend(added).Where(c => DefinitionId(c) == null && DefinitionTypeOf(c) != null))
         {
             string path = ComponentNames.PathOf(names[c.Id]);
             lines.Add($"{path} needs a {DefinitionTypeOf(c)!.Name}; the block fails validation without it. Point it at one with write to {path}.Definition, or create one with create_definition first.");
         }
         lines.AddRange(unmet);
-        return string.Join("\n", lines);
+        lines.AddRange(MismatchedHolders(dependencies.Prepend(added).Select(c => c.Id).ToHashSet()));
+        return lines;
+    }
+
+    // The game's entity builder resolves a dependency by tag and fails the block when the holder's type does not fit,
+    // even for an optional dependency, so a component found this way breaks the block at load.
+    private List<string> MismatchedHolders(HashSet<Guid> needers)
+    {
+        var names = ComponentNames.Assign(Entries());
+        var lines = new List<string>();
+        foreach (var side in Sides())
+        {
+            foreach (var needer in side.ComponentsMap.Values.Where(c => needers.Contains(c.Id)))
+            {
+                foreach (var dependency in RuntimeComponentInfo.For(needer.ComponentType).BuildDependencies)
+                {
+                    if (dependency.WeakDependency)
+                        continue;
+                    var holder = side.ComponentsMap.Values.FirstOrDefault(c => c.Id != needer.Id && c.Tags.Contains(dependency.Tag));
+                    var needed = dependency.Field.FieldType;
+                    if (holder == null || needed.IsAssignableFrom(holder.ComponentType))
+                        continue;
+                    string holderPath = ComponentNames.PathOf(names[holder.Id]);
+                    string line = $"{ComponentNames.PathOf(names[needer.Id])} needs a {needed.Name} tagged {dependency.Tag}, but {holderPath} holds that tag as a {holder.ComponentType.Name}; the block fails to load like this.";
+                    if (needed.IsSubclassOf(holder.ComponentType))
+                        line += $" Upgrade it with component_upgrade(block, \"{names[holder.Id]}\", base), the base a template, block or definition of the same function that has a {needed.Name}.";
+                    if (!lines.Contains(line))
+                        lines.Add(line);
+                }
+            }
+        }
+        return lines;
     }
 
     private const string RenderParentTag = "IRenderParent";
@@ -745,13 +798,16 @@ internal sealed class Block
         var holders = SidesFor(type)
             .SelectMany(s => s.ComponentsMap.Values)
             .Where(c => c.Tags.Any(defaults.Contains))
-            .Select(c => (Name: names[c.Id], Tags: c.Tags.Where(defaults.Contains).Select(t => t.ToString())))
+            .Select(c => (Name: names[c.Id], c.ComponentType, Tags: c.Tags.Where(defaults.Contains).Select(t => t.ToString())))
             .DistinctBy(h => h.Name)
             .ToList();
         if (holders.Count == 0)
             return;
         string held = string.Join("; ", holders.Select(h => $"{ComponentNames.PathOf(h.Name)} holds {string.Join(", ", h.Tags)}"));
-        throw new EditError($"A {type.Name} would take over a role this block's component already fills ({held}); a block keeps one component per role. Replacing a component is not a tool operation.");
+        string message = $"A {type.Name} would take over a role this block's component already fills ({held}); a block keeps one component per role.";
+        if (holders is [var only] && type.IsSubclassOf(only.ComponentType))
+            message += $" To make {ComponentNames.PathOf(only.Name)} a {type.Name}, keeping its values, use component_upgrade(block, \"{only.Name}\", base), the base a template, block or definition of the same function that has a {type.Name}.";
+        throw new EditError(message);
     }
 
     private IEnumerable<EntityPrefabNode> SidesFor(Type type)
@@ -795,11 +851,14 @@ internal sealed class Block
         Root.RemoveComponent(component.Id);
         Save();
 
-        string reply = $"{Content.Shown(Item)}: removed {path}{sides}.";
-        if (definition is { } id && _project.GetAssetFileByGuid(id) is { Project.IsReadOnly: false } asset && Unused(id, files) == true)
-            reply += $" Its definition {Content.Shown(asset)} is no longer used by anything.";
-        return reply;
+        return $"{Content.Shown(Item)}: removed {path}{sides}.{UnusedNote(definition, files)}";
     }
+
+    // Shared by every operation that leaves a definition behind, so they all treat the stale file alike.
+    private string UnusedNote(Guid? definition, HashSet<Guid> blockFiles) =>
+        definition is { } id && _project.GetAssetFileByGuid(id) is { Project.IsReadOnly: false } asset && Unused(id, blockFiles) == true
+            ? $" Its definition {Content.Shown(asset)} is no longer used by anything."
+            : "";
 
     // The engine's dependency rule, run backwards: a required dependency is a tag the component fills on its side.
     private List<string> Dependents(IComponentNode component, StringId? only = null)
