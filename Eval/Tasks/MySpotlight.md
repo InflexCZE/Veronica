@@ -23,8 +23,8 @@ I want a spotlight block made from my MyThruster models.
   ```
   $t = '<block model definition>'
   $d = 'Dummies[<index of the dummy>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":-0.45},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.2,"Y":0.2,"Z":0.2}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":-0.45},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.2,"Y":0.2,"Z":0.2}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the spot instead, the user says the light comes out of the front face of the block; exact numbers only when the model asks for exact values. If the model asks which way the beam points: "out of the front".

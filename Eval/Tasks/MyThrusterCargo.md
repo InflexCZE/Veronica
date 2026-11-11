@@ -16,8 +16,8 @@ Make my thruster able to hold cargo, like a small container.
   ```
   $t = 'MyThruster_ThrusterBlockModelDefinition.partialdef'
   $d = 'Dummies[<index the model named>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":1,"Y":1,"Z":1},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":1,"Y":1,"Z":1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":1,"Y":1,"Z":1},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":1,"Y":1,"Z":1}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the port instead, the user says it is a conveyor port on the block's side; exact numbers only when the model asks for exact values.

@@ -17,8 +17,8 @@ Give my thruster a fan that spins faster the harder it thrusts. The fan uses my 
   ```
   $t = 'MyThruster_ThrusterBlockModelDefinition.partialdef'
   $d = 'Dummies[<index the model named>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":0.5},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":1,"Y":1,"Z":1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":0.5},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":1,"Y":1,"Z":1}}')
   ```
 
   Then answer as the user, e.g. "Done, the fan is at the back". Never hand the model these numbers; if it asks to describe the spot, the user says "at the back, in the middle".

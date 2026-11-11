@@ -16,8 +16,8 @@ I imported my thruster model into Assets/MyThruster. Make a new ion thruster blo
 
   ```
   $t = '<block model definition>'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"Dummies[0].Transform","value":{"Position":{"X":0,"Y":0,"Z":0.6458988},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"Dummies[0].Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"Dummies[0].Transform","value":{"Position":{"X":0,"Y":0,"Z":0.6458988},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"Dummies[0].Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the nozzle instead, the user says it is on the back face, centred, small; exact numbers only when the model asks for exact values.

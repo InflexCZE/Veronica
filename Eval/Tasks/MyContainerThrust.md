@@ -17,8 +17,8 @@ Make my container able to thrust, like a small ion thruster.
   ```
   $t = 'MyContainer_BlockModelDefinition.partialdef'
   $d = 'Dummies[<index the model named>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":0.6458988},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":0.6458988},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the nozzle instead, the user says it is on the back face, centred, small; exact numbers only when the model asks for exact values.

@@ -30,8 +30,8 @@ Make a fabricator block from my MyThruster models.
   ```
   $t = '<block model definition>'
   $d = 'Dummies[<index of the dummy>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":-0.75},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.5,"Y":0.5,"Z":0.1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0,"Z":-0.75},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.5,"Y":0.5,"Z":0.1}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the spots instead, the user says the screen is in the middle of the front face and the port in the middle of the back face; exact numbers only when the model asks for exact values.

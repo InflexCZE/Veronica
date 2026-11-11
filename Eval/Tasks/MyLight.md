@@ -22,8 +22,8 @@ Make a light block from my MyThruster models.
   ```
   $t = '<block model definition>'
   $d = 'Dummies[<index of the dummy>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0.3,"Z":0.2},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":0.3,"Z":0.2},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.1,"Y":0.1,"Z":0.1}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the spot instead, the user says the light should come out of the top front of the block; exact numbers only when the model asks for exact values.

@@ -29,8 +29,8 @@ Make a cockpit block from my MyThruster models.
   ```
   $t = '<block model definition>'
   $d = 'Dummies[<index of the dummy>]'
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":-0.2,"Z":0},"Euler":{"X":0,"Y":0,"Z":0}}}')
-  & C:\Codes\Veronica\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.4,"Y":0.4,"Z":0.4}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Transform","value":{"Position":{"X":0,"Y":-0.2,"Z":0},"Euler":{"X":0,"Y":0,"Z":0}}}')
+  & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":0.4,"Y":0.4,"Z":0.4}}')
   ```
 
 - Never hand the model these numbers. If it asks the user to describe the spots instead, the user says the seat is in the middle of the block, the eyes a bit above and forward of it, and the player gets in from the front; exact numbers only when the model asks for exact values.
