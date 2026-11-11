@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.UI.UniDock.Docking;
 using Veronica.Agent;
+using Veronica.Agent.Recording;
 using Veronica.Agent.Tools;
 using Veronica.Tools;
 
@@ -139,7 +140,8 @@ public sealed class EditorShell
             .With(new AskUserTool(questions, waitsForAnswers: true)));
         ProviderStatus? early = null;
         var gate = new Lock();
-        var provider = EvalHook.Record(ModelProvider.Create(status =>
+        var record = new MemoryRecordStore();
+        var provider = EvalHook.Record(new RecordingProvider(ModelProvider.Create(status =>
         {
             ChatPanelViewModel target;
             lock (gate)
@@ -152,8 +154,8 @@ public sealed class EditorShell
                 target = panel;
             }
             target.ShowStatus(status);
-        }, endpoint));
-        var created = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions);
+        }, endpoint), record, ModelProvider.Describe()));
+        var created = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions, record.Copy);
         lock (gate)
         {
             panel = created;

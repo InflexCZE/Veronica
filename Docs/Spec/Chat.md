@@ -8,6 +8,7 @@ The modder talks to the assistant in a panel inside the Editor. The assistant an
 - Clearing the chat starts a new conversation. It also picks up skill and wiki files edited on disk, without an Editor restart.
 - The panel can always be reopened from the Editor's menu; its dock position is remembered.
 - Any script and emoji are safe in chat text.
+- A chat command copies the conversation since the last clear to the clipboard, for a bug report: the system prompt and tools, every message with the model's thinking and tool results, and each subagent's session. It works during a turn too. With Claude Code it holds what Veronica saw of the turn; what Claude Code adds to its own context is not in it.
 
 ## Turns
 

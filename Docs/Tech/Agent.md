@@ -49,6 +49,8 @@ Rounds: stream a reply, run its tool calls, stream again. Each round sends the s
 
 - A conversation holds the chat's transcript and its provider session, and sends one turn at a time.
 - The transcript lives in memory only; eval runs also record every session to a file ([Eval](Eval.md)).
+- `/copy` puts the same recording on the clipboard, kept in memory since the last `/clear`: each session after a header line naming its eval file, so the paste splits back into the files the eval and replay tools read. It is a recording apart from the transcript because compaction replaces the transcript with its summary.
+- Each recording tracks the tool call running in its own async-local slot: the eval recording and the `/copy` one wrap the same provider, and a shared slot would link a subagent's session to the other recording's call.
 - `/clear` empties the transcript, resets the session and builds the system prompt anew, so edited skill files take effect without an Editor restart.
 - Assistant messages keep their reasoning. A thinking model's chat template otherwise renders an empty think block for its earlier replies, after which the model stops closing `</think>`; and WebQwen reuses its KV cache only when every earlier reply comes back exactly as generated.
 

@@ -1,15 +1,17 @@
 using System.Diagnostics;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Veronica.Agent.Eval;
 
-namespace Veronica.Agent.Eval;
+namespace Veronica.Agent.Recording;
 
-// Records every session an eval run opens, each to a JSONL file of its own: the chat's to
+// Records every session the provider opens, each to a JSONL file of its own: the chat's to
 // transcript.jsonl, a subagent's to <name>-<n>.jsonl, so the chat's file stays what the chat model saw.
-public sealed class RecordingProvider(IProvider inner, string directory, string description) : IProvider
+public sealed class RecordingProvider(IProvider inner, IRecordStore store, string description) : IProvider
 {
     // The tool call running now in this async flow: a session opened inside it is that call's child.
-    private static readonly AsyncLocal<CallScope?> RunningCall = new();
+    // Per recording, so two recordings stacked on one provider each link their own files.
+    private readonly AsyncLocal<CallScope?> _runningCall = new();
 
     private readonly object _gate = new();
     private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
@@ -36,19 +38,10 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
             if (name == Compaction.SessionName)
                 _lastCompaction = fileName;
         }
-        var parent = RunningCall.Value;
-        RunTranscript? transcript = null;
-        try
-        {
-            transcript = new RunTranscript(directory, fileName, parent, Failed);
-            parent?.Children.Add(fileName);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
-        {
-            Failed(e.Message);
-        }
-        var session = inner.OpenSession(name);
-        return transcript == null ? session : new Session(session, transcript, description, LastCompaction);
+        var parent = _runningCall.Value;
+        parent?.Children.Add(fileName);
+        var transcript = new RunTranscript(store, fileName, parent, _runningCall, Failed);
+        return new Session(inner.OpenSession(name), transcript, description, LastCompaction, name == IProvider.ChatSession ? store.ChatCleared : null);
     }
 
     private string? LastCompaction()
@@ -68,7 +61,7 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
         public List<string> Children { get; } = [];
     }
 
-    private sealed class Session(IProviderSession inner, RunTranscript transcript, string description, Func<string?> lastCompaction) : IProviderSession
+    private sealed class Session(IProviderSession inner, RunTranscript transcript, string description, Func<string?> lastCompaction, Action? chatCleared) : IProviderSession
     {
         private string? _system;
         private IReadOnlyList<ToolDefinition>? _tools;
@@ -103,40 +96,38 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
         public Task ResetAsync()
         {
             transcript.WriteClear();
+            chatCleared?.Invoke();
             _system = null;
             return inner.ResetAsync();
         }
 
-        public void Dispose()
-        {
-            inner.Dispose();
-            transcript.Dispose();
-        }
+        public void Dispose() => inner.Dispose();
     }
 
     // One session's file, appended as it happens, one whole message per line, so a hung or killed Editor
     // loses nothing.
-    internal sealed class RunTranscript : IDisposable
+    internal sealed class RunTranscript
     {
         public const string FileName = "transcript.jsonl";
 
         private static readonly JsonWriterOptions WriterOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
         private readonly object _gate = new();
-        private readonly FileStream _file;
+        private readonly IRecordStore _store;
         private readonly string _fileName;
         private readonly CallScope? _parent;
+        private readonly AsyncLocal<CallScope?> _runningCall;
         private readonly Action<string> _failed;
         private readonly Stopwatch _clock = Stopwatch.StartNew();
         private int _line;
         private int _round;
 
-        public RunTranscript(string directory, string fileName, CallScope? parent, Action<string> failed)
+        public RunTranscript(IRecordStore store, string fileName, CallScope? parent, AsyncLocal<CallScope?> runningCall, Action<string> failed)
         {
-            Directory.CreateDirectory(directory);
-            _file = new FileStream(Path.Combine(directory, fileName), FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            _store = store;
             _fileName = fileName;
             _parent = parent;
+            _runningCall = runningCall;
             _failed = failed;
         }
 
@@ -187,12 +178,6 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
 
         public Host Wrap(ITurnHost host) => new(this, host);
 
-        public void Dispose()
-        {
-            lock (_gate)
-                _file.Dispose();
-        }
-
         private void Write(string type, Action<Utf8JsonWriter> body)
         {
             lock (_gate)
@@ -210,8 +195,7 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
                         line = Line(_line, type, w => w.WriteString("unwritable", e.Message));
                     }
                     _line++;
-                    _file.Write(line);
-                    _file.Flush();
+                    _store.Append(_fileName, line);
                 }
                 catch (Exception e)
                 {
@@ -278,7 +262,7 @@ public sealed class RecordingProvider(IProvider inner, string directory, string 
             public async Task<ToolResult?> OnToolCallAsync(ToolCall call, ToolCallContext context, CancellationToken cancellationToken)
             {
                 var clock = Stopwatch.StartNew();
-                var scope = RunningCall.Value = new CallScope(run._fileName, call.Id);
+                var scope = run._runningCall.Value = new CallScope(run._fileName, call.Id);
                 try
                 {
                     return await host.OnToolCallAsync(call, context, cancellationToken).ConfigureAwait(false);

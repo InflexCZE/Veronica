@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
 using Veronica.Agent.Eval;
+using Veronica.Agent.Recording;
 using Veronica.Ui;
 
 namespace Veronica;
@@ -23,7 +24,7 @@ internal static class EvalHook
         if (RunDir.Length == 0)
             return provider;
         Log.Default.WriteLine($"[Veronica] Eval transcripts in '{LocalModel.AsciiOnly(RunDir)}'.");
-        return _recording = new RecordingProvider(provider, RunDir, ModelProvider.Describe());
+        return _recording = new RecordingProvider(provider, new FileRecordStore(RunDir), ModelProvider.Describe());
     }
 
     public static void Attach(ChatPanelViewModel panel)

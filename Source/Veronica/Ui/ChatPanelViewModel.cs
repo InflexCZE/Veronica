@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Avalonia.Threading;
+using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.Editor.Services.Docking;
 using Veronica.Agent;
 using Veronica.Agent.Chat;
@@ -12,6 +13,7 @@ namespace Veronica.Ui;
 public sealed class ChatPanelViewModel : DockItemViewModel
 {
     private const string ClearCommand = "/clear";
+    private const string CopyCommand = "/copy";
 
     private static readonly Stopwatch Clock = Stopwatch.StartNew();
 
@@ -26,12 +28,13 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     private CancellationTokenSource? _turn;
     private Task? _turnTask;
     private readonly IProvider _provider;
+    private readonly Func<string> _record;
     private bool _clearing;
     private QuestionCard? _card;
     // Answers given before the turn that asked had wound down: sent when it has.
     private string? _queuedAnswers;
 
-    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, Compaction compaction, QuestionBoard questions)
+    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, Compaction compaction, QuestionBoard questions, Func<string> record)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -39,6 +42,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         CanFloat = true;
 
         _provider = provider;
+        _record = record;
         _tools = tools;
         _plan = plan;
         Questions = questions;
@@ -171,10 +175,17 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 
     private void Submit()
     {
+        var text = Draft.Trim();
+        if (text == CopyCommand)
+        {
+            Draft = "";
+            CopyRecord();
+            return;
+        }
+
         if (_clearing)
             return;
 
-        var text = Draft.Trim();
         if (text == ClearCommand)
         {
             Draft = "";
@@ -308,6 +319,23 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         // Questions asked after these answers stay open for the user.
         if (_queuedAnswers is { } answers && !_clearing)
             Start(answers, closeQuestions: false);
+    }
+
+    private async void CopyRecord()
+    {
+        if (EditorShell.MainWindow?.Clipboard is not { } clipboard)
+        {
+            Log.Default.WriteLine("[Veronica] No clipboard, chat record not copied.");
+            return;
+        }
+        try
+        {
+            await clipboard.SetTextAsync(_record());
+        }
+        catch (Exception e)
+        {
+            Log.Default.WriteLine($"[Veronica] Chat record not copied: {LocalModel.AsciiOnly(e.Message)}");
+        }
     }
 
     private async Task ClearAsync()
