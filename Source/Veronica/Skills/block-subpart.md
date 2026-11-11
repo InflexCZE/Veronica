@@ -17,7 +17,7 @@ Plan:
 
 Steps:
 1. read(block) lists its components; read its BlockModelComponentDefinition's Dummies.
-2. create_prefab("Blocks/Subparts/Subpart", <part name>, folder). create_definition("ModelComponentDefinition", ...), write its Model, then write(part prefab, "Components[ModelComponent].Definition", <it>): the template's own points at no model.
+2. create_prefab("Blocks/Subparts/Subpart", <part name>, folder) gives the part its own ModelComponentDefinition with no model: write its Model. A model left empty fails the mod's validation.
 3. create_definition("DummyTypeDefinition", ...) for the part's spot. create_definition("ConditionalSubPartsDefinition", ...), component_add(block, "ConditionalSubPartsComponent", <it>), element_add(it, "SubParts", key=<dummy type>, value=<part prefab>).
 4. element_add(BlockModelComponentDefinition, "Dummies"), write its Name and Type (the new dummy type). Never compute its position: show(the block), ask the user to place it (name the path, e.g. Dummies[0].Transform) with wait_for_user, then read the dummy again.
 
