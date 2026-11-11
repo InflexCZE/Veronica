@@ -23,6 +23,8 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
 | [SubpartToggleMotion.md](SubpartToggleMotion.md) | Skills: subparts that move to a target and back on a toggle |
 | [SkippedBlockKinds.md](SkippedBlockKinds.md) | Skills: block kinds and parts left out of the wide block run (owner decision) |
+| [Grinder.md](Grinder.md) | Skills: no grinder block, deferred out of the items and recipes round (owner decision) |
+| [O2H2Generator.md](O2H2Generator.md) | Skills: no ice-to-gas generator block, deferred out of the items and recipes round (owner decision) |
 | [RespawnPreviewCrash.md](RespawnPreviewCrash.md) | Editor: show of a block with a respawn point crashes the Editor; medical room kind held (owner decision) |
 | [SmallModelEval.md](SmallModelEval.md) | Eval: the 9B does not finish the eval tasks reliably (owner decision: parked) |
 | [NativeStdout.md](NativeStdout.md) | WebQwen: native stdout writes would corrupt the protocol |
