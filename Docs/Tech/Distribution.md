@@ -13,6 +13,14 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 - Model files are not in the release; they come from Hugging Face.
 - `Build/Publish.ps1` builds the assets; it creates no release. Releases are unsigned (`Docs/TODOs/CodeSigning.md`).
 
+## Public wiki
+
+- The GitHub wiki is generated, never edited: on a push to GitHub that touches its sources, an Action rebuilds it from `/Wiki` (hand-written pages, `Home.md` the front page), the shipped skills and wiki, and the eval tasks, and replaces the whole wiki repo. Editing on GitHub is restricted to collaborators, since a web edit is lost at the next publish.
+- Visitors read skills, game knowledge and eval tasks without digging through the code repo; the repo stays the only source, reviewed with the code.
+- Wiki URLs are flat whatever the folder, so generated pages carry a section prefix (`Skill-`, `Knowledge-`, `Eval-`) and the build fails on any clash.
+- Frontmatter becomes the page's description; a wiki page's `source` is dropped, as provenance for maintainers. Eval asset folders are not published.
+- The sidebar is generated; `.github/scripts/publish_wiki.py <dir>` previews the pages locally.
+
 ## Launcher
 
 - `Source/Veronica.Setup`: one self-contained .NET exe with an Avalonia window. It ships the public Avalonia, unlike the plugin, which uses the Editor's fork. It shares the settings and release code with the plugin through `Veronica.Agent`.

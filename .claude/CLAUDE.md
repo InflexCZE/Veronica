@@ -13,6 +13,8 @@ Veronica is an AI assistant for modding Space Engineers 2 inside the VRage3 Edit
 | `Eval` | eval run scripts; `Eval/Tasks` the eval tasks |
 | `Assets/VeronicaDevMod` | the dev mod for live runs |
 | `Build` | dependency fetch and release publish scripts |
+| `Wiki` | hand-written pages of the public GitHub wiki |
+| `.github` | the Action that publishes the GitHub wiki |
 
 ## Rules
 
