@@ -35,7 +35,7 @@ public sealed class SetupHost
         {
             Layout = layout,
             Files = new DiskFiles(),
-            Http = ReleaseFeed.CreateClient(null, version),
+            Http = ReleaseFeed.CreateClient(null, version, line => Log(layout, line)),
             Editor = new EditorProbe(layout),
             RunningExe = exe,
             SteamRoot = Steam.RootFromRegistry,
@@ -85,11 +85,13 @@ public sealed class SetupHost
 
     public IReadOnlyList<ModelRecord> Manifest => Files.FileExists(Layout.Manifest) ? ModelCatalog.Parse(Files.ReadAllText(Layout.Manifest)) : [];
 
-    public void Log(string line)
+    public void Log(string line) => Log(Layout, line);
+
+    private static void Log(InstallLayout layout, string line)
     {
         try
         {
-            File.AppendAllText(Layout.LogFile, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} {Ascii(line)}{Environment.NewLine}");
+            File.AppendAllText(layout.LogFile, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} {Ascii(line)}{Environment.NewLine}");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

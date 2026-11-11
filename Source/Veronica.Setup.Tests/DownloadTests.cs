@@ -80,12 +80,159 @@ public class ModelDownloaderTests
     {
         var (files, http) = Serve(cuts: 2);
 
-        await new ModelDownloader(http.Client(), files, Layout).DownloadAsync(Model(), null, CancellationToken.None);
+        await new ModelDownloader(http.Client(), files, Layout) { Delay = Record([]) }.DownloadAsync(Model(), null, CancellationToken.None);
 
         AssertInstalled(files);
         var ranges = http.Requests.Where(r => r.RequestUri!.ToString().EndsWith("params_shard_0.bin")).Select(r => r.Headers.Range?.Ranges.Single().From).ToList();
         Assert.Equal([null, 1200L, 2400L], ranges);
     }
+
+    [Fact]
+    public async Task CutConnection_WaitsLongerBeforeEachResume()
+    {
+        var (files, http) = Serve(cuts: 2);
+        var waits = new List<TimeSpan>();
+
+        await new ModelDownloader(http.Client(), files, Layout) { Delay = Record(waits) }.DownloadAsync(Model(), null, CancellationToken.None);
+
+        AssertInstalled(files);
+        Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)], waits);
+    }
+
+    [Fact]
+    public async Task OverloadedListing_IsRetriedWithBackoff()
+    {
+        var (files, http) = Serve();
+        http.Serve(ListingUrl, Listing()).FailuresLeft = 3;
+        var waits = new List<TimeSpan>();
+        var log = new List<string>();
+
+        await new ModelDownloader(Retrying(http, waits, log), files, Layout).DownloadAsync(Model(), null, CancellationToken.None);
+
+        AssertInstalled(files);
+        Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4)], waits);
+        Assert.Equal(3, log.Count);
+        Assert.Contains("429", log[0]);
+    }
+
+    [Fact]
+    public async Task RetryAfter_IsWaitedInFull()
+    {
+        var (files, http) = Serve();
+        var route = http.Serve(Base + "params_shard_0.bin", Shard);
+        route.FailuresLeft = 1;
+        route.FailWith = System.Net.HttpStatusCode.ServiceUnavailable;
+        route.RetryAfter = TimeSpan.FromSeconds(45);
+        var waits = new List<TimeSpan>();
+
+        await new ModelDownloader(Retrying(http, waits), files, Layout).DownloadAsync(Model(), null, CancellationToken.None);
+
+        AssertInstalled(files);
+        Assert.Equal([TimeSpan.FromSeconds(45)], waits);
+    }
+
+    [Fact]
+    public async Task RetryAfterBeyondTheBudget_FailsAtOnce()
+    {
+        var (files, http) = Serve();
+        var route = http.Serve(Base + "params_shard_0.bin", Shard);
+        route.FailuresLeft = 1;
+        route.RetryAfter = RetryHandler.Budget + TimeSpan.FromSeconds(1);
+        var waits = new List<TimeSpan>();
+
+        var e = await Assert.ThrowsAsync<HttpRequestException>(() => new ModelDownloader(Retrying(http, waits), files, Layout).DownloadAsync(Model(), null, CancellationToken.None));
+
+        Assert.Equal(System.Net.HttpStatusCode.TooManyRequests, e.StatusCode);
+        Assert.Empty(waits);
+    }
+
+    [Fact]
+    public async Task RefusedConnection_IsRetriedByTheClient()
+    {
+        var (files, http) = Serve();
+        http.Serve(ListingUrl, Listing()).DropsLeft = 2;
+        var waits = new List<TimeSpan>();
+
+        await new ModelDownloader(Retrying(http, waits), files, Layout).DownloadAsync(Model(), null, CancellationToken.None);
+
+        AssertInstalled(files);
+        Assert.Equal([TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)], waits);
+    }
+
+    [Fact]
+    public async Task RetryAfterARedirect_StartsFromTheOriginalUrl_AndLogsOnlyIt()
+    {
+        var (files, http) = Serve();
+        const string Signed = "https://cdn.example/shard?X-Amz-Signature=secret";
+        var redirecting = new Redirecting(http, Base + "params_shard_0.bin", Signed);
+        var log = new List<string>();
+        var client = new HttpClient(new RetryHandler(redirecting) { Delay = Record([]), Log = log.Add });
+
+        await new ModelDownloader(client, files, Layout).DownloadAsync(Model(), null, CancellationToken.None);
+
+        AssertInstalled(files);
+        Assert.Equal([Base + "params_shard_0.bin", Base + "params_shard_0.bin"], redirecting.Seen);
+        Assert.DoesNotContain(log, l => l.Contains("secret"));
+    }
+
+    // Stands in for the redirect handler: it rewrites RequestUri to the target, which then fails once.
+    private sealed class Redirecting(FakeHttp inner, string from, string to) : DelegatingHandler(inner)
+    {
+        private bool _failed;
+
+        public List<string> Seen { get; } = new();
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri!.ToString() != from)
+                return base.SendAsync(request, cancellationToken);
+            Seen.Add(request.RequestUri.ToString());
+            if (_failed)
+                return base.SendAsync(request, cancellationToken);
+            _failed = true;
+            request.RequestUri = new Uri(to);
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable) { RequestMessage = request });
+        }
+    }
+
+    [Fact]
+    public async Task LastingOverload_GivesUpAfterTheHandlersRetries_WithoutTheDownloaderRetryingAgain()
+    {
+        var (files, http) = Serve();
+        http.Serve(Base + "params_shard_0.bin", Shard).FailuresLeft = int.MaxValue;
+        var waits = new List<TimeSpan>();
+
+        var e = await Assert.ThrowsAsync<HttpRequestException>(() => new ModelDownloader(Retrying(http, waits), files, Layout) { Delay = Record(waits) }.DownloadAsync(Model(), null, CancellationToken.None));
+
+        Assert.Equal(System.Net.HttpStatusCode.TooManyRequests, e.StatusCode);
+        Assert.Equal(new[] { 1, 2, 4, 8, 16, 30, 30, 30 }.Select(s => TimeSpan.FromSeconds(s)), waits);
+        Assert.Equal(RetryHandler.Retries + 1, http.Requests.Count(r => r.RequestUri!.ToString().EndsWith("params_shard_0.bin")));
+        Assert.False(files.DirectoryExists(@"C:\V\Models\Tiny-MLC"));
+    }
+
+    [Fact]
+    public async Task MissingFile_FailsWithoutRetrying()
+    {
+        var (files, http) = Serve();
+        var route = http.Serve(Base + "params_shard_0.bin", Shard);
+        route.FailuresLeft = 1;
+        route.FailWith = System.Net.HttpStatusCode.NotFound;
+        var waits = new List<TimeSpan>();
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => new ModelDownloader(Retrying(http, waits), files, Layout) { Delay = Record(waits) }.DownloadAsync(Model(), null, CancellationToken.None));
+
+        Assert.Empty(waits);
+        Assert.Single(http.Requests, r => r.RequestUri!.ToString().EndsWith("params_shard_0.bin"));
+    }
+
+    private static Func<TimeSpan, CancellationToken, Task> Record(List<TimeSpan> waits) => (wait, _) =>
+    {
+        waits.Add(wait);
+        return Task.CompletedTask;
+    };
+
+    private static HttpClient Retrying(FakeHttp http, List<TimeSpan> waits, List<string>? log = null) =>
+        new(new RetryHandler(http) { Delay = Record(waits), Log = log == null ? null : log.Add });
 
     [Fact]
     public async Task PartialFileFromAnEarlierRun_IsContinued()

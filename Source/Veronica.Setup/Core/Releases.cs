@@ -9,9 +9,9 @@ public static class ReleaseFeed
     public static async Task<Release> LatestAsync(HttpClient http, string url, CancellationToken cancellationToken) =>
         Release.Parse(await http.GetStringAsync(url, cancellationToken).ConfigureAwait(false));
 
-    public static HttpClient CreateClient(HttpMessageHandler? handler, SemVer? version)
+    public static HttpClient CreateClient(HttpMessageHandler? handler, SemVer? version, Action<string>? log = null)
     {
-        var http = handler == null ? new HttpClient() : new HttpClient(handler);
+        var http = new HttpClient(new RetryHandler(handler ?? new HttpClientHandler()) { Log = log });
         http.Timeout = Timeout.InfiniteTimeSpan;
         // GitHub's API refuses requests without a user agent.
         http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Veronica", (version ?? new SemVer(0, 0, 0)).ToString()));

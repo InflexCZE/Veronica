@@ -118,6 +118,8 @@ public sealed class ModelDownloader(HttpClient http, IFiles files, InstallLayout
 {
     public int Attempts { get; init; } = 5;
 
+    public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
+
     public async Task DownloadAsync(ModelRecord model, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         string listing = await http.GetStringAsync(HubListing.Url(model), cancellationToken).ConfigureAwait(false);
@@ -163,8 +165,11 @@ public sealed class ModelDownloader(HttpClient http, IFiles files, InstallLayout
                 await ResumeAsync(url, part, size, report, cancellationToken).ConfigureAwait(false);
                 break;
             }
-            catch (Exception e) when (e is IOException or HttpRequestException && attempt < Attempts && !cancellationToken.IsCancellationRequested)
+            // The client's RetryHandler (ReleaseFeed.CreateClient) has already retried error statuses and failed sends;
+            // what is left here is a connection lost mid-body, which the next attempt resumes.
+            catch (IOException) when (attempt < Attempts && !cancellationToken.IsCancellationRequested)
             {
+                await Delay(Backoff.Step(attempt), cancellationToken).ConfigureAwait(false);
             }
         }
         if (!Verified(part, size, check))

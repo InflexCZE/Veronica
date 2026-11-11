@@ -155,6 +155,14 @@ public sealed class FakeHttp : HttpMessageHandler
         public int CutsLeft { get; set; }
 
         public int CutAfter { get; init; }
+
+        public int DropsLeft { get; set; }
+
+        public int FailuresLeft { get; set; }
+
+        public HttpStatusCode FailWith { get; set; } = HttpStatusCode.TooManyRequests;
+
+        public TimeSpan? RetryAfter { get; set; }
     }
 
     public Route Serve(string url, byte[] body, bool honoursRange = true, int cuts = 0, int cutAfter = 0)
@@ -173,6 +181,19 @@ public sealed class FakeHttp : HttpMessageHandler
         Requests.Add(request);
         if (!_routes.TryGetValue(request.RequestUri!.ToString(), out var route))
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { RequestMessage = request });
+        if (route.DropsLeft > 0)
+        {
+            route.DropsLeft--;
+            throw new HttpRequestException("The connection was refused.");
+        }
+        if (route.FailuresLeft > 0)
+        {
+            route.FailuresLeft--;
+            var failure = new HttpResponseMessage(route.FailWith) { RequestMessage = request };
+            if (route.RetryAfter is { } after)
+                failure.Headers.RetryAfter = new RetryConditionHeaderValue(after);
+            return Task.FromResult(failure);
+        }
 
         long from = 0;
         var status = HttpStatusCode.OK;
