@@ -19,7 +19,7 @@ Make an assembler block from my MyThruster models that crafts everything the van
   - what kind of item it is: "a component, like a motor";
   - how many orders it queues: "same as the assembler";
   - power: "like the vanilla assembler";
-  - where it goes in the block menu: "next to the vanilla assembler";
+  - where it goes in the block menu: "in the same place as the vanilla assembler";
   - a spot that opens the production screen at the block, if offered: "yes, a screen spot on the front";
   - conveyor ports: "one, on the back".
 - No block icon of their own; fine with none.
