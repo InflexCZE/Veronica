@@ -32,6 +32,7 @@ internal static class TemplateRepairs
         ["Blocks/Breakable/Tanks"] = r => r.Write(r.Generated("BlockDestructionExplosionDefinition"), "Explosion", r.PathOf(HydrogenTank500Explosion)),
         ["Blocks/Breakable/Drills"] = r => r.PointComponent("DrillToolEffectsComponent", r.PathOf(Drill350Effects)),
         ["Blocks/Breakable/Doors"] = Door,
+        ["Blocks/Breakable/Production(Manual)"] = Production,
     };
 
     // What every vanilla block of the synthetic template's family sets over the template it is generated from.
@@ -87,6 +88,15 @@ internal static class TemplateRepairs
         await r.Write(r.Generated("ThrusterEffectsComponentDefinition"), "OnThrustPoweredParticleEffect", r.PathOf(AtmosphericFlame));
         await r.Write(r.Generated("PowerableBlockDefinition"), "UIData.Name", "ThrusterAtmo");
         await r.Write(r.Generated("PowerableBlockDefinition"), "BlockKind", r.PathOf(AtmosphericThrusterKind));
+    }
+
+    // The template draws power idle and none while crafting, and queues nothing, so its block can never craft; every
+    // vanilla production block draws nothing idle. Assembler500's crafting values stand in until the user picks theirs.
+    private static async Task Production(Repair r)
+    {
+        await r.Write(r.Generated("PowerableBlockDefinition"), "ConsumedResource.Amount", 0);
+        await r.Write(r.Generated("ItemConverterDefinition"), "ConsumedResource", 1600);
+        await r.Write(r.Generated("ItemConverterDefinition"), "MaxQueueSize", 20);
     }
 
     // SlidingDoorNarrow250's values.

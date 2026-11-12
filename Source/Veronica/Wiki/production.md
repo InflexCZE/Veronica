@@ -15,7 +15,7 @@ Parts:
   - Every recipe's input item types must be allowed by the input inventory's WhitelistedTypes, and its outputs by the output inventory's; otherwise validation fails and the mod's definitions do not load.
 - InventoryStockpileComponent on the output inventory: pushes products to the conveyor network once the output is filled above FillRatioPush (a share, 0 to 1); it pushes every item not listed in its Items. Other blocks then pull from it. PreventStockpilingFromRemovingItems on an InventoryDefinition stops other blocks taking items out (for input inventories), PreventStockpilingFromAddingItems stops them putting items in (for outputs).
 - ConveyorComponent: an order pulls its ingredients from the conveyor network, which connects only at UseConveyor dummies (the inventory-and-conveyors page). With no ports the block is cut off from the ship's cargo.
-- PowerableBlockComponent as the block component: its ConsumedResource.Amount is drawn all the time the block is on, in kW. Total draw = that + the converter's ConsumedResource while crafting.
+- PowerableBlockComponent as the block component: its ConsumedResource.Amount is the idle draw in kW; the converter's ConsumedResource comes on top while crafting (the power page).
 
 Recipes: an ItemRecipeDefinition has Inputs, Outputs and TimeToConvert. A block offers a mod's recipe only when its ItemConverterComponent points at an ItemConverterDefinition whose RecipeDefinitions list a set holding it.
 
@@ -27,7 +27,7 @@ Where players use it: the production screen is the Production tab of the grid's 
 
 Vanilla production blocks: Assets/Blocks/<name>/<size> (Fabricator, Gearforge, Assembler, ...). They draw nothing idle (block Amount 0) and their power only while crafting. Each offers its own recipe sets.
 
-The Production (Manual) template: a block made from it gets its own ItemConverterDefinition (no recipes, queue 0, no extra power while crafting), its own input and output InventoryDefinitions and its own PowerableBlockDefinition (a fixed draw while on, no BlockKind, so no block menu place). It has no dummies: no conveyor ports and no production screen spot.
+The Production (Manual) template: a block made from it gets its own ItemConverterDefinition (no recipes; queue, speed and power while crafting as the vanilla Assembler), its own input and output InventoryDefinitions and its own PowerableBlockDefinition (nothing drawn idle, no BlockKind, so no block menu place). It has no dummies: no conveyor ports and no production screen spot.
 
 Crafting without orders: AutoItemConverterComponent is an ItemConverterComponent that queues recipes itself from what is in its input inventory. Its AutoItemConverterDefinition adds InventoryUpdateFrequency (must not be 0) and FillRatio; MaxQueueSize and RemoveImpossibleRecipes are on the base definition as above. It needs an inventory tagged InventoryStockpile on the block. No vanilla block uses it. No production component works without a queue.
 
