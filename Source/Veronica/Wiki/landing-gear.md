@@ -23,7 +23,7 @@ Locking:
 - A target inside the lock box and flat enough is ready to lock; players lock and unlock it, also with the cockpit's parking key.
 - Auto-lock locks to a ready target by itself. It is each built block's own setting, switched by players in the terminal; a mod does not set it on the block.
 - After an unlock, auto-lock waits until nothing but the block's own grid is inside the release box, so the gear does not lock straight back to the surface it left.
-- Locking and unlocking need the block to work: built, on and powered. Its PowerableBlockDefinition's ConsumedResource Amount is 0 in the template and vanilla: it draws nothing but needs power on the grid.
+- Locking and unlocking need the block to work: built, on and powered. Its PowerableBlockDefinition's ConsumedResource Amount is 0 in the template and vanilla: it draws nothing but needs power on the grid (the power page).
 
 Vanilla landing gears: Assets/Blocks/LandingGear/LandingGear/<size> (100, 500).
 

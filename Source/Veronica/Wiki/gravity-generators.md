@@ -7,7 +7,7 @@ description: What a gravity generator block does: the field's reach and strength
 Parts:
 - GravityGeneratorComponent, on both sides, with its GravityGeneratorDefinition: MaxAffectDistance (m), the most reach players can set; MinGravitationalAcceleration and MaxGravitationalAcceleration (m/s^2), the strength players can set; SupportedGravityShapes, the shapes players can pick.
 - The component's own fields are the field a newly built block starts with, later changed by players in the terminal: AffectDistance (m, within MaxAffectDistance), GravitationalAcceleration (m/s^2, within the strength limits; negative pushes instead of pulling) and GravityShape.
-- PowerableBlockComponent as the block component. ConsumedResource.Amount is the kW drawn while the block is on; gravity works only while the block works (built, on and powered). With Amount 0 it draws nothing but still needs power on the grid.
+- PowerableBlockComponent as the block component. ConsumedResource.Amount is the kW drawn while the block is on; gravity works only while the block works (built, on and powered), which needs power on the grid even at Amount 0 (the power page).
 - No dummy is needed.
 
 Units: the terminal shows strength in g, the definition and the block in m/s^2; 1 g is 9.80665 m/s^2.

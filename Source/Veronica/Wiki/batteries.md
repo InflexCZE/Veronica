@@ -19,7 +19,7 @@ Energy:
 
 Power draw:
 - Vanilla batteries have ConsumedResource none: they need no power to run.
-- A block with a ConsumedResource counts as unpowered until power reaches it, and a battery that is not working stores and gives nothing. Such a battery cannot start a grid on its own; it works only while another source powers the grid.
+- A battery with a ConsumedResource is unpowered until power reaches it (the power page), and a battery that is not working stores and gives nothing: it cannot start a grid on its own, and works only while another source powers the grid.
 - Players switch each built battery between Auto, Charge and Discharge in the terminal; a mod does not set it.
 
 CellSlot dummies:
