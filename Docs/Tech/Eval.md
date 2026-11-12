@@ -45,7 +45,7 @@ The plugin serves a small HTTP JSON endpoint on loopback when its port setting i
 ## Tasks
 
 - `Eval/Tasks/<name>.md`, committed: the first message as a user would type it, what the user wants and knows for the role-play, and the pass criteria. An optional fixture folder is copied over the dev mod.
-- Generated fixture files stay out of git: the fixture holds a script that writes the same bytes every run, plus the files' metas captured from the Editor's own import. Without metas the Editor stops at load to ask about them.
+- Small generated fixture files, such as an icon, go to git as they are; the script that made them does not. Large generated files stay out of git so they do not bloat it: the fixture holds a script that writes the same bytes every run. Either way the fixture keeps the files' metas captured from the Editor's own import; without them the Editor stops at load to ask about them.
 - Fixtures reuse the MyThruster models, whatever the shape: no new model files go into git.
 
 ## Method
