@@ -130,7 +130,7 @@ public static class Prompts
         (wikiAnswer == null ? "" : "Your last wiki answer, kept verbatim:\n" + wikiAnswer + "\n\n") +
         (activeSkill == null ? "" : $"The active skill, {activeSkill.Name}, kept verbatim:\n" + activeSkill.Overview + "\n\n") +
         (planItem == null ? "" : $"You are on {planItem}.\n\n") +
-        "You are continuing a compacted session. Continue with Next steps to lead the Current task to completion.</harness>";
+        "You are continuing a compacted session. Continue with Next steps to lead the Current task to completion; how to do each step comes from the active skill, not from the summary.</harness>";
 
     public const string CompactionTitle = "Summarizing conversation";
 
