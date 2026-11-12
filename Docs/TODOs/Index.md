@@ -49,6 +49,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |
 | [ClaudeWaitForUser.md](ClaudeWaitForUser.md) | Chat: Claude's prompt and skills name wait_for_user, which it does not have (owner decision) |
 | [ContextWindow.md](ContextWindow.md) | Chat: providers assume a 45K context window (owner decision) |
+| [CompactionInventedDecision.md](CompactionInventedDecision.md) | Chat: a compaction summary once turned a conditional plan step into a user decision (owner decision: wait for a recurrence) |
 | [ResearcherContext.md](ResearcherContext.md) | Wiki: the researcher inherits the chat's whole transcript and does not compact (owner decision) |
 | [PlanPanel.md](PlanPanel.md) | Skills: the active plan is not shown in the panel |
 | [PlanChecks.md](PlanChecks.md) | Skills: plan items are completed on the model's word (owner decision) |
