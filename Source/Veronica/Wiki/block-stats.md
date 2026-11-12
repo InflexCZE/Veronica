@@ -1,7 +1,7 @@
 ---
 name: block-stats
 title: Block stats: mass, health, build cost, build time and PCU
-source: SE2 source CubeBlockDefinition (mass, MaxHealth, ComputeRecipeAmounts, BuildTime, PCU, WeakThreshold), CubeBlockDensityDefinition, CubeBlockFragilityDefinition, CubeBlockMassConfiguration, CubeBlockRecipeDefinition, PhysicalItemDefinition, GeneratedBlockDataLoader, CubeBlockMassComputationTests; vanilla block recipes, Assets/Templates/Blocks/BaseDefinitions
+source: SE2 source CubeBlockDefinition (mass, MaxHealth, ComputeRecipeAmounts, BuildTime, PCU, WeakThreshold), CubeBlockDensityDefinition, CubeBlockFragilityDefinition, CubeBlockMassConfiguration, CubeBlockRecipeDefinition, ItemDefinition, GeneratedBlockDataLoader, CubeBlockMassComputationTests; vanilla block recipes, Assets/Templates/Blocks/BaseDefinitions
 description: How a block's mass and health are computed (density, fragility, size, the weak-while-built share), how its build cost works (the CubeBlockRecipeDefinition, why the component counts in game differ from the recipe's amounts and how to change them), how long building takes, and its PCU.
 ---
 The stats below sit on the block definition: PowerableBlockDefinition or the block's other *BlockDefinition.
@@ -20,7 +20,7 @@ Build cost:
 - Recipe references a CubeBlockRecipeDefinition. Its CriticalItems and OptionalItems list ItemAmount entries: an item definition and an Amount.
 - The Amounts are ratios, not counts. Count in game = Amount * scale, with scale = block mass / sum of (Amount * the item's MassPerUnit), rounded, at least 1. So the components' total mass matches the block's mass.
 - A bigger block made from a smaller one's recipe costs more of the same items; so does a denser one.
-- An item with a tiny MassPerUnit (PhysicalItemDefinition) inflates the count in every block that uses it. A new component item needs a mass in line with the vanilla components: read one.
+- An item with a tiny MassPerUnit (ItemDefinition) inflates the count in every block that uses it. A new component item needs a mass in line with the vanilla components: read one.
 - To change counts, change the Amount ratios, the items' MassPerUnit, the Density or the block's size.
 - Every entry needs an existing Item: one cleared or pointing at a deleted item definition breaks the mod's load instead of failing validation. Remove the entry instead.
 
