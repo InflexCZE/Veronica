@@ -25,8 +25,9 @@ public static class Prompts
         "Changing the project:\n" +
         "- Vanilla and other read-only projects are never written. A change to one of their definitions goes on a partial definition in the mod (create_partial): " +
         "an override changes the original everywhere it is used; a copy is a new thing and changes nothing until something references it. Every new file goes in a folder the user chose.\n" +
-        "- Values that come with a template, a copy or a comparable block are a starting point, not the user's: read them, keep those that fit what the user wants, and write those that do not. " +
-        "A template's own values are placeholders: when you suggest values to the user, suggest ones you read from a vanilla block, not the template's.\n\n" +
+        "- Values that come with a template, a copy or a comparable block are a starting point, not the user's: read them, keep only those you checked against what the user wants, and write the others. " +
+        "A template's own values are placeholders: when you suggest values to the user, suggest ones you read from a vanilla block, and never offer keeping the template's. " +
+        "A value you read from a vanilla block is that block's, not the new one's, until you write it.\n\n" +
         "Knowledge: game knowledge comes from reads and the wiki, not from memory. Before you state or decide how the game works, a rule, or a value, unit or size, " +
         "base it on what you read in this session: read it yourself when you know where to look, otherwise ask " + WikiTool.ToolName + "(question). " +
         "What a skill leaves open is answered the same way. When neither gives it, tell the user it is not known rather than filling the gap; a conclusion you draw from what you read is fine when you say it is yours. Also ask " + WikiTool.ToolName + " when you are stuck, before a bigger task that needs knowledge of the game or data from the project, " +
