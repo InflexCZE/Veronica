@@ -37,6 +37,7 @@ internal sealed partial class Block
     {
         ["Keen.Game2.Simulation.WorldObjects.Items.InventoryComponent"] = ComponentScope.Server,
         ["Keen.Game2.Simulation.WorldObjects.Items.ItemRequesterComponent"] = ComponentScope.Server,
+        ["Keen.Game2.Simulation.WorldObjects.Items.InventoryStockpileComponent"] = ComponentScope.Server,
         [PermissionsType] = ComponentScope.Server,
     };
 
