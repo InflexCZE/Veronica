@@ -2,8 +2,6 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Veronica.Agent.Mcp;
 
@@ -13,9 +11,9 @@ namespace Veronica.Agent.Mcp;
 public sealed class McpServer : IDisposable
 {
     public const string ServerName = "veronica";
-    public const string EndpointPath = "/mcp";
+    public const string EndpointPath = McpProtocol.EndpointPath;
 
-    private const string DefaultProtocolVersion = "2025-06-18";
+    private const string SessionHeader = "Mcp-Session-Id";
 
     private static readonly TimeSpan ReadTimeout = TimeSpan.FromSeconds(30);
 
@@ -23,15 +21,16 @@ public sealed class McpServer : IDisposable
     private const int MaxBodyBytes = 64 * 1024 * 1024;
 
     private readonly TcpListener _listener;
-    private readonly IReadOnlyList<ToolDefinition> _tools;
-    private readonly Func<string, string, CancellationToken, Task<ToolResult?>> _call;
+    private readonly McpProtocol _protocol;
+    private readonly bool _sessions;
     private readonly CancellationTokenSource _stop = new();
 
-    // call runs one tool by name with its arguments as JSON text; null means it was stopped.
-    public McpServer(int port, IReadOnlyList<ToolDefinition> tools, Func<string, string, CancellationToken, Task<ToolResult?>> call)
+    // call runs one tool by name with its arguments as JSON text, for the request's session id or null
+    // without one; null means it was stopped. Without sessions no ids are issued.
+    public McpServer(int port, IReadOnlyList<ToolDefinition> tools, Func<string?, string, string, CancellationToken, Task<ToolResult?>> call, IMcpSessions? sessions = null)
     {
-        _tools = tools;
-        _call = call;
+        _protocol = new McpProtocol(ServerName, tools, call, sessions);
+        _sessions = sessions != null;
         _listener = new TcpListener(IPAddress.Loopback, port);
         _listener.Start();
         _ = AcceptLoopAsync();
@@ -39,7 +38,9 @@ public sealed class McpServer : IDisposable
 
     public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
-    public string Url => $"http://127.0.0.1:{Port}{EndpointPath}";
+    public string Url => UrlFor(Port);
+
+    public static string UrlFor(int port) => $"http://127.0.0.1:{port}{EndpointPath}";
 
     public void Dispose()
     {
@@ -77,19 +78,15 @@ public sealed class McpServer : IDisposable
         try
         {
             var stream = client.GetStream();
-            Request? request;
+            McpHttpRequest? request;
             using (var reading = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token))
             {
                 reading.CancelAfter(ReadTimeout);
                 request = await ReadRequestAsync(stream, reading.Token).ConfigureAwait(false);
             }
             var response = request == null
-                ? new Response(400, null)
-                : request.Path != EndpointPath
-                    ? new Response(404, null)
-                    : request.Method != "POST"
-                        ? new Response(405, null)
-                        : await HandleAsync(request.Body).ConfigureAwait(false);
+                ? new McpHttpResponse(400, null)
+                : await _protocol.HandleAsync(request, _stop.Token).ConfigureAwait(false);
             await WriteResponseAsync(stream, response).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or SocketException or OperationCanceledException or ObjectDisposedException)
@@ -97,103 +94,7 @@ public sealed class McpServer : IDisposable
         }
     }
 
-    private sealed record Request(string Method, string Path, string Body);
-
-    // Body null: no content.
-    private sealed record Response(int Status, string? Body);
-
-    private async Task<Response> HandleAsync(string body)
-    {
-        JsonNode? message;
-        try
-        {
-            message = JsonNode.Parse(body);
-        }
-        catch (JsonException)
-        {
-            return new Response(200, Error(null, -32700, "The body is not JSON."));
-        }
-        if (message is not JsonObject request)
-            return new Response(200, Error(null, -32600, "Expected one JSON-RPC message object."));
-
-        // Notifications and responses to us get no reply.
-        if (!request.TryGetPropertyValue("id", out var id) || request["method"] is not JsonValue methodValue)
-            return new Response(202, null);
-
-        string method = methodValue.TryGetValue(out string? m) ? m : "";
-        var parameters = request["params"] as JsonObject;
-        try
-        {
-            JsonNode result = method switch
-            {
-                "initialize" => Initialize(parameters),
-                "ping" => new JsonObject(),
-                "tools/list" => ListTools(),
-                "tools/call" => await CallToolAsync(parameters).ConfigureAwait(false),
-                _ => throw new RpcException(-32601, $"Unknown method '{method}'."),
-            };
-            return new Response(200, new JsonObject { ["jsonrpc"] = "2.0", ["id"] = id?.DeepClone(), ["result"] = result }.ToJsonString());
-        }
-        catch (RpcException e)
-        {
-            return new Response(200, Error(id, e.Code, e.Message));
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            return new Response(200, Error(id, -32603, e.Message));
-        }
-    }
-
-    private sealed class RpcException(int code, string message) : Exception(message)
-    {
-        public int Code { get; } = code;
-    }
-
-    private static string Error(JsonNode? id, int code, string message) =>
-        new JsonObject
-        {
-            ["jsonrpc"] = "2.0",
-            ["id"] = id?.DeepClone(),
-            ["error"] = new JsonObject { ["code"] = code, ["message"] = message },
-        }.ToJsonString();
-
-    private static JsonObject Initialize(JsonObject? parameters)
-    {
-        string version = parameters?["protocolVersion"] is JsonValue v && v.TryGetValue(out string? requested) && requested.Length > 0
-            ? requested
-            : DefaultProtocolVersion;
-        return new JsonObject
-        {
-            ["protocolVersion"] = version,
-            ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
-            ["serverInfo"] = new JsonObject { ["name"] = ServerName, ["version"] = "1.0.0" },
-        };
-    }
-
-    private JsonObject ListTools() => new()
-    {
-        ["tools"] = new JsonArray(_tools.Select(t => (JsonNode?)new JsonObject
-        {
-            ["name"] = t.Name,
-            ["description"] = t.Description,
-            ["inputSchema"] = JsonNode.Parse(t.Parameters),
-        }).ToArray()),
-    };
-
-    private async Task<JsonObject> CallToolAsync(JsonObject? parameters)
-    {
-        if (parameters?["name"] is not JsonValue nameValue || !nameValue.TryGetValue(out string? name))
-            throw new RpcException(-32602, "tools/call needs a tool name.");
-        string arguments = parameters["arguments"]?.ToJsonString() ?? "{}";
-        var result = await _call(name, arguments, _stop.Token).ConfigureAwait(false);
-        return new JsonObject
-        {
-            ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = result?.Output ?? ClientToolLoop.CancelledToolOutput }),
-            ["isError"] = result == null,
-        };
-    }
-
-    private static async Task<Request?> ReadRequestAsync(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task<McpHttpRequest?> ReadRequestAsync(NetworkStream stream, CancellationToken cancellationToken)
     {
         var buffer = new byte[MaxHeaderBytes];
         int length = 0;
@@ -214,12 +115,19 @@ public sealed class McpServer : IDisposable
             return null;
 
         int contentLength = 0;
+        string? session = null;
         foreach (var line in lines.Skip(1))
         {
             int colon = line.IndexOf(':');
-            if (colon > 0 && line[..colon].Trim().Equals("Content-Length", StringComparison.OrdinalIgnoreCase)
-                && (!int.TryParse(line[(colon + 1)..].Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out contentLength) || contentLength > MaxBodyBytes))
+            if (colon <= 0)
+                continue;
+            string name = line[..colon].Trim();
+            string value = line[(colon + 1)..].Trim();
+            if (name.Equals("Content-Length", StringComparison.OrdinalIgnoreCase)
+                && (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out contentLength) || contentLength > MaxBodyBytes))
                 return null;
+            if (name.Equals(SessionHeader, StringComparison.OrdinalIgnoreCase) && value.Length > 0)
+                session = value;
         }
 
         var body = new byte[contentLength];
@@ -235,10 +143,10 @@ public sealed class McpServer : IDisposable
 
         string target = start[1];
         int q = target.IndexOf('?');
-        return new Request(start[0], q >= 0 ? target[..q] : target, Encoding.UTF8.GetString(body));
+        return new McpHttpRequest(start[0], q >= 0 ? target[..q] : target, session, Encoding.UTF8.GetString(body));
     }
 
-    private static async Task WriteResponseAsync(NetworkStream stream, Response response)
+    private async Task WriteResponseAsync(NetworkStream stream, McpHttpResponse response)
     {
         string reason = response.Status switch
         {
@@ -253,8 +161,10 @@ public sealed class McpServer : IDisposable
         var head = new StringBuilder($"HTTP/1.1 {response.Status} {reason}\r\n");
         if (response.Body != null)
             head.Append("Content-Type: application/json; charset=utf-8\r\n");
+        if (response.SessionId != null)
+            head.Append(CultureInfo.InvariantCulture, $"{SessionHeader}: {response.SessionId}\r\n");
         if (response.Status == 405)
-            head.Append("Allow: POST\r\n");
+            head.Append(_sessions ? "Allow: POST, DELETE\r\n" : "Allow: POST\r\n");
         head.Append(CultureInfo.InvariantCulture, $"Content-Length: {payload.Length}\r\nConnection: close\r\n\r\n");
         await stream.WriteAsync(Encoding.ASCII.GetBytes(head.ToString())).ConfigureAwait(false);
         await stream.WriteAsync(payload).ConfigureAwait(false);

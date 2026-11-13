@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
-using Veronica.Ui;
 
 namespace Veronica;
 
@@ -11,7 +10,8 @@ internal static class UpdateCheck
 {
     private static bool _started;
 
-    public static void Start(ChatPanelViewModel panel)
+    // show: any thread.
+    public static void Start(Action<string, Action> show)
     {
         if (_started || !Install.IsInstalled || Install.Version is not { } current || Install.SetupExe is not { } setup)
             return;
@@ -27,7 +27,7 @@ internal static class UpdateCheck
                 if (!(release.Version > current))
                     return;
                 Log.Default.WriteLine($"[Veronica] Veronica {release.Version} is available (running {current}).");
-                panel.ShowUpdate($"Veronica {release.Version} is available. Update starts Veronica.exe, which updates once you close the Editor.", () => RunSetup(setup));
+                show($"Veronica {release.Version} is available. Update starts Veronica.exe, which updates once you close the Editor.", () => RunSetup(setup));
             }
             catch (Exception e)
             {

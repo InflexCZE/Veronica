@@ -38,7 +38,7 @@ Skills are cut so the model combines them, not one per finished thing.
 - The system prompt ends with the skill index (`Context.md`).
 - `skill(name)` returns the overview: the skill without its Plan section.
 - A broken file is skipped and logged, so one bad edit does not take the other skills down.
-- Skills are read again on `/clear`, so an edited skill takes effect without restarting the Editor. They load from the source tree in a development build and from the install folder otherwise (`Distribution.md`), where the modder may edit and add them.
+- Skills are read again for each new session (`/clear`, a new bare MCP client), so an edited skill takes effect without restarting the Editor. They load from the source tree in a development build and from the install folder otherwise (`Distribution.md`), where the modder may edit and add them.
 
 ## Plan
 
@@ -75,7 +75,8 @@ Small models drop steps: after a failed write, or after handing off to an append
 
 ### State
 
-- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it. `/clear` drops the plans and what was read.
+- The plan is harness state, not transcript. It lasts across turns until its last item is closed, so a question to the user mid-plan keeps it.
+- A session's state is one object: its plans, the skills it read, and the skills and wiki pages loaded when it began. `/clear` replaces it rather than resetting its parts; each bare MCP client session has its own (`McpEndpoint.md`).
 - Rounds that call only the skill and plan tools (or `wiki`) are free, so bookkeeping does not cost the task its round budget.
 - The end gate and free rounds belong to the client tool loop. The Claude provider runs its own loop and gets the plan tools without them (`ClaudeProvider.md`).
 - Completion is the model's word and its proof; no item is checked yet.

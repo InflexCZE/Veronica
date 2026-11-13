@@ -5,7 +5,7 @@ The wiki holds what and why: how the game and the Editor work (`Skills.md`). Onl
 ## Pages
 
 - One Markdown file per topic, with `name`, `title`, `source` and `description` frontmatter. The description is the only routing signal; pages do not link each other. `source` is provenance for whoever edits the page; the model never sees it.
-- Pages share the skills' loader: a broken page is skipped and logged, and pages are read again on `/clear`. Like skills, the modder may edit and add them in the install folder.
+- Pages share the skills' loader: a broken page is skipped and logged, and pages are read again for each new session (`Skills.md`, State). Like skills, the modder may edit and add them in the install folder.
 - A page holds knowledge a skill needs only sometimes; what every run of a skill needs stays in the skill. Where the line falls is tuned in eval runs.
 - Facts follow the rules of `Context.md`. ASCII only.
 

@@ -43,7 +43,9 @@ public static class Prompts
     public const string LengthNudge =
         "Your reply was cut off: you spent it all thinking. Stop deliberating and write your answer now.";
 
-    public static TurnLimits ChatLimits(SkillPlan plan) => new()
+    public static TurnLimits ChatLimits(SkillPlan plan) => ChatLimits(() => plan);
+
+    public static TurnLimits ChatLimits(Func<SkillPlan> plans) => new()
     {
         // Until tool rewards exist (Docs/TODOs/ToolRewards.md), a whole block build has to fit in one turn.
         MaxRounds = 50,
@@ -51,8 +53,8 @@ public static class Prompts
         MaxTokens = 4000,
         ThinkingBudget = 4000,
         Thinking = true,
-        LengthNudge = new LengthNudge(() => LengthNudge + plan.CurrentItemNote(), MaxNudges: 2),
-        EndNudge = new EndNudge(_ => plan.EndNudge(), SkillPlan.ToolNames),
+        LengthNudge = new LengthNudge(() => LengthNudge + plans().CurrentItemNote(), MaxNudges: 2),
+        EndNudge = new EndNudge(_ => plans().EndNudge(), SkillPlan.ToolNames),
         TurnEndingTools = new HashSet<string> { WaitForUserTool.ToolName, AskUserTool.ToolName },
         UserFacingTools = new HashSet<string> { AskUserTool.ToolName },
     };

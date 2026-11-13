@@ -91,7 +91,7 @@
       <Setter Property="Orientation" Value="Horizontal" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Spacing" Value="14" />
-      <Setter Property="Margin" Value="0,54,0,20" />
+      <Setter Property="Margin" Value="0,34,0,40" />
     </Style>
     <Style Selector="Border.logo">
       <Setter Property="Width" Value="56" />
@@ -171,20 +171,10 @@
   <Window.DataTemplates>
 
     <DataTemplate DataType="ui:SetupFlow">
-      <Grid RowDefinitions="Auto,*,Auto">
-        <StackPanel Classes="greeting">
-          <Border Classes="logo">
-            <TextBlock Classes="logo" Text="V" />
-          </Border>
-          <StackPanel Classes="heading" VerticalAlignment="Center">
-            <TextBlock Classes="h1" Text="Hi, I'm Veronica" />
-            <TextBlock Classes="dim" Text="Your Space Engineers 2 modding Co-Engineer" />
-          </StackPanel>
-        </StackPanel>
+      <Grid RowDefinitions="*,Auto">
+        <ContentControl Grid.Row="0" Content="{Binding Slides}" />
 
-        <ContentControl Grid.Row="1" Content="{Binding Slides}" />
-
-        <Border Grid.Row="2" Classes="strip" IsVisible="{Binding Files.Visible}">
+        <Border Grid.Row="1" Classes="strip" IsVisible="{Binding Files.Visible}">
           <StackPanel Classes="field">
             <StackPanel Classes="field" IsVisible="{Binding Files.Activity.Progressing}">
               <TextBlock Classes="dim" Text="{Binding Files.Activity.Status}" />
@@ -236,10 +226,20 @@
       </Grid>
     </DataTemplate>
 
+    <!-- The greeting belongs to the first slide only, so the later slides get its space. -->
     <DataTemplate DataType="ui:WelcomeSlide">
-      <Grid Classes="page" RowDefinitions="*,Auto">
-        <ScrollViewer>
-          <StackPanel Classes="chapters">
+      <Grid Classes="page" RowDefinitions="Auto,*,Auto">
+        <StackPanel Classes="greeting">
+          <Border Classes="logo">
+            <TextBlock Classes="logo" Text="V" />
+          </Border>
+          <StackPanel Classes="heading" VerticalAlignment="Center">
+            <TextBlock Classes="h1" Text="Hi, I'm Veronica" />
+            <TextBlock Classes="dim" Text="Your Space Engineers 2 modding Co-Engineer" />
+          </StackPanel>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1">
+          <StackPanel Classes="chapters" MaxWidth="540" HorizontalAlignment="Center">
             <StackPanel Classes="section">
               <TextBlock Classes="h2" Text="Install folder" />
               <Grid Classes="row" ColumnDefinitions="*,Auto">
@@ -255,7 +255,7 @@
             </StackPanel>
           </StackPanel>
         </ScrollViewer>
-        <StackPanel Grid.Row="1" Classes="section">
+        <StackPanel Grid.Row="2" Classes="section">
           <TextBlock Classes="error" HorizontalAlignment="Center" TextAlignment="Center" IsVisible="{Binding HasError}" Text="{Binding Error}" />
           <Button Classes="accent big" HorizontalAlignment="Center" Content="Let's get started" Command="{Binding Start}" />
         </StackPanel>
@@ -380,6 +380,25 @@
             </StackPanel>
           </Expander>
           <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" />
+        </StackPanel>
+      </ScrollViewer>
+    </DataTemplate>
+
+    <DataTemplate DataType="ui:BareMcpConnectPage">
+      <ScrollViewer>
+        <StackPanel Classes="page">
+          <StackPanel Classes="heading">
+            <TextBlock Classes="h2" Text="{Binding Name}" />
+            <TextBlock Classes="dim" Text="{Binding Pitch}" />
+          </StackPanel>
+          <StackPanel Classes="section">
+            <TextBlock Text="Copy this prompt and give it to your agent. The setup finishes once the agent connects; the Editor must be closed meanwhile." />
+            <Border Classes="card">
+              <SelectableTextBlock Text="{Binding Prompt}" TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+          <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ContinueRow}" />
+          <Button Classes="link" HorizontalAlignment="Center" Content="Skip the check" Command="{Binding Skip}" IsEnabled="{Binding FilesReady}" />
         </StackPanel>
       </ScrollViewer>
     </DataTemplate>

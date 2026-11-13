@@ -178,14 +178,8 @@
       <Setter Property="Opacity" Value="0.5" />
     </Style>
 
-    <!-- First-run pages sit centered under the header; inside the app they line up with the tabs.
-         Margin and width live in styles only, since a value set on the element would beat the in-app style. -->
     <Style Selector=":is(Control).page">
       <Setter Property="Margin" Value="24,20,24,16" />
-      <Setter Property="MaxWidth" Value="540" />
-    </Style>
-    <Style Selector="ContentControl.inApp :is(Control).page">
-      <Setter Property="MaxWidth" Value="Infinity" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="StackPanel.page">

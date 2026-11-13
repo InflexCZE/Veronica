@@ -12,9 +12,14 @@ public sealed class ContextFullTurnException(string message, bool canCompact) : 
 // Replaces the chat's transcript with a summary once it no longer fits the context window.
 // One compaction is allowed; the allowance comes back with the user's next message or once the model
 // closed ItemsPerAllowance plan items since, so a model that compacts without progress stops.
-public sealed class Compaction(SkillPlan plan, Func<IReadOnlyList<Skill>> skills)
+public sealed class Compaction(Func<SkillPlan> plans, Func<IReadOnlyList<Skill>> skills)
 {
     public const string SessionName = "compaction";
+
+    public Compaction(SkillPlan plan, Func<IReadOnlyList<Skill>> skills)
+        : this(() => plan, skills)
+    {
+    }
 
     public const int ItemsPerAllowance = 5;
 
@@ -27,7 +32,7 @@ public sealed class Compaction(SkillPlan plan, Func<IReadOnlyList<Skill>> skills
 
     public bool Available => _runner != null;
 
-    public bool Allowed => !_spent || plan.ClosedItems - _closedAtSpend >= ItemsPerAllowance;
+    public bool Allowed => !_spent || plans().ClosedItems - _closedAtSpend >= ItemsPerAllowance;
 
     public void UserInteracted() => _spent = false;
 
@@ -35,6 +40,7 @@ public sealed class Compaction(SkillPlan plan, Func<IReadOnlyList<Skill>> skills
     public async Task<ChatMessage> CompactAsync(IReadOnlyList<ChatMessage> transcript, CancellationToken cancellationToken)
     {
         var runner = _runner ?? throw new InvalidOperationException("No compaction runner is attached.");
+        var plan = plans();
         _spent = true;
         _closedAtSpend = plan.ClosedItems;
         var request = new SubAgentRequest(

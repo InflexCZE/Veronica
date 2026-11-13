@@ -30,7 +30,7 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 - A running single-file exe loads its assemblies lazily from its own file, so it is never renamed while it still works: self-update renames it only right before it exits.
 - One instance runs per install folder. A second start brings the first to the front and passes on its request, such as the panel's update.
 - Nothing touches the chosen folder before the install starts. The install runs in the background while the modder sets up a provider; a provider's setup saves only once the install is done and its check passes.
-- Each provider's check is cheap, with no prompt and no model load: the local model's files are present and verified, `claude` is found and signed in, the OpenAI-compatible server lists the chosen model.
+- Each provider's check is cheap, with no prompt and no model load: the local model's files are present and verified, `claude` is found and signed in, the OpenAI-compatible server lists the chosen model, the modder's agent connects to the bare MCP check server (`McpEndpoint.md`).
 - Names that come from a download (zip entries, Hugging Face file names, manifest model ids) must stay inside their folder; anything else fails the install or the download.
 - Operations that need the Editor closed (model delete, runtime swap, `.vrgproj` edits) wait for it where they were started, cancellably.
 

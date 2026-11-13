@@ -1,5 +1,8 @@
+using System.Net.Sockets;
+using System.Windows.Input;
 using Avalonia.Threading;
 using Veronica.Agent;
+using Veronica.Agent.Mcp;
 using Veronica.Setup.Core;
 
 namespace Veronica.Setup.Ui;
@@ -49,6 +52,8 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     public Func<Task<string?>> PickEditor { get; set; } = () => Task.FromResult<string?>(null);
 
     public Func<Task<string?>> PickGame { get; set; } = () => Task.FromResult<string?>(null);
+
+    public Func<string, Task> CopyText { get; set; } = _ => Task.CompletedTask;
 
     public void Start(bool update, bool selfUpdated, bool install)
     {
@@ -288,12 +293,72 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                 continueLabel, p => ConnectAndSave(p, saved)) { Back = backCommand },
             ProviderKind.OpenAi => new OpenAiConnectPage(settings.Get(Settings.VERONICA_OPENAI_URL), settings.Get(Settings.VERONICA_OPENAI_API_KEY),
                 settings.Get(Settings.VERONICA_OPENAI_MODEL), settings.Get(Settings.VERONICA_OPENAI_EFFORT), continueLabel, p => ConnectAndSave(p, saved)) { Back = backCommand },
+            ProviderKind.BareMcp => BareMcpPage(back, saved),
             _ => new LocalConnectPage(understood: false, continueLabel, p => ConnectAndSave(p, saved)) { Back = backCommand },
         };
         page.FilesReady = _filesReady;
         if (page is LocalConnectPage local)
             LoadModels(local);
         return page;
+    }
+
+    private int McpPort => McpEndpoint.PortFrom(host.Settings.Get(Settings.VERONICA_MCP_PORT), out _);
+
+    // Going back stops a running check: it holds the port the Editor needs.
+    private BareMcpConnectPage BareMcpPage(Action back, Action<ConnectPage> saved)
+    {
+        BareMcpConnectPage page = null!;
+        page = new BareMcpConnectPage(McpConnection.Prompt(McpPort), p => ConnectAndSave(p, saved))
+        {
+            Back = new Command(() =>
+            {
+                page.Leave();
+                back();
+            }),
+            Pressed = () => _ = CopyText(page.Prompt),
+            Skip = new Command(() => SkipAndSave(page, saved)),
+        };
+        return page;
+    }
+
+    // Like the check, saving waits for the install: the flow moves on to the mods once saved.
+    private void SkipAndSave(BareMcpConnectPage page, Action<ConnectPage> saved)
+    {
+        if (!page.FilesReady)
+            return;
+        page.Leave();
+        page.Idle();
+        try
+        {
+            Save(page, saved);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            host.Log($"Saving the provider failed: {e}");
+            page.Show(new CheckResult(false, $"The settings could not be saved: {e.Message}"));
+        }
+    }
+
+    // Cancelled when the page is left, so a check nobody waits for ends quietly.
+    private Func<Task<CheckResult>> BareMcpCheck(BareMcpConnectPage page)
+    {
+        int port = McpPort;
+        int epoch = page.Epoch;
+        return async () =>
+        {
+            McpConnectionCheck check;
+            try
+            {
+                check = new McpConnectionCheck(port);
+            }
+            catch (SocketException)
+            {
+                return new CheckResult(false, $"Port {port} is in use, most likely by the Editor running Veronica. Close the Editor to run the check, or skip it.");
+            }
+            var left = await Dispatcher.UIThread.InvokeAsync(() => page.Hold(check, epoch));
+            await check.Connected.WaitAsync(left);
+            return new CheckResult(true, "Your agent connected.");
+        };
     }
 
     private static string? Blank(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
@@ -307,6 +372,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             ClaudeConnectPage => () => ProviderCheck.ClaudeAsync(CancellationToken.None),
             OpenAiConnectPage openAi => OpenAiCheck(openAi),
             LocalConnectPage local => LocalCheck(local),
+            BareMcpConnectPage bare => BareMcpCheck(bare),
             _ => throw new InvalidOperationException(page.GetType().Name),
         };
         _ = Run(async () =>
@@ -315,6 +381,11 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             try
             {
                 result = await Task.Run(check);
+            }
+            catch (OperationCanceledException) when (page is BareMcpConnectPage)
+            {
+                page.Idle();
+                return;
             }
             catch (Exception e)
             {
@@ -327,6 +398,10 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             if (!result.Ok)
                 return;
             await Task.Delay(1000);
+            // Skipped meanwhile: that saved already.
+            if (!page.IsConnected)
+                return;
+            page.Leave();
             try
             {
                 Save(page, saved);
@@ -522,7 +597,15 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     {
         _filesReady = true;
         if (_app == null)
-            _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+        {
+            var app = _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+            // A bare MCP check left running would hold the port when the modder starts the Editor from Mods.
+            app.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AppShell.Tab) && app.Tab != AppTab.Brain)
+                    _brainConnect?.Content?.Leave();
+            };
+        }
         RefreshMods();
         RefreshUpdates();
         _app.Tab = tab;

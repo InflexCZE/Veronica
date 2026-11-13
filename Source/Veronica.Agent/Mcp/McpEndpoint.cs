@@ -6,8 +6,8 @@ namespace Veronica.Agent.Mcp;
 public sealed class McpEndpointException(string message) : Exception(message);
 
 // Veronica's tools for any local MCP client. A call runs directly, unless a provider routes calls
-// into the turn it is running.
-public sealed class McpEndpoint(int port, ToolSet tools) : IDisposable
+// into the turn it is running. With client sessions, each session's calls work on its own state.
+public sealed class McpEndpoint(int port, ToolSet tools, McpClientSessions? sessions = null) : IDisposable
 {
     public const int DefaultPort = 47812;
 
@@ -23,7 +23,7 @@ public sealed class McpEndpoint(int port, ToolSet tools) : IDisposable
         {
             try
             {
-                _server ??= new McpServer(port, tools.Definitions, CallAsync);
+                _server ??= new McpServer(port, tools.Definitions, CallAsync, sessions);
             }
             catch (SocketException e)
             {
@@ -54,14 +54,29 @@ public sealed class McpEndpoint(int port, ToolSet tools) : IDisposable
         }
     }
 
-    private async Task<ToolResult?> CallAsync(string name, string arguments, CancellationToken stop)
+    public static int PortFrom(string? setting, out string? problem)
+    {
+        problem = null;
+        string port = setting?.Trim() ?? "";
+        if (port.Length == 0)
+            return DefaultPort;
+        if (int.TryParse(port, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int value) && value is >= 1 and <= 65535)
+            return value;
+        problem = $"'{port}' is not a port, using {DefaultPort}.";
+        return DefaultPort;
+    }
+
+    private async Task<ToolResult?> CallAsync(string? session, string name, string arguments, CancellationToken stop)
     {
         Func<string, string, CancellationToken, Task<ToolResult?>>? route;
         lock (_gate)
             route = _route;
         if (route != null)
             return await route(name, arguments, stop).ConfigureAwait(false);
-        return await tools.ExecuteAsync(new ToolCall($"mcp-{Interlocked.Increment(ref _calls)}", name, arguments), stop).ConfigureAwait(false);
+        var call = new ToolCall($"mcp-{Interlocked.Increment(ref _calls)}", name, arguments);
+        if (sessions != null)
+            return await sessions.RunAsync<ToolResult?>(session, async () => await tools.ExecuteAsync(call, stop).ConfigureAwait(false)).ConfigureAwait(false);
+        return await tools.ExecuteAsync(call, stop).ConfigureAwait(false);
     }
 
     private sealed class Routing(McpEndpoint endpoint, Func<string, string, CancellationToken, Task<ToolResult?>> route) : IDisposable

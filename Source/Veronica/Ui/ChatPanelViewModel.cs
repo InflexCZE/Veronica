@@ -19,7 +19,6 @@ public sealed class ChatPanelViewModel : DockItemViewModel
 
     private readonly Conversation _conversation;
     private readonly ToolSet _tools;
-    private readonly SkillPlan _plan;
     private readonly ChatTimeline _timeline;
     private readonly DispatcherTimer _ticker;
     private string _draft = "";
@@ -34,7 +33,7 @@ public sealed class ChatPanelViewModel : DockItemViewModel
     // Answers given before the turn that asked had wound down: sent when it has.
     private string? _queuedAnswers;
 
-    public ChatPanelViewModel(IProvider provider, ToolSet tools, SkillPlan plan, Func<string> systemPrompt, WikiTool wiki, Compaction compaction, QuestionBoard questions, Func<string> record)
+    public ChatPanelViewModel(IProvider provider, ToolSet tools, SessionScope sessions, WikiTool wiki, Compaction compaction, QuestionBoard questions, Func<string> record)
     {
         Header = "Veronica";
         ContentTemplateResourceKey = "VeronicaChatPanel";
@@ -44,10 +43,9 @@ public sealed class ChatPanelViewModel : DockItemViewModel
         _provider = provider;
         _record = record;
         _tools = tools;
-        _plan = plan;
         Questions = questions;
         questions.Changed += () => Dispatcher.UIThread.Post(RefreshCard);
-        _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), systemPrompt, Prompts.ChatLimits(plan), tools.Definitions, compaction);
+        _conversation = new Conversation(provider.OpenSession(IProvider.ChatSession), () => Prompts.SystemWith(sessions.Renew().Skills), Prompts.ChatLimits(() => sessions.Current.Plan), tools.Definitions, compaction);
         if (provider.RunsSubagents)
         {
             wiki.Attach(RunSubAgentAsync, () => _conversation.Transcript.ToList());
@@ -349,7 +347,6 @@ public sealed class ChatPanelViewModel : DockItemViewModel
             if (_turnTask != null)
                 await _turnTask;
             await _conversation.ClearAsync();
-            _plan.Reset();
             _timeline.Clear();
         }
         finally

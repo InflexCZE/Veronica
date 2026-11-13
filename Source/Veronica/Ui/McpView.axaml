@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Veronica.Ui"
+             x:Class="Veronica.Ui.McpView"
+             x:DataType="ui:McpPanelViewModel">
+
+  <UserControl.Resources>
+    <FontFamily x:Key="VeronicaUiFont">avares://VRage.UI.Shared/Resources/Fonts/Roboto/Roboto-*.ttf#Roboto</FontFamily>
+    <FontFamily x:Key="VeronicaTextFont">Segoe UI, Segoe UI Emoji, Segoe UI Symbol</FontFamily>
+    <SolidColorBrush x:Key="VeronicaBanner" Color="#EA9A00" Opacity="0.3" />
+  </UserControl.Resources>
+
+  <!-- Every text control gets an absolute or system font: the Editor's global Roboto style uses a relative
+       URI, and Avalonia's glyph fallback throws on those (see ChatView). -->
+  <UserControl.Styles>
+    <Style Selector=":is(TextBlock)">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaUiFont}" />
+    </Style>
+    <Style Selector=":is(TextBlock).text">
+      <Setter Property="FontFamily" Value="{StaticResource VeronicaTextFont}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+    </Style>
+    <Style Selector=":is(TextBlock).small">
+      <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+    </Style>
+    <Style Selector=":is(TextBlock).dim">
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+      <Setter Property="Opacity" Value="0.65" />
+    </Style>
+    <Style Selector="Border.prompt">
+      <Setter Property="Background" Value="{DynamicResource SemiLightestGrayColor}" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="Border.error">
+      <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}" />
+      <Setter Property="Background" Value="{DynamicResource SecondaryColor}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto" Margin="6,10,6,6">
+    <ScrollViewer Grid.Row="0">
+      <StackPanel Spacing="10" Margin="12,8,12,8" MaxWidth="720" HorizontalAlignment="Left">
+        <TextBlock Classes="text" FontSize="22" FontWeight="Bold" Text="Veronica" />
+        <TextBlock Classes="text" Text="MCP mode activated." />
+        <TextBlock Classes="text" Text="Give your agent the following prompt to connect." />
+        <Border Classes="prompt">
+          <Grid ColumnDefinitions="*,Auto">
+            <SelectableTextBlock Grid.Column="0" Classes="text" Text="{Binding ConnectionPrompt}" />
+            <Button Grid.Column="1" Content="Copy" Margin="8,0,0,0" VerticalAlignment="Top" Command="{Binding CopyCommand}" />
+          </Grid>
+        </Border>
+        <TextBlock Classes="text" Text="{Binding Connections}" />
+        <Border Classes="error" IsVisible="{Binding ShowState}">
+          <StackPanel>
+            <TextBlock Classes="text" Text="{Binding StateText}" />
+            <SelectableTextBlock Classes="text small" Text="{Binding StateDetail}" />
+          </StackPanel>
+        </Border>
+        <TextBlock Classes="text dim" Margin="0,12,0,0" Text="To change to interactive mode, pick a different brain in the Launcher." />
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="1" IsVisible="{Binding HasUpdate}" Background="{StaticResource VeronicaBanner}"
+            CornerRadius="4" Padding="10,6" Margin="0,6,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Grid.Column="0" Text="{Binding UpdateNotice}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Foreground="{DynamicResource HighlightedTextColor}" Classes="small" />
+        <Button Grid.Column="1" Content="Update" Margin="8,0,0,0" VerticalAlignment="Center" Command="{Binding UpdateCommand}" />
+        <Button Grid.Column="2" Classes="icon" Content="X" Margin="6,0,0,0" Command="{Binding DismissUpdateCommand}" ToolTip.Tip="Hide until the next Editor start" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

@@ -7,6 +7,7 @@ using Veronica.Agent.OpenAi;
 namespace Veronica;
 
 // VERONICA_PROVIDER=openai talks to an OpenAI-compatible server, =claude runs Claude Code, instead of starting WebQwen.exe.
+// =bare_mcp runs no model at all: the Editor only serves the tools to the user's own MCP client.
 internal static class ModelProvider
 {
     private static string Provider => Install.Settings.Get(Settings.VERONICA_PROVIDER)?.Trim() ?? "";
@@ -15,12 +16,15 @@ internal static class ModelProvider
 
     private static bool IsClaude => Provider.Equals("claude", StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsBareMcp => Provider.Equals("bare_mcp", StringComparison.OrdinalIgnoreCase);
+
     public static string Describe() =>
         IsOpenAi ? $"openai {Install.Settings.Get(Settings.VERONICA_OPENAI_URL)} model={Install.Settings.Get(Settings.VERONICA_OPENAI_MODEL) ?? "(first listed)"} effort={Install.Settings.Get(Settings.VERONICA_OPENAI_EFFORT) ?? "(template default)"}"
         : IsClaude ? $"claude model={ReadClaudeSettings().Model}"
+        : IsBareMcp ? "bare_mcp"
         : "webqwen";
 
-    public static bool NeedsEndpoint => IsClaude;
+    public static bool NeedsEndpoint => IsClaude || IsBareMcp;
 
     public static IProvider Create(Action<ProviderStatus> showStatus, McpEndpoint endpoint)
     {

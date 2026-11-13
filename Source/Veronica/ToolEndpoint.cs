@@ -1,4 +1,3 @@
-using System.Globalization;
 using Keen.VRage.Library.Diagnostics;
 using Veronica.Agent;
 using Veronica.Agent.Mcp;
@@ -10,7 +9,11 @@ namespace Veronica;
 // endpoint starts it then too. VERONICA_MCP_PORT picks the port.
 internal static class ToolEndpoint
 {
-    public static McpEndpoint Create(ToolSet tools) => new(ReadPort(), tools);
+    public static McpEndpoint Create(ToolSet tools, McpClientSessions? sessions = null) => new(Port, tools, sessions);
+
+    private static readonly Lazy<int> ReadOnce = new(ReadPort);
+
+    public static int Port => ReadOnce.Value;
 
     public static void Start(McpEndpoint endpoint, bool providerNeedsIt, Action<ProviderStatus> showStatus)
     {
@@ -32,12 +35,9 @@ internal static class ToolEndpoint
 
     private static int ReadPort()
     {
-        string port = Install.Settings.Get(Settings.VERONICA_MCP_PORT)?.Trim() ?? "";
-        if (port.Length == 0)
-            return McpEndpoint.DefaultPort;
-        if (int.TryParse(port, NumberStyles.None, CultureInfo.InvariantCulture, out int value) && value is >= 1 and <= 65535)
-            return value;
-        Log.Default.WriteLine($"[Veronica] VERONICA_MCP_PORT '{LocalModel.AsciiOnly(port)}' is not a port, using {McpEndpoint.DefaultPort}.");
-        return McpEndpoint.DefaultPort;
+        int port = McpEndpoint.PortFrom(Install.Settings.Get(Settings.VERONICA_MCP_PORT), out string? problem);
+        if (problem != null)
+            Log.Default.WriteLine($"[Veronica] VERONICA_MCP_PORT {LocalModel.AsciiOnly(problem)}");
+        return port;
     }
 }

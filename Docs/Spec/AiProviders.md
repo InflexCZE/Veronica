@@ -1,12 +1,13 @@
 # AI providers
 
-The assistant runs on a frontier model or a local one, with the same tools either way. The modder picks one in the Launcher (`Launcher.md`).
+The assistant runs on a frontier model or a local one, with the same tools either way, or runs no model and lends its tools to an agent the modder already uses. The modder picks one in the Launcher (`Launcher.md`).
 
 | provider | for |
 |---|---|
 | built-in local model | the easiest and most compatible: no account, no server, works offline. Not the smartest or the fastest |
 | Claude Code | a frontier model, on the modder's own Claude account |
 | OpenAI-compatible server | a model the modder already hosts, local or remote |
+| no model | the modder's own AI agent, working on the mod through Veronica's tools |
 
 ## Built-in local model
 
@@ -30,3 +31,10 @@ The assistant runs on a frontier model or a local one, with the same tools eithe
 - The address may be just a host name; the Launcher finds the server.
 - Self-signed certificates are accepted. A reasoning effort can be set. Speeds show with llama.cpp only.
 - The Editor keeps its GPU memory: the server may be remote or on another GPU.
+
+## No model
+
+- The Editor runs no model and has no chat. It serves Veronica's tools over MCP (`McpEndpoint.md`) to an agent the modder runs, in that agent's own UI.
+- The panel shows a prompt to give the agent so it connects, and the number of open connections.
+- The agent is told to read Veronica's working rules and skill index before it starts, and reads the wiki itself. It asks the modder its questions itself.
+- The Editor keeps its GPU memory.

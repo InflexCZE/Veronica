@@ -8,6 +8,7 @@ One downloaded program installs Veronica, sets up its AI provider, enables it pe
 - Welcome picks the install folder and offers Start menu and Desktop shortcuts. A folder that already holds other files is allowed: Veronica's folders go beside them, and the modder is told so. The Launcher copies itself there and carries on from the copy.
 - The install runs in the background while the modder sets up a provider, with its progress or an error and a retry.
 - Each provider's setup ends with one button that runs a quick check, then saves. A failed check stays on the page with its reason.
+- With no model, the setup shows the prompt that connects the modder's agent and the check waits until the agent connects. It needs the Editor closed, and can be skipped.
 
 ## Afterwards
 

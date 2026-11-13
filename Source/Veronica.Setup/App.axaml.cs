@@ -27,6 +27,7 @@ public sealed class App : Application
             main.PickFolder = window.PickFolderAsync;
             main.PickEditor = window.PickEditorAsync;
             main.PickGame = window.PickGameAsync;
+            main.CopyText = text => window.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
             desktop.MainWindow = window;
             Instance?.Listen(
                 () => Dispatcher.UIThread.Post(() => window.Bring()),

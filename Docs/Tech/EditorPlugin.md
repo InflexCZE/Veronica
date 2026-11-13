@@ -38,6 +38,7 @@
 - A panel follows the Editor's own pattern: `Content` stays null and a `ContentTemplateResourceKey` names a `DataTemplate` merged into the application resources. A control placed in `Content` would be serialized into the saved layout. The template is untyped, since a typed one does not match the null content.
 - A tabbed dock group rebuilds the selected tab's view on every switch, so all panel state lives in the view model and a view subscribes only while attached.
 - Layout persistence drops view models the Editor does not know, and Restore Layout replaces the whole set. The panel is therefore added again on every project load and from the menu, never restored. The saved layout keeps the tab itself, so its position is remembered; a project without Veronica shows the tab empty.
+- The saved layout keys a tab by its `DockId`, by default the view model's type name. The bare MCP panel takes the chat panel's id, so either mode fills the one remembered tab.
 - The chat panel docks in the right-hand group, or the first tabbed group when the user's layout has none: a dock item whose group is missing is never shown.
 - **Menu:** the Window menu is built before plugins load and has no extension point, so Veronica adds its own top-level menu, which re-adds the panel and selects it.
 

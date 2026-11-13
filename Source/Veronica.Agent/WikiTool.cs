@@ -4,9 +4,14 @@ using Veronica.Agent.Tools;
 namespace Veronica.Agent;
 
 // Asks a researcher subagent, so its reading never enters the chat's transcript.
-public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnlyList<Skill>> skills, IReadOnlyList<ITool> projectTools, SkillPlan plan) : ITool
+public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnlyList<Skill>> skills, IReadOnlyList<ITool> projectTools, Func<SkillPlan> plans) : ITool
 {
     public const string ToolName = "wiki";
+
+    public WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnlyList<Skill>> skills, IReadOnlyList<ITool> projectTools, SkillPlan plan)
+        : this(pages, skills, projectTools, () => plan)
+    {
+    }
 
     // Room left for the answer once the researcher's prompt has grown past the reading limit.
     public const int AnswerReserve = 10_000;
@@ -50,7 +55,7 @@ public sealed class WikiTool(Func<IReadOnlyList<WikiPage>> pages, Func<IReadOnly
             ToolName,
             "Wiki research: " + question,
             Prompts.Researcher(pages(), skills(), projectTools.Select(t => t.Name).ToList()),
-            Prompts.ResearchBrief(TranscriptRender.Render(_transcript(), new HashSet<string> { ToolName }), plan.CurrentItem(), question),
+            Prompts.ResearchBrief(TranscriptRender.Render(_transcript(), new HashSet<string> { ToolName }), plans().CurrentItem(), question),
             [new WikiPageTool(pages), new SkillTool(skills, new SkillPlan()), .. projectTools],
             Prompts.ResearcherLimits,
             AnswerReserve,

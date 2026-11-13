@@ -216,6 +216,7 @@ public enum ProviderKind
     Local,
     Claude,
     OpenAi,
+    BareMcp,
 }
 
 public static class Providers
@@ -224,6 +225,7 @@ public static class Providers
     {
         ProviderKind.Claude => "claude",
         ProviderKind.OpenAi => "openai",
+        ProviderKind.BareMcp => "bare_mcp",
         _ => "webqwen",
     };
 
@@ -231,6 +233,7 @@ public static class Providers
     {
         "claude" => ProviderKind.Claude,
         "openai" => ProviderKind.OpenAi,
+        "bare_mcp" => ProviderKind.BareMcp,
         _ => ProviderKind.Local,
     };
 
@@ -238,6 +241,7 @@ public static class Providers
     {
         ProviderKind.Claude => "Claude Code",
         ProviderKind.OpenAi => "OpenAI-compatible server",
+        ProviderKind.BareMcp => "Your own AI agent",
         _ => "Local model",
     };
 
@@ -245,6 +249,7 @@ public static class Providers
     {
         ProviderKind.Claude => "Frontier model through your Claude subscription. Runs through the Claude Code you have installed.",
         ProviderKind.OpenAi => "Your server, your model. llama.cpp, LM Studio, Ollama or any service with an OpenAI-style API.",
+        ProviderKind.BareMcp => "No model in the Editor. The agent you already use works on your mod through Veronica's tools over MCP.",
         _ => "A small model on your graphics card. One large download, then it works offline and nothing leaves your machine.",
     };
 }
@@ -358,7 +363,16 @@ public sealed class ConnectSlide : ViewModel
 {
     private ConnectPage? _content;
 
-    public ConnectPage? Content { get => _content; set => Set(ref _content, value); }
+    public ConnectPage? Content
+    {
+        get => _content;
+        set
+        {
+            var old = _content;
+            if (Set(ref _content, value))
+                old?.Leave();
+        }
+    }
 }
 
 public enum ConnectState
@@ -383,7 +397,10 @@ public abstract class ConnectPage : ViewModel
         ContinueLabel = continueLabel;
         Continue = new Command(() =>
         {
-            if (_state is ConnectState.Connecting or ConnectState.Connected || !_filesReady || !Valid)
+            if (!_filesReady || !Valid)
+                return;
+            Pressed?.Invoke();
+            if (_state is ConnectState.Connecting or ConnectState.Connected)
                 return;
             connect(this);
         });
@@ -398,6 +415,9 @@ public abstract class ConnectPage : ViewModel
     public string ContinueLabel { get; }
 
     public ICommand? Back { get; init; }
+
+    // Runs on every press of the button, also while the check runs.
+    public Action? Pressed { get; init; }
 
     public ConnectState State
     {
@@ -437,9 +457,16 @@ public abstract class ConnectPage : ViewModel
     // A working button stays enabled so it keeps its color; clicks are ignored meanwhile.
     public bool ButtonEnabled => _state is ConnectState.Connecting or ConnectState.Connected || (_filesReady && Valid);
 
+    protected virtual string ConnectingText => "Connecting...";
+
+    // The page is no longer shown.
+    public virtual void Leave()
+    {
+    }
+
     public string ContinueText => _state switch
     {
-        ConnectState.Connecting => "Connecting...",
+        ConnectState.Connecting => ConnectingText,
         ConnectState.Connected => "Connected",
         _ => _filesReady ? ContinueLabel : "Finishing installation...",
     };
@@ -568,6 +595,52 @@ public sealed class OpenAiConnectPage(string? url, string? apiKey, string? model
             if (Set(ref _effort, value))
                 Edited();
         }
+    }
+}
+
+// Waits for the user's agent to connect to a check server on Veronica's MCP port; the check may be skipped.
+// The button copies the prompt and starts waiting; pressing it again copies again.
+public sealed class BareMcpConnectPage(string prompt, Action<ConnectPage> connect)
+    : ConnectPage(ProviderKind.BareMcp, "Copy prompt", connect)
+{
+    private IDisposable? _listener;
+    private CancellationTokenSource? _left;
+    private int _epoch;
+
+    protected override bool Valid => true;
+
+    protected override string ConnectingText => "Copied. Waiting for your agent...";
+
+    public string Prompt => prompt;
+
+    public ICommand? Skip { get; init; }
+
+    // Counts the times the page was left, so a check started before one does not attach to the page after it.
+    public int Epoch => _epoch;
+
+    // Kept until the page is left, so the agent's requests after its first one are answered too.
+    // The token is cancelled when the page is left, and at once when it was left since epoch.
+    public CancellationToken Hold(IDisposable listener, int epoch)
+    {
+        if (epoch != _epoch)
+        {
+            listener.Dispose();
+            return new CancellationToken(canceled: true);
+        }
+        _listener?.Dispose();
+        _left?.Cancel();
+        _listener = listener;
+        _left = new CancellationTokenSource();
+        return _left.Token;
+    }
+
+    public override void Leave()
+    {
+        _epoch++;
+        _listener?.Dispose();
+        _listener = null;
+        _left?.Cancel();
+        _left = null;
     }
 }
 

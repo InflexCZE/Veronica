@@ -2,9 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Keen.VRage.Editor.Services.Docking;
 using Keen.VRage.Library.Diagnostics;
 using Keen.VRage.UI.UniDock.Docking;
 using Veronica.Agent;
+using Veronica.Agent.Mcp;
 using Veronica.Agent.Recording;
 using Veronica.Agent.Tools;
 using Veronica.Tools;
@@ -15,7 +17,7 @@ public sealed class EditorShell
 {
     private const string PreferredDockGroup = "MainRightDockGroup";
 
-    private ChatPanelViewModel? _panel;
+    private DockItemViewModel? _panel;
     private bool _templatesRegistered;
     private bool _menuAdded;
 
@@ -70,7 +72,13 @@ public sealed class EditorShell
             return;
         }
 
-        _panel ??= ChatPanelViewModel.Current = CreatePanel();
+        if (_panel == null)
+        {
+            if (ModelProvider.IsBareMcp)
+                _panel = McpPanelViewModel.Current = CreateMcpPanel();
+            else
+                _panel = ChatPanelViewModel.Current = CreatePanel();
+        }
 
         if (!dock.ContainsViewModel(_panel))
         {
@@ -91,18 +99,22 @@ public sealed class EditorShell
         _panel.Select();
     }
 
-    private static readonly SkillShelf Skills = new();
+    private static readonly SessionScope Sessions = new(SkillShelf.Load);
 
-    private static readonly SkillPlan Plan = new();
+    private static readonly Func<SkillPlan> Plan = () => Sessions.Current.Plan;
 
-    private static readonly WikiTool Wiki = new(() => Skills.Pages, () => Skills.Current,
+    private static readonly Func<IReadOnlyList<Skill>> Skills = () => Sessions.Current.Skills;
+
+    private static readonly Func<IReadOnlyList<WikiPage>> Pages = () => Sessions.Current.Pages;
+
+    private static readonly WikiTool Wiki = new(Pages, Skills,
         [new FindContentTool(), new FindReferencesTool(), new ListFolderTool(), new FindTemplateTool(), new ReadTool(), new ContainsTool(), new DescribeTool()], Plan);
 
     private static readonly ITool[] Tools =
     [
         Wiki,
-        new SkillTool(() => Skills.Current, Plan),
-        new ActivateSkillTool(() => Skills.Current, Plan),
+        new SkillTool(Skills, Plan),
+        new ActivateSkillTool(Skills, Plan),
         new MarkCompletedTool(Plan),
         new MarkSkippedTool(Plan),
         new FindContentTool(),
@@ -127,6 +139,11 @@ public sealed class EditorShell
         new PresentGraphTool(),
     ];
 
+    // The researcher reads the chat's transcript, which an MCP client is not part of, so a client reads the pages itself.
+    private static ToolSet EndpointTools(ToolSet tools) =>
+        tools.Without(WikiTool.ToolName).Without(WaitForUserTool.ToolName)
+            .With(new ListWikiTool(Pages)).With(new WikiPageTool(Pages));
+
     private static ChatPanelViewModel CreatePanel()
     {
         ChatPanelViewModel? panel = null;
@@ -135,10 +152,7 @@ public sealed class EditorShell
         var tools = new ToolSet([.. Tools, new AskUserTool(questions, waitsForAnswers: ModelProvider.NeedsEndpoint)]);
         if (!ModelProvider.NeedsEndpoint)
             tools = tools.With(new WaitForUserTool());
-        // The researcher reads the chat's transcript, which an MCP client is not part of, so a client reads the pages itself.
-        var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).Without(WaitForUserTool.ToolName)
-            .With(new AskUserTool(questions, waitsForAnswers: true))
-            .With(new ListWikiTool(() => Skills.Pages)).With(new WikiPageTool(() => Skills.Pages)));
+        var endpoint = ToolEndpoint.Create(EndpointTools(tools).With(new AskUserTool(questions, waitsForAnswers: true)));
         ProviderStatus? early = null;
         var gate = new Lock();
         var record = new MemoryRecordStore();
@@ -156,7 +170,7 @@ public sealed class EditorShell
             }
             target.ShowStatus(status);
         }, endpoint), record, ModelProvider.Describe()));
-        var created = new ChatPanelViewModel(provider, tools, Plan, Skills.SystemPrompt, Wiki, new Compaction(Plan, () => Skills.Current), questions, record.Copy);
+        var created = new ChatPanelViewModel(provider, tools, Sessions, Wiki, new Compaction(Plan, Skills), questions, record.Copy);
         lock (gate)
         {
             panel = created;
@@ -164,8 +178,20 @@ public sealed class EditorShell
                 created.ShowStatus(early);
         }
         EvalHook.Attach(panel);
-        UpdateCheck.Start(panel);
+        UpdateCheck.Start(panel.ShowUpdate);
         ToolEndpoint.Start(endpoint, ModelProvider.NeedsEndpoint, panel.ShowStatus);
+        return panel;
+    }
+
+    // No chat answers a question, so the client asks the user in its own UI.
+    private static McpPanelViewModel CreateMcpPanel()
+    {
+        var sessions = new McpClientSessions(Sessions, _ => McpConnection.Hint);
+        var endpoint = ToolEndpoint.Create(EndpointTools(new ToolSet(Tools))
+            .With(new ReadInstructionsTool(() => Prompts.SystemWith(Sessions.Current.Skills))), sessions);
+        var panel = new McpPanelViewModel(sessions, ToolEndpoint.Port);
+        UpdateCheck.Start(panel.ShowUpdate);
+        ToolEndpoint.Start(endpoint, providerNeedsIt: true, panel.ShowStatus);
         return panel;
     }
 

@@ -159,3 +159,14 @@ public class SafePathTests
     public void EscapingOrRootedPath_IsRefused(string relative) =>
         Assert.Throws<FormatException>(() => Veronica.Setup.Core.SafePath.Under(@"C:\V\Skills", relative));
 }
+
+public class ProviderSettingTests
+{
+    [Theory]
+    [InlineData("webqwen")]
+    [InlineData("claude")]
+    [InlineData("openai")]
+    [InlineData("bare_mcp")]
+    public void RoundTrips(string value) =>
+        Assert.Equal(value, Veronica.Setup.Ui.Providers.SettingsValue(Veronica.Setup.Ui.Providers.FromSettings(value)));
+}

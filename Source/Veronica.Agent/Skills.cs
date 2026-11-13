@@ -67,9 +67,14 @@ public static class SkillFiles
     }
 }
 
-public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan) : ITool
+public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, Func<SkillPlan> plans) : ITool
 {
     public const string ToolName = "skill";
+
+    public SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
+        : this(skills, () => plan)
+    {
+    }
 
     public string Name => ToolName;
 
@@ -84,7 +89,7 @@ public sealed class SkillTool(Func<IReadOnlyList<Skill>> skills, SkillPlan plan)
         var skill = Find(skills(), arguments, out var notFound);
         if (skill == null)
             return Task.FromResult(new ToolResult(notFound, Refused: true) { Summary = $"Could not open skill {Gist.Text(arguments, "name")}: there is no such skill" });
-        plan.MarkRead(skill.Name);
+        plans().MarkRead(skill.Name);
         return Task.FromResult(new ToolResult(skill.Overview) { Summary = $"Opened skill: {skill.Name}" });
     }
 
