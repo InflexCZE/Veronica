@@ -1,6 +1,6 @@
 # Compaction
 
-The local model has a small context window (about 25K to 56K tokens), and a block build fills it. When the chat's conversation hits the end of the window, a subagent summarizes it, the summary replaces the whole transcript, and the turn goes on from it.
+The local model has a small context window (`WebQwen.md`), and a block build fills it. When the chat's conversation hits the end of the window, a subagent summarizes it, the summary replaces the whole transcript, and the turn goes on from it.
 
 ## When
 

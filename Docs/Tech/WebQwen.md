@@ -38,6 +38,7 @@ The local model provider: `WebQwen.exe` runs the WebQwen inference engine outsid
 - They talk over stdio, one JSON object per line, commands on stdin and events on stdout; the log goes to stderr. The message types are one source file compiled into both sides. Both come from the same release, so the protocol has no version.
 - The process dies with the Editor however the Editor ends: it sits in a job object whose handle the plugin never closes, and it exits by itself when its stdin closes.
 - Each chat request carries the whole conversation. The engine reuses its KV cache for the prefix shared with the previous request, which only works while every earlier reply, reasoning included, comes back byte-identical.
+- The plugin always starts `WebQwen.exe` with a context window (`VERONICA_CONTEXT_SIZE`), and the provider reports that size: without one the engine silently caps the window below what the agent assumes. The KV cache is allocated for the whole window at load, and a window that does not fit VRAM spills into shared memory without an error and decodes several times slower.
 - A prompt that does not fit the context window, and a reply that ends as `length` short of its token limit, are reported as the context wall (`Compaction.md`).
 - The provider holds the Editor's VRAM for each whole turn and for each model load until the load completes, even when the turn that started it is stopped (`VramSharing.md`).
 - Stop during start or load ends the turn; the load continues.

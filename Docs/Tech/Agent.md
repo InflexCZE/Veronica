@@ -6,7 +6,7 @@
 
 - A provider opens sessions; a session runs one whole assistant turn, tool rounds included. A session is one conversation's state: the chat holds one for its lifetime, a subagent opens its own, runs one turn and disposes it, so two conversations never see each other's state.
 - A provider says whether it runs subagents: whether a second session may run a turn while the chat's turn waits inside a tool call. Wiki research and compaction exist only with providers that do.
-- A provider states its context window. It is assumed, not asked of the server ([ContextWindow](../TODOs/ContextWindow.md)).
+- A provider states its context window. The local model states the window it starts with; the server providers assume one, not asked of the server ([ContextWindow](../TODOs/ContextWindow.md)).
 - The chat sees a turn only through host callbacks in model order: round start, text and reasoning deltas, round stats, tool calls, notices, transcript appends. Every provider drives the same host, so the panel and eval recording do not depend on the provider.
 - Two provider shapes:
   - one model request per round on the wire (WebQwen, OpenAI-compatible): the provider streams a round and the shared client tool loop turns it into a session;

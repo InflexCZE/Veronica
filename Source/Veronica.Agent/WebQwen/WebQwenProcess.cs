@@ -4,7 +4,32 @@ using System.Text;
 
 namespace Veronica.Agent.WebQwen;
 
-public sealed record WebQwenLaunch(string ExePath, string ModelId, string? ModelsDir = null, int ContextWindowSize = 0);
+public sealed record WebQwenLaunch(string ExePath, string ModelId, string? ModelsDir, int ContextWindowSize)
+{
+    public const int DefaultContextWindowSize = 50_000;
+
+    public IReadOnlyList<string> Arguments()
+    {
+        List<string> arguments = ["serve", "--model", ModelId];
+        if (ModelsDir != null)
+            arguments.AddRange(["--models", ModelsDir]);
+        arguments.AddRange(["--context", ContextWindowSize.ToString(CultureInfo.InvariantCulture)]);
+        return arguments;
+    }
+
+    // An unusable value falls back to the default rather than failing: the chat still works, the log says why.
+    public static int ContextWindowSizeFrom(string? setting, out string? problem)
+    {
+        problem = null;
+        string value = setting?.Trim() ?? "";
+        if (value.Length == 0)
+            return DefaultContextWindowSize;
+        if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int size) && size > 0)
+            return size;
+        problem = $"{Settings.VERONICA_CONTEXT_SIZE} '{value}' is not a positive number of tokens, using {DefaultContextWindowSize}.";
+        return DefaultContextWindowSize;
+    }
+}
 
 // A running WebQwen.exe. It dies with this process: the job kills it if this process is
 // killed, and it exits by itself when its stdin closes.
@@ -36,19 +61,8 @@ public sealed class WebQwenProcess
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };
-        info.ArgumentList.Add("serve");
-        info.ArgumentList.Add("--model");
-        info.ArgumentList.Add(launch.ModelId);
-        if (launch.ModelsDir != null)
-        {
-            info.ArgumentList.Add("--models");
-            info.ArgumentList.Add(launch.ModelsDir);
-        }
-        if (launch.ContextWindowSize > 0)
-        {
-            info.ArgumentList.Add("--context");
-            info.ArgumentList.Add(launch.ContextWindowSize.ToString(CultureInfo.InvariantCulture));
-        }
+        foreach (string argument in launch.Arguments())
+            info.ArgumentList.Add(argument);
 
         var process = Process.Start(info) ?? throw new WebQwenClosedException($"{launch.ExePath} did not start.");
         try

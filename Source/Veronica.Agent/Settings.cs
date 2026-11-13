@@ -17,6 +17,9 @@ public static class Settings
     /// <summary>The local model WebQwen runs: a model id of the WebQwen manifest.</summary>
     public const string VERONICA_MODEL = nameof(VERONICA_MODEL);
 
+    /// <summary>The local model's context window in tokens; unset is 50000.</summary>
+    public const string VERONICA_CONTEXT_SIZE = nameof(VERONICA_CONTEXT_SIZE);
+
     /// <summary>OpenAI-compatible server: base URL including the API prefix, e.g. <c>http://localhost:8080/v1</c>.</summary>
     public const string VERONICA_OPENAI_URL = nameof(VERONICA_OPENAI_URL);
 
@@ -60,7 +63,7 @@ public static class Settings
 
     public static readonly IReadOnlyList<string> All =
     [
-        VERONICA_PROVIDER, VERONICA_MODEL,
+        VERONICA_PROVIDER, VERONICA_MODEL, VERONICA_CONTEXT_SIZE,
         VERONICA_OPENAI_URL, VERONICA_OPENAI_MODEL, VERONICA_OPENAI_API_KEY, VERONICA_OPENAI_EFFORT,
         VERONICA_CLAUDE_MODEL, VERONICA_CLAUDE_EFFORT,
         VERONICA_MCP, VERONICA_MCP_PORT,

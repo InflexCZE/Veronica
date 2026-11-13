@@ -24,7 +24,10 @@ internal static class LocalModel
         }
         Install.CopyShaderCompiler();
         string modelId = chosen ?? DevelopmentModelId;
-        var launch = new WebQwenLaunch(Install.WebQwenExe, modelId, Install.ModelsDir);
+        int contextSize = WebQwenLaunch.ContextWindowSizeFrom(Install.Settings.Get(Settings.VERONICA_CONTEXT_SIZE), out string? problem);
+        if (problem != null)
+            Log.Default.WriteLine($"[Veronica] {AsciiOnly(problem)}");
+        var launch = new WebQwenLaunch(Install.WebQwenExe, modelId, Install.ModelsDir, contextSize);
         var gpu = new GpuShare(EditorResidency.FreeAsync, EditorResidency.RestoreAsync, line => Log.Default.WriteLine($"[Veronica] {line}"));
         var provider = new WebQwenProvider(launch, line => Log.Default.WriteLine($"[WebQwen] {AsciiOnly(line)}"), gpu);
         EditorResidency.DropUnusedTextures();

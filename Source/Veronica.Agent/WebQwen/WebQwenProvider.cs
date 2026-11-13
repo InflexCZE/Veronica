@@ -12,7 +12,7 @@ public sealed class WebQwenProvider(WebQwenLaunch launch, Action<string> log, IG
 
     public event Action<ProviderStatus>? StatusChanged;
 
-    public int ContextWindow => IProvider.AssumedContextWindow;
+    public int ContextWindow => launch.ContextWindowSize;
 
     public bool RunsSubagents => true;
 
