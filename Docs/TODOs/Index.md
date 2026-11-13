@@ -46,7 +46,6 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [SkillSources.md](SkillSources.md) | Skills: a community skill repository (owner decision) |
 | [Wiki.md](Wiki.md) | Wiki: content beyond the skills, eval evidence on the research |
 | [ContentQuery.md](ContentQuery.md) | Editor tools: no way to query a field across many items (owner decision) |
-| [ClaudeWiki.md](ClaudeWiki.md) | Wiki: not available with the Claude provider (owner decision) |
 | [ClaudeWaitForUser.md](ClaudeWaitForUser.md) | Chat: Claude's prompt and skills name wait_for_user, which it does not have (owner decision) |
 | [ContextWindow.md](ContextWindow.md) | Chat: server providers assume a 45K context window (owner decision) |
 | [CompactionInventedDecision.md](CompactionInventedDecision.md) | Chat: a compaction summary once turned a conditional plan step into a user decision (owner decision: wait for a recurrence) |

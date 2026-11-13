@@ -38,7 +38,7 @@ public sealed class WikiPageTool(Func<IReadOnlyList<WikiPage>> pages) : ITool
 
     public string Name => ToolName;
 
-    public string Description => "Returns a wiki page from the system prompt's page list.";
+    public string Description => "Returns a wiki page, on how the game and the Editor work, by its name.";
 
     public string Parameters => """
         {"type":"object","properties":{"name":{"type":"string","description":"Page name, e.g. gscreen"}},"required":["name"]}
@@ -61,4 +61,27 @@ public sealed class WikiPageTool(Func<IReadOnlyList<WikiPage>> pages) : ITool
     }
 
     public string Attempt(JsonElement arguments) => $"open wiki page {Gist.Text(arguments, "name")}";
+}
+
+public sealed class ListWikiTool(Func<IReadOnlyList<WikiPage>> pages) : ITool
+{
+    public const string ToolName = "list_wiki";
+
+    public string Name => ToolName;
+
+    public string Description =>
+        "Lists the wiki pages on how the game and the Editor work, each with what it covers. " +
+        "Game knowledge comes from these pages and from reads, not from memory: this game differs from others you may know. Read a page with " + WikiPageTool.ToolName + "(name).";
+
+    public string Parameters => """{"type":"object","properties":{}}""";
+
+    public Task<ToolResult> ExecuteAsync(JsonElement arguments, CancellationToken cancellationToken)
+    {
+        var all = pages();
+        return Task.FromResult(all.Count == 0
+            ? new ToolResult("There are no wiki pages.") { Summary = "Listed the wiki: there are no pages" }
+            : new ToolResult("Wiki pages:" + WikiFiles.Index(all)) { Summary = $"Listed the wiki: {all.Count} pages" });
+    }
+
+    public string Attempt(JsonElement arguments) => "list the wiki";
 }

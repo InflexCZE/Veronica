@@ -38,5 +38,5 @@ A subagent is one self-contained turn on a session of its own: its own system pr
 - A subagent opens its own provider session, runs one turn and disposes it, so two conversations never see each other's state. No server slot or KV cache is kept per session: on WebQwen, one process with one cache, a subagent's run evicts the chat's cached prompt and the chat's next round prefills it again.
 - The chat supplies the runner and shows the run as its own card, with the subagent's tool calls and then its answer. A tool such as `wiki` only builds the request.
 - The runner exists only for providers that can run a second session while the chat's turn waits in a tool call. The Claude provider cannot, since its turn is one `claude -p` reaching Veronica over MCP, so `wiki` says it is not available there.
-- `wiki` is not served over MCP (`McpEndpoint.md`): the researcher reads the chat's transcript, which an MCP client is not part of.
+- `wiki` is not served over MCP (`McpEndpoint.md`): the researcher reads the chat's transcript, which an MCP client is not part of. A client gets `list_wiki` (the page index) and `wiki_page` instead and reads pages itself; a large model's context holds the reading the researcher keeps out of a small one's.
 - Eval runs record each subagent session to a file of its own (`Eval.md`).

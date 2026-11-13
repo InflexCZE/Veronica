@@ -41,6 +41,16 @@ public sealed class WikiTests
     }
 
     [Fact]
+    public async Task ListTool_ListsEveryPageWithItsDescription()
+    {
+        var other = GScreen with { Name = "units", Description = "Units of values." };
+
+        Assert.Equal("Wiki pages:\n- gscreen: Use for G-Screen places.\n- units: Units of values.",
+            (await new ListWikiTool(() => [GScreen, other]).ExecuteAsync(Args("{}"), CancellationToken.None)).Output);
+        Assert.Equal("There are no wiki pages.", (await new ListWikiTool(() => []).ExecuteAsync(Args("{}"), CancellationToken.None)).Output);
+    }
+
+    [Fact]
     public void ShippedPages_LoadCleanly_InAscii()
     {
         var load = WikiFiles.Load(Dir());

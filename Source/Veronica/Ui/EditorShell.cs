@@ -135,9 +135,10 @@ public sealed class EditorShell
         var tools = new ToolSet([.. Tools, new AskUserTool(questions, waitsForAnswers: ModelProvider.NeedsEndpoint)]);
         if (!ModelProvider.NeedsEndpoint)
             tools = tools.With(new WaitForUserTool());
-        // The researcher reads the chat's transcript, so an MCP client has nothing to ask it about.
+        // The researcher reads the chat's transcript, which an MCP client is not part of, so a client reads the pages itself.
         var endpoint = ToolEndpoint.Create(tools.Without(WikiTool.ToolName).Without(WaitForUserTool.ToolName)
-            .With(new AskUserTool(questions, waitsForAnswers: true)));
+            .With(new AskUserTool(questions, waitsForAnswers: true))
+            .With(new ListWikiTool(() => Skills.Pages)).With(new WikiPageTool(() => Skills.Pages)));
         ProviderStatus? early = null;
         var gate = new Lock();
         var record = new MemoryRecordStore();

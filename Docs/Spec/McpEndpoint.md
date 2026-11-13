@@ -4,7 +4,7 @@ The assistant's tools are available to any MCP client on the modder's machine, s
 
 - Opt in through settings; always on with the Claude Code provider.
 - Loopback only, no authentication.
-- Every chat tool except the wiki.
+- Every chat tool, except that the wiki is read page by page instead of asking a researcher.
 - A call runs silently: no chat line, no Stop. Only during a Claude Code turn are calls routed into the turn and shown in the chat; during a local-model or OpenAI-compatible turn they stay silent too.
 - A question from a client shows the question card (`Chat.md`) and waits until the modder answers or closes it; other calls still run meanwhile.
 - Calls run one at a time, together with the chat's own tool calls.

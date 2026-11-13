@@ -21,7 +21,7 @@ The assistant runs on a frontier model or a local one, with the same tools eithe
 
 - Needs Claude Code installed and signed in. A model and an effort can be chosen.
 - Claude sees Veronica's tools only, not the modder's own Claude Code setup (MCP servers, hooks, memory). The account's identity still reaches Claude.
-- No wiki and no summarizing: Claude manages its own context.
+- No summarizing: Claude manages its own context. Claude reads wiki pages itself instead of asking a researcher (`Wiki.md`).
 - Speeds include network overhead.
 
 ## OpenAI-compatible server

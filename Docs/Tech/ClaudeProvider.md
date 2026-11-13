@@ -10,7 +10,7 @@ Each turn runs through the Claude Code CLI, `claude -p`, which runs its own tool
 - Claude Code runs a tool before it reports the end of the message that called it; the assistant message is still entered into the transcript before the tool's result.
 - The round limit is Claude Code's `--max-turns`, set high (100). Veronica's other turn limits (free rounds, nudges, rewards, token caps) do not apply. Because the limit counts inside one process, an answered question does not reset it as a new turn does in the client loop; the margin makes that acceptable.
 - Stop kills the process tree. The next turn resumes normally, and Claude sees that its last call was interrupted.
-- The provider holds no VRAM and runs no subagents, so the wiki is not available (`Docs/TODOs/ClaudeWiki.md`).
+- The provider holds no VRAM and runs no subagents, so Claude reads wiki pages itself over MCP instead of asking the researcher (`Wiki.md`, Subagents).
 
 ## System prompt
 

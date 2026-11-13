@@ -42,7 +42,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
 
     public int ContextWindow => IProvider.AssumedContextWindow;
 
-    // Its turn runs in claude -p, which only reaches Veronica through the MCP endpoint (Docs/TODOs/ClaudeWiki.md).
+    // Its turn runs in claude -p, which only reaches Veronica through the MCP endpoint; it reads wiki pages itself.
     public bool RunsSubagents => false;
 
     private string StartEndpoint()
