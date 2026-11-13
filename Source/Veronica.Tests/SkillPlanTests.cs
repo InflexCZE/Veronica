@@ -177,10 +177,10 @@ public sealed class SkillPlanTests
 
         Assert.Equal("mark_completed needs proof: one line on what you did for the item.", chat.Call("mark_completed", """{"proof":" "}"""));
         Assert.Equal("mark_completed needs proof: one line on what you did for the item.", chat.Call("mark_completed"));
-        Assert.StartsWith("Done: Create the prefab (made it). Work on item 2 of 3 now: Fill block name.", chat.Call("mark_completed", """{"proof":"made it"}"""));
+        Assert.StartsWith("Done: Create the prefab. Work on item 2 of 3 now: Fill block name.", chat.Call("mark_completed", """{"proof":"made it"}"""));
         Assert.Equal(new PlanItem("Create the prefab", PlanItemState.Done, "made it"), chat.Plan.Items[0]);
         Done(chat);
-        Assert.StartsWith("Done: Next skill (did it). The plan of create-block is through.", Done(chat));
+        Assert.StartsWith("Done: Next skill. The plan of create-block is through.", Done(chat));
         Assert.Null(chat.Plan.ActiveSkill);
         Assert.StartsWith("No skill is active.", Done(chat));
     }
@@ -192,7 +192,7 @@ public sealed class SkillPlanTests
         chat.Call("activate_skill", """{"name":"create-block"}""");
 
         Assert.Equal("mark_skipped needs a reason.", chat.Call("mark_skipped", """{"reason":" "}"""));
-        Assert.StartsWith("Skipped: Create the prefab (exists already). Work on item 2 of 3 now: Fill block name.", chat.Call("mark_skipped", """{"reason":"exists already"}"""));
+        Assert.StartsWith("Skipped: Create the prefab. Work on item 2 of 3 now: Fill block name.", chat.Call("mark_skipped", """{"reason":"exists already"}"""));
         Assert.Equal(new PlanItem("Create the prefab", PlanItemState.Skipped, "exists already"), chat.Plan.Items[0]);
     }
 
@@ -223,11 +223,11 @@ public sealed class SkillPlanTests
 
         var output = Done(chat);
 
-        Assert.Equal("Done: Show the block (did it). block-thruster's plan is done. Back to create-block, item 3 of 3: Next skill. " +
+        Assert.Equal("Done: Show the block. block-thruster's plan is done. Back to create-block, item 3 of 3: Next skill. " +
             "If the work this item asks for is done, call mark_completed with proof; do not redo it. If it needs another skill, activate it.", output);
         Assert.Equal("create-block", chat.Plan.ActiveSkill);
         Assert.Equal([PlanItemState.Done, PlanItemState.Done, PlanItemState.Open], chat.Plan.Items.Select(i => i.State));
-        Assert.StartsWith("Done: Next skill (did it). The plan of create-block is through.", Done(chat));
+        Assert.StartsWith("Done: Next skill. The plan of create-block is through.", Done(chat));
         Assert.Null(chat.Plan.ActiveSkill);
     }
 
@@ -287,7 +287,7 @@ public sealed class SkillPlanTests
         Assert.Contains("BLOCK BODY", chat.Call("activate_skill", """{"name":"create-block"}"""));
         Done(chat);
         Done(chat);
-        Assert.StartsWith("Done: Next skill (did it). The plan of create-block is through.", Done(chat));
+        Assert.StartsWith("Done: Next skill. The plan of create-block is through.", Done(chat));
         Assert.Null(chat.Plan.ActiveSkill);
     }
 

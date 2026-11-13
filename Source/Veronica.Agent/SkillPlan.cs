@@ -196,7 +196,7 @@ public sealed class SkillPlan
                     : $"{MarkSkippedTool.ToolName} needs a reason.";
             var item = _items[current] = _items[current] with { State = state, Note = note };
             _closedItems++;
-            var closed = state == PlanItemState.Done ? $"Done: {item.Text} ({note})." : $"Skipped: {item.Text} ({note}).";
+            var closed = state == PlanItemState.Done ? $"Done: {item.Text}." : $"Skipped: {item.Text}.";
             int next = Current();
             if (next >= 0)
                 return $"{closed} {WorkOn(next)}";
