@@ -34,4 +34,4 @@
 | Connector: looks, inventory, small size | lock indicator, effects, sound, Particles and construction dummies, SupportingFracture, HighlightSection; inventory MaxMass left as the template has it (vanilla large differs); the small connector size not exercised | vanilla Connector150, Connector50 |
 | Event controller, LCD panel, conveyor block, structural block | not reached. Event controller: little beyond toolbars players set. LCD: each screen needs a mesh-part name from the model. Conveyor and structural blocks: mostly the model itself (named ConveyorHole dummies for the conveyor) | vanilla EventController, LCDPanels, Conveyors |
 
-The Grinder and the O2/H2 generator have their own files: [Grinder.md](Grinder.md), [O2H2Generator.md](O2H2Generator.md).
+The Grinder has its own file: [Grinder.md](Grinder.md). The O2/H2 generator is covered by block-item-to-resource.

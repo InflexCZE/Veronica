@@ -3,6 +3,7 @@ using Keen.VRage.ContentPipeline.Definitions.Utility;
 using Keen.VRage.ContentPipeline.Project.Structure;
 using Keen.VRage.ContentPipeline.Project.Utils;
 using Keen.VRage.Library.Definitions;
+using Keen.VRage.Library.Serialization;
 using Veronica.Editing;
 
 namespace Veronica.Tools;
@@ -22,6 +23,8 @@ internal static class TemplateRepairs
     private static readonly Guid Pivot = new("b80cb7d1-126f-406e-a1c7-6410109f3c1d");
     private static readonly Guid AtmosphericFlame = new("c3d8a15e-f0af-4c48-8718-7f09db3f6deb");
     private static readonly Guid AtmosphericThrusterKind = new("93e882df-b11a-4379-97ec-4176d195480f");
+    private static readonly Guid Hydrogen = new("a0e12811-7f81-4735-aef4-b74ef0c2d395");
+    private static readonly Guid Oxygen = new("d129d38e-116d-4424-a1a8-bbb298ac9dba");
 
     // Run before the abstract rule, so an abstract reference with a better vanilla value keeps that value.
     private static readonly Dictionary<string, Func<Repair, Task>> ByTemplate = new(StringComparer.OrdinalIgnoreCase)
@@ -33,6 +36,7 @@ internal static class TemplateRepairs
         ["Blocks/Breakable/Drills"] = r => r.PointComponent("DrillToolEffectsComponent", r.PathOf(Drill350Effects)),
         ["Blocks/Breakable/Doors"] = Door,
         ["Blocks/Breakable/Production(Manual)"] = Production,
+        ["Blocks/Breakable/O2H2 Generator"] = GasGenerator,
     };
 
     // What every vanilla block of the synthetic template's family sets over the template it is generated from.
@@ -97,6 +101,22 @@ internal static class TemplateRepairs
         await r.Write(r.Generated("PowerableBlockDefinition"), "ConsumedResource.Amount", 0);
         await r.Write(r.Generated("ItemConverterDefinition"), "ConsumedResource", 1600);
         await r.Write(r.Generated("ItemConverterDefinition"), "MaxQueueSize", 20);
+    }
+
+    // The template's converter is the abstract base's, which makes Electricity; both vanilla generators make hydrogen
+    // and oxygen at these rates instead. The item stays empty, as the template has it: the user picks what it consumes.
+    private static async Task GasGenerator(Repair r)
+    {
+        var converter = r.Generated("ItemToResourceConverterDefinition");
+        var gases = new[] { (Hydrogen, 4), (Oxygen, 2) };
+        for (int i = 0; i < gases.Length; i++)
+        {
+            await r.AddElement(converter, "ResourcesProduced");
+            await r.Write(converter, $"ResourcesProduced[{i}].Resource", r.PathOf(gases[i].Item1));
+            await r.Write(converter, $"ResourcesProduced[{i}].ConversionRate", gases[i].Item2);
+            await r.Write(converter, $"ResourcesProduced[{i}].ProductionPriority.Priority", 10);
+        }
+        await r.Clear(converter, "ResourceProduced");
     }
 
     // SlidingDoorNarrow250's values.
@@ -192,13 +212,26 @@ internal static class TemplateRepairs
         public Task Write(ItemOf target, string path, object value) =>
             Write(target, path, _ => JsonSerializer.SerializeToElement(value));
 
-        private Task Write(ItemOf target, string path, Func<LoadedProject, JsonElement?> value) => Run(project =>
+        public Task Clear(ItemOf target, string path) =>
+            Write(target, path, _ => JsonSerializer.SerializeToElement<object?>(null));
+
+        private Task Write(ItemOf target, string path, Func<LoadedProject, JsonElement?> value) =>
+            Edit(target, (project, root, links) =>
+            {
+                if (value(project) is { } json)
+                    FieldWriter.Write(root, path, json, links);
+            });
+
+        public Task AddElement(ItemOf target, string path) =>
+            Edit(target, (_, root, links) => Elements.Add(root, path, null, null, links));
+
+        private Task Edit(ItemOf target, Action<LoadedProject, MemberReference, ProjectLinks> edit) => Run(project =>
         {
-            if (target(project) is not { } file || value(project) is not { } json)
+            if (target(project) is not { } file)
                 return;
             var asset = Content.Resolve(project, file);
             Content.RequireWritable(asset);
-            FieldWriter.Write(Content.Definition(asset).Fields.Root, path, json, new ProjectLinks(project, asset));
+            edit(project, Content.Definition(asset).Fields.Root, new ProjectLinks(project, asset));
             Content.Save(asset);
         });
 

@@ -30,7 +30,7 @@ A new item, in order:
 2. Dropped look: create_prefab from the Floating Objects/Floating Object template. It makes the prefab chain (binding, client, server and their compositions) and a copy of the template's model component, <name>_FloatingObjectModelComponent, which both compositions already use and which carries the pickup dummy. Write the item's model into that copy's Model.
 3. FloatingObjectPrefabsConfiguration: an override of vanilla's (Assets/System/Configurations; the configurations page) with an ItemPrefabs entry, key the ItemDefinition, value the prefab's _Server definition. Without it a dropped unit shows the generic fallback cube; datapads and quest items have fallbacks of their own by Type.
 4. A recipe that makes it, in a recipe set a block offers (below). Without one the item exists but nothing crafts it.
-5. Uses: a block's build cost (block-stats page), reactor fuel (reactors page), ammo (configurations page).
+5. Uses: a block's build cost (block-stats page), the item a reactor or gas generator consumes (item-to-resource page), ammo (configurations page).
 
 Recipes (the production page has the parts and the tabs):
 - A recipe repeats while its order runs; one run takes TimeToConvert / the converter's SpeedMultiplier. SpeedMultiplier 2 crafts twice as fast; vanilla blocks have 1. Outputs are multiplied by EfficiencyMultiplier. Vanilla times: Smelter 0.2 to 0.7 s, Refinery 1 to 1.2 s, Assembler 1.5 to 4 s, Fabricator about 4.2 s, Gearforge up to 10 s.

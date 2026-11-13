@@ -10,9 +10,10 @@ Make a reactor block from my MyThruster models.
 - Each only when asked:
   - name and folder: "My Reactor" in `Assets/MyReactor`;
   - which fuel: "the same as the smaller vanilla reactor";
+  - which of several templates: the reactor one;
   - how much power: "40 MW";
   - the energy a unit of fuel gives, or how long fuel lasts: "a kilo of fuel should be worth as much as in that smaller reactor"; if asked whether that means the same energy per kilo or the same burn time: "the same energy per kilo, so it burns faster at the higher power";
-  - how much fuel it holds: "same as that reactor";
+  - how much fuel it holds: "same as that reactor"; if the model has not asked by the time it says the reactor is done, the user says it before the oxygen message: "It should hold as much fuel as that reactor too." (reported as a nudge, not a fail);
   - whether it takes fuel from the conveyors by itself: "yes, like the normal reactor";
   - how many conveyor ports: "one, on the back".
 - No icon of their own; fine with none.
@@ -27,6 +28,11 @@ Make a reactor block from my MyThruster models.
   & .\Eval\Mcp-Call.ps1 -Port <McpPort> -Tool write -ArgsJson ('{"target":"' + $t + '","path":"' + $d + '.Scale","value":{"X":1,"Y":1,"Z":0.05}}')
   ```
 
+- **Second message,** sent once the model says the reactor is done (or the first turn has ended with it in place): "Can it also make oxygen? About 10 L of oxygen per kilo of fuel." Each only when asked:
+  - whether the power should stay as it is: "yes, still 40 MW, same fuel use for the power";
+  - whether it should need power to make oxygen: "no";
+  - more ports: "no, the one on the back is enough".
+  The run ends after the model says it is done.
 - Never hand the model these numbers. If it asks the user to describe the spot instead, the user says the port is in the middle of the back face; exact numbers only when the model asks for exact values.
 - Does not know engine internals: component and definition types, field names, units, file paths in vanilla, vanilla numbers, the fuel's name.
 
@@ -34,13 +40,14 @@ Make a reactor block from my MyThruster models.
 
 1. A new block prefab exists in the dev mod, created from the Reactors template; its block definition's `UIData.Name` is the name the user agreed to, and its `BlockModelComponentDefinition` `Model`, `FractureModel` and `DamagedModel` are the three imported `MyThruster` .model assets.
 2. Its `ItemToResourceConverterDefinition` `ItemConsumed` is the uranium ore item (`UraniumOreItem_FloatingObjectItem`), the fuel of vanilla Reactor250, read from vanilla.
-3. `MaxResourceProduction` is 40000 and `ResourcesPerItem` is Reactor250's (14400), read from vanilla.
-4. Its fuel `InventoryDefinition` `MaxMass` is Reactor250's (12000); its whitelist still allows uranium ore.
-5. Its `InventoryStockpileDefinition` `Items` holds the uranium ore item and `FillRatioPull` is above 0 and at most 1 (vanilla 0.01; another value is reported).
-6. One UseConveyor dummy: the model asked the user to position it, pointing at it (`show` and/or its field path), and waited with `wait_for_user`; after the user's answer it holds the values the user set (not overwritten), and the dummies item's proof cites them.
-7. The block definition's `BlockKind` is still the vanilla reactors' and `ConsumedResource` is none; no component of the block needs a definition (the final `read` shows no "needs"); the model called `show` on the new prefab, no vanilla file changed, and nothing outside the dev mod was changed.
+3. By the end of the first turn (judged from the transcript's writes; the files keep these values, unread once the list is set): `MaxResourceProduction` is 40000 and `ResourcesPerItem` is Reactor250's (14400), read from vanilla.
+4. At the end, after the oxygen message, the converter holds the list form with power kept: `ResourcesProduced` has exactly two entries, Electricity with `ConversionRate` 14400 and Oxygen with `ConversionRate` 10; `MaxItemsPerSecondConsumed` is 40000 / 14400 (2.78 rounded, so the most power stays 40000 kW within 0.1%); `ResourceProduced` is none, and the end validation has no warning about both forms set. The model told the user the oxygen per second at full power that follows (27.8 L/s).
+5. Its fuel `InventoryDefinition` `MaxMass` is Reactor250's (12000); its whitelist still allows uranium ore.
+6. Its `InventoryStockpileDefinition` `Items` holds the uranium ore item and `FillRatioPull` is above 0 and at most 1 (vanilla 0.01; another value is reported).
+7. One UseConveyor dummy, also after the oxygen message (no port added for it): the model asked the user to position it, pointing at it (`show` and/or its field path), and waited with `wait_for_user`; after the user's answer it holds the values the user set (not overwritten), and the dummies item's proof cites them.
+8. The block definition's `BlockKind` is still the vanilla reactors' and `ConsumedResource` is none, and the converter's `PowerableBlockResourceRequiredToOperate` is still none; no component of the block needs a definition (the final `read` shows no "needs"); the model called `show` on the new prefab, no vanilla file changed, and nothing outside the dev mod was changed.
 
-Not required, reported: whether the model offered vanilla values before reading them, whether it named the fuel to the user or asked them to, whether it converted MW to kW without asking, and whether it invented parts (subparts, explosion changes).
+Not required, reported: the Electricity entry's `ProductionPriority` (expected the old single-output one) and the Oxygen entry's, whether the model offered vanilla values before reading them, whether it named the fuel to the user or asked them to, whether it converted MW to kW without asking, and whether it invented parts (subparts, explosion changes).
 
 ## Fixture
 

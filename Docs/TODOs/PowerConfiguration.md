@@ -1,6 +1,6 @@
 # Power configuration on any block
 
-**Exists:** each block skill sets the power of its own kind (block-production, block-thruster, block-reactor and others), mostly by reading a vanilla block's values. create_prefab gives a block made from the Production template nothing idle and the vanilla Assembler's crafting power and queue, since the template's own values (a draw idle, none while crafting, no queue) fit no vanilla production block.
+**Exists:** each block skill sets the power of its own kind (block-production, block-thruster, block-item-to-resource and others), mostly by reading a vanilla block's values. create_prefab gives a block made from the Production template nothing idle and the vanilla Assembler's crafting power and queue, since the template's own values (a draw idle, none while crafting, no queue) fit no vanilla production block.
 
 **Missing:** one skill that configures a block's power consumption whatever the block is: its idle draw and every consumer on it, priority included, read from what is actually on the block.
 
