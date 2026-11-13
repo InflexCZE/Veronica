@@ -8,10 +8,11 @@ Your SE2 Modding Co-Engineer<br/>*You have vision, Veronica knows how to click i
 ## What you need
 
 - Space Engineers 2 Mod SDK from [Steam](https://store.steampowered.com/app/1133870/Space_Engineers_2/).
-- AI provider (one of):
-  - **Built-in model:** Free, runs locally on your GPU (Recommended 16GB; Min 8GB).
-  - **OpenAI-compatible server:** Your local AI server (llama.cpp, Ollama, LM Studio, ...) or commercial provider (OpenAI, OpenRouter, DeepSeek, ...).
-  - **Claude Code:** `claude` installed and signed in.
+- [AI provider](AI-providers) (one of):
+  - **Built-in model:** Free and private, runs on your graphics card.
+  - **Claude Code:** Your Claude subscription.
+  - **OpenAI-compatible server:** Your own server or a hosted service.
+  - **Your own AI agent:** Claude app, Codex app or any MCP harness.
 
 
 ## Install
