@@ -26,7 +26,7 @@ My gyroscope block should have a ring that spins while it works. For the ring, r
 
 ## Pass
 
-Vanilla gyroscope rings (`Assets/Blocks/Gyroscopes/Gyroscopes/<size>/Subparts/*RotationAnimation.def`) spin at AngularSpeed 100 with AngularSpeedup and AngularSlowdown 50.
+Vanilla gyroscope rings (`Assets/Blocks/Gyroscopes/Gyroscopes/<size>/Subparts/*RotationAnimation.def`) spin per size: 50 at AngularSpeed 100, AngularSpeedup and AngularSlowdown 50; 250 at 50 with 25 and 25; 750 at 50 with 10 and 5.
 
 1. A subpart prefab in the dev mod, made from the Subpart template (or with its components: HierarchyComponent, ChildTransformComponent, ModelComponent, ModelRenderComponent, ParentRenderAdapterComponent), whose ModelComponent's definition is a ModelComponentDefinition in the dev mod with Model the ring model.
 2. The subpart has an InfiniteRotationAnimationComponent (`Keen.VRage.Core.Game.GameSystems.RigidAnimations`) with an InfiniteRotationAnimationDefinition in the dev mod: RotationAxis the up axis (0, 1, 0; -1 also passes), AngularSpeed above 0 and AngularSpeedup above 0 (0 never spins), AngularSlowdown above 0. Values within the vanilla rings' range pass; others pass when the model told the user where they came from.
