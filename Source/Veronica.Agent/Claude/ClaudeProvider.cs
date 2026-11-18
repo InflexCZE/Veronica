@@ -27,6 +27,7 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
         ["MCP_TOOL_TIMEOUT"] = "86400000",
         // Tools hidden behind a search would need instructions the replaced system prompt no longer has.
         ["ENABLE_TOOL_SEARCH"] = "false",
+        ["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] = "1",
     };
 
     private readonly object _gate = new();
@@ -136,7 +137,6 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
             "--strict-mcp-config",
             "--mcp-config", mcpConfigFile,
             "--setting-sources", "",
-            "--settings", "{\"autoMemoryEnabled\":false}",
             "--permission-mode", "dontAsk",
             "--allowedTools", $"{McpServer.ToolNamePrefix}*",
             "--max-turns", ClaudeSettings.MaxTurns.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -310,6 +310,8 @@ public sealed class ClaudeProvider(ClaudeSettings settings, McpEndpoint endpoint
 
         private static string Failed(int exitCode, string error)
         {
+            if (exitCode == ClaudeCommand.NotFoundExitCode)
+                return ClaudeCommand.NotFoundMessage;
             error = error.Trim();
             return error.Length == 0
                 ? $"Claude Code exited with code {exitCode} without an answer."

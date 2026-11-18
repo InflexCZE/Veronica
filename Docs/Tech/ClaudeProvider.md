@@ -2,6 +2,11 @@
 
 Each turn runs through the Claude Code CLI, `claude -p`, which runs its own tool loop. Veronica's tools reach it through the MCP endpoint (`McpEndpoint.md`). The user installs and signs in to Claude Code; Veronica does not.
 
+## Finding Claude Code
+
+- `claude` runs through `cmd.exe`, the way the user's terminal runs it, so whatever install PATH resolves is used: the native `claude.exe` or npm's `claude.cmd`. The Launcher's check and the provider share this. Veronica keeps no search of its own: one that fell back to a known install folder ran a stale native install while the user's terminal ran a current npm one.
+- No argument may contain a quote: npm's shim passes the command line through `cmd.exe` a second time, where a quote would expose `&`, `|` and the like. Settings go through environment variables instead.
+
 ## Turns
 
 - One `claude -p` process per turn. Claude Code keeps the conversation: the first turn creates a session id, later turns resume it, and clearing the chat starts a new id.

@@ -22,20 +22,14 @@ internal sealed class ClaudeProcess : IDisposable
     // input is written to stdin, which is then closed.
     public static ClaudeProcess Start(IReadOnlyList<string> arguments, string workingDirectory, IReadOnlyDictionary<string, string> environment, string input)
     {
-        var start = new ProcessStartInfo(FindExecutable())
-        {
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardInputEncoding = new UTF8Encoding(false),
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-        foreach (var argument in arguments)
-            start.ArgumentList.Add(argument);
+        var start = ClaudeCommand.StartInfo(arguments);
+        start.WorkingDirectory = workingDirectory;
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+        start.StandardInputEncoding = new UTF8Encoding(false);
+        start.StandardOutputEncoding = Encoding.UTF8;
+        start.StandardErrorEncoding = Encoding.UTF8;
         foreach (var (name, value) in environment)
             start.Environment[name] = value;
 
@@ -78,27 +72,6 @@ internal sealed class ClaudeProcess : IDisposable
     }
 
     public void Dispose() => _process.Dispose();
-
-    // The native installer puts claude.exe in ~/.local/bin and on the user's PATH; an Editor started
-    // before that PATH change does not see it there.
-    private static string FindExecutable()
-    {
-        var directories = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).ToList();
-        directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin"));
-        foreach (var directory in directories)
-        {
-            try
-            {
-                string candidate = Path.Combine(directory.Trim().Trim('"'), "claude.exe");
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-            catch (ArgumentException)
-            {
-            }
-        }
-        throw new ClaudeException("Claude Code (claude.exe) was not found on PATH or in %USERPROFILE%\\.local\\bin. Install it and sign in by running 'claude' once.");
-    }
 
     private static async Task<string> ReadCappedAsync(StreamReader reader)
     {

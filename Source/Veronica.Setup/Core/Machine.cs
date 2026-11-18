@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Veronica.Agent;
+using Veronica.Agent.Claude;
 
 namespace Veronica.Setup.Core;
 
@@ -69,25 +70,19 @@ public static class ProviderCheck
 
     public static async Task<CheckResult> ClaudeAsync(CancellationToken cancellationToken)
     {
-        string? exe = FindClaude();
-        if (exe == null)
-            return new CheckResult(false, "Claude Code (claude.exe) was not found on PATH or in %USERPROFILE%\\.local\\bin. Install it and sign in by running 'claude' once.");
-        var info = new ProcessStartInfo(exe)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-        };
-        info.ArgumentList.Add("auth");
-        info.ArgumentList.Add("status");
-        info.ArgumentList.Add("--json");
+        var info = ClaudeCommand.StartInfo(["auth", "status", "--json"]);
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
         using var process = Process.Start(info)!;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
         string output;
+        string error;
         try
         {
+            var errorTask = process.StandardError.ReadToEndAsync(timeout.Token);
             output = await process.StandardOutput.ReadToEndAsync(timeout.Token).ConfigureAwait(false);
+            error = await errorTask.ConfigureAwait(false);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -95,10 +90,12 @@ public static class ProviderCheck
             process.Kill(entireProcessTree: true);
             return new CheckResult(false, "'claude auth status' did not answer.");
         }
-        return ClaudeStatus(output);
+        return process.ExitCode == ClaudeCommand.NotFoundExitCode
+            ? new CheckResult(false, ClaudeCommand.NotFoundMessage)
+            : ClaudeStatus(output, error);
     }
 
-    public static CheckResult ClaudeStatus(string json)
+    public static CheckResult ClaudeStatus(string json, string error = "")
     {
         try
         {
@@ -109,7 +106,12 @@ public static class ProviderCheck
         }
         catch (JsonException)
         {
-            return new CheckResult(false, "'claude auth status' gave no status; update Claude Code.");
+            string said = error.Trim();
+            if (said.Length > 300)
+                said = said[..300] + "...";
+            return new CheckResult(false, said.Length == 0
+                ? "'claude auth status' gave no status; update Claude Code."
+                : $"'claude auth status' gave no status; update Claude Code. It said: {said}");
         }
     }
 
@@ -246,25 +248,5 @@ public static class ProviderCheck
         {
             return new CheckResult(false, "The server's model list is not JSON.");
         }
-    }
-
-    // Like the Claude provider: the native installer puts claude.exe in ~/.local/bin, maybe not on this PATH yet.
-    private static string? FindClaude()
-    {
-        var directories = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).ToList();
-        directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin"));
-        foreach (var directory in directories)
-        {
-            try
-            {
-                string candidate = Path.Combine(directory.Trim().Trim('"'), "claude.exe");
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-            catch (ArgumentException)
-            {
-            }
-        }
-        return null;
     }
 }
