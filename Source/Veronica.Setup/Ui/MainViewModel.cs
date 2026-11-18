@@ -239,7 +239,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         var activity = strip.Activity;
         activity.Begin("Installing...");
         strip.Touch();
-        _ = Run(async () =>
+        Run(async () =>
         {
             try
             {
@@ -317,7 +317,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                 page.Leave();
                 back();
             }),
-            Pressed = () => _ = CopyText(page.Prompt),
+            Pressed = () => Run(() => CopyText(page.Prompt)),
             Skip = new Command(() => SkipAndSave(page, saved)),
         };
         return page;
@@ -377,7 +377,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             BareMcpConnectPage bare => BareMcpCheck(bare),
             _ => throw new InvalidOperationException(page.GetType().Name),
         };
-        _ = Run(async () =>
+        Run(async () =>
         {
             CheckResult result;
             try
@@ -491,7 +491,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         _modelOps++;
         var activity = card.Activity;
         activity.Begin("Starting the download...");
-        _ = Run(async () =>
+        Run(async () =>
         {
             try
             {
@@ -539,7 +539,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         _modelOps++;
         var activity = card.Activity;
         activity.Begin("Deleting...");
-        _ = Run(async () =>
+        Run(async () =>
         {
             try
             {
@@ -592,15 +592,26 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     // The installer awaits its callback with ConfigureAwait(false); what the callback shows must run on the UI thread.
     private static Func<Task> OnUi(Func<Task> work) => () => Dispatcher.UIThread.InvokeAsync(work);
 
-    // Work started from the UI thread; its continuations come back to it.
-    private static async Task Run(Func<Task> work) => await work();
+    // Work started from the UI thread; its continuations come back to it. Nothing awaits it, so an exception
+    // that escapes would vanish with the task.
+    private async void Run(Func<Task> work)
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception e)
+        {
+            host.Log($"Unhandled: {e}");
+        }
+    }
 
     private void ShowApp(AppTab tab) => Safe(() =>
     {
         _filesReady = true;
         if (_app == null)
         {
-            var app = _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync(), () => _ = AddProjectAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+            var app = _app = new AppShell(new ModsPane(() => Run(PickEditorExeAsync), () => Run(PickGameExeAsync), () => Run(AddProjectAsync)), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
             // A bare MCP check left running would hold the port when the modder starts the Editor from Mods.
             app.PropertyChanged += (_, e) =>
             {
@@ -700,13 +711,13 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                 if (host.Files.FileExists(project))
                     mods.Add(ProjectCard(name, folder, project, project, added: true));
                 else
-                    mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => _ = RemoveModAsync(mod))
+                    mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => Run(() => RemoveModAsync(mod)))
                         { Note = $"{project} is missing." });
             }
             catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
             {
                 host.Log($"Reading project {project} failed: {e}");
-                mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => _ = RemoveModAsync(mod))
+                mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => Run(() => RemoveModAsync(mod)))
                     { Note = $"Cannot be read: {e.Message}" });
             }
         }
@@ -737,8 +748,8 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             name = VrgProj.Name(text) ?? name;
             state = VrgProj.State(text, host.Layout.Runtime);
         }
-        return new ModCard(name, folder, project, state, mod => _ = StartEditorAsync(mod), (mod, hook) => _ = ChangeModAsync(mod, hook),
-            key, added ? mod => _ = RemoveModAsync(mod) : null);
+        return new ModCard(name, folder, project, state, mod => Run(() => StartEditorAsync(mod)), (mod, hook) => Run(() => ChangeModAsync(mod, hook)),
+            key, added ? mod => Run(() => RemoveModAsync(mod)) : null);
     }
 
     private async Task AddProjectAsync()
@@ -959,7 +970,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         pane.Latest = "Looking for a newer version...";
         pane.UpToDate = false;
         pane.CanUpdate = false;
-        _ = Task.Run(async () =>
+        Run(() => Task.Run(async () =>
         {
             string text;
             bool newer = false;
@@ -980,7 +991,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                 pane.CanUpdate = newer;
                 pane.UpToDate = !newer && !text.StartsWith("Cannot", StringComparison.Ordinal);
             });
-        });
+        }));
     }
 
     // Self-update first, then Runtime, Skills and Wiki, then models whose pin changed.
@@ -997,7 +1008,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         var pane = _app.Updates;
         var activity = pane.Activity;
         activity.Begin("Looking for the latest release...");
-        _ = Run(async () =>
+        Run(async () =>
         {
             try
             {

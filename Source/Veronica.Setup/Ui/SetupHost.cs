@@ -106,7 +106,7 @@ public sealed class SetupHost
 
     public void Log(string line) => Log(Layout, line);
 
-    private static void Log(InstallLayout layout, string line)
+    public static void Log(InstallLayout layout, string line)
     {
         try
         {

@@ -22,7 +22,13 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var main = new MainViewModel(SetupHost.ForThisProcess(), () => desktop.Shutdown());
+            var host = SetupHost.ForThisProcess();
+            Dispatcher.UIThread.UnhandledException += (_, e) =>
+            {
+                host.Log($"Unhandled: {e.Exception}");
+                e.Handled = true;
+            };
+            var main = new MainViewModel(host, () => desktop.Shutdown());
             var window = new MainWindow { DataContext = main };
             main.PickFolder = window.PickFolderAsync;
             main.PickEditor = window.PickEditorAsync;
