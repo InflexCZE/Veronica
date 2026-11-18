@@ -21,6 +21,8 @@ public sealed record InstallLayout(string Root)
 
     public string SettingsFile => Path.Combine(Root, Settings.FileName);
 
+    public string LauncherFile => Path.Combine(Root, LauncherSettings.FileName);
+
     public string InstalledFile => Path.Combine(Root, "Veronica.installed.json");
 
     public string LogFile => Path.Combine(Root, "Veronica.log");
@@ -38,7 +40,7 @@ public sealed record InstallLayout(string Root)
 
     private static readonly HashSet<string> OwnNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Runtime", "Runtime.new", "Runtime.old", "Skills", "Wiki", "Models", "Downloads", Settings.FileName, "Veronica.installed.json", "Veronica.log",
+        "Runtime", "Runtime.new", "Runtime.old", "Skills", "Wiki", "Models", "Downloads", Settings.FileName, LauncherSettings.FileName, "Veronica.installed.json", "Veronica.log",
     };
 
     // Names in the root that are not Veronica's: the user dropped Veronica.exe into a busy folder.

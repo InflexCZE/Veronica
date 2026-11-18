@@ -444,10 +444,14 @@
     <DataTemplate DataType="ui:ModsPane">
       <ScrollViewer>
         <StackPanel Classes="page">
-          <StackPanel Classes="heading">
-            <TextBlock Classes="h2" Text="Which mods should I help with?" />
-            <TextBlock Classes="dim" Text="Installed in a mod, Veronica loads the next time you open it in the Editor." />
-          </StackPanel>
+          <Grid Classes="row" ColumnDefinitions="*,Auto">
+            <StackPanel Classes="heading">
+              <TextBlock Classes="h2" Text="Which mods should I help with?" />
+              <TextBlock Classes="dim" Text="Installed in a mod, Veronica loads the next time you open it in the Editor." />
+            </StackPanel>
+            <Button Grid.Column="1" VerticalAlignment="Top" Content="Add project..." Command="{Binding AddProject}"
+                    ToolTip.Tip="Add a mod the Editor does not list, by its .vrgproj file." />
+          </Grid>
           <TextBlock Classes="warning" IsVisible="{Binding HasMessage}" Text="{Binding Message}" />
           <ItemsControl ItemsSource="{Binding Mods}" ItemsPanel="{StaticResource CardList}" Grid.IsSharedSizeScope="True">
             <ItemsControl.ItemTemplate>
@@ -461,14 +465,17 @@
                       <ContentControl Content="{Binding Activity}" ContentTemplate="{StaticResource ActivityView}" />
                     </StackPanel>
                     <!-- Shared column widths line the buttons up across the cards, Install as wide as Uninstall. -->
-                    <Grid Grid.Column="1" Classes="buttons" VerticalAlignment="Top" IsEnabled="{Binding CanAct}">
+                    <Grid Grid.Column="1" Classes="buttons" VerticalAlignment="Top">
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="ModStart" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="ModInstall" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="ModRemove" />
                       </Grid.ColumnDefinitions>
-                      <Button Content="Start Editor" Command="{Binding Start}" />
-                      <Button Grid.Column="1" Classes="accent" Content="Install" Command="{Binding Install}" IsVisible="{Binding !Installed}" />
-                      <Button Grid.Column="1" Classes="accentRed" Content="Uninstall" Command="{Binding Uninstall}" IsVisible="{Binding Installed}" />
+                      <Button Content="Start Editor" Command="{Binding Start}" IsEnabled="{Binding CanAct}" />
+                      <Button Grid.Column="1" Classes="accent" Content="Install" Command="{Binding Install}" IsVisible="{Binding !Installed}" IsEnabled="{Binding CanAct}" />
+                      <Button Grid.Column="1" Classes="accentRed" Content="Uninstall" Command="{Binding Uninstall}" IsVisible="{Binding Installed}" IsEnabled="{Binding CanAct}" />
+                      <Button Grid.Column="2" Content="Remove" Command="{Binding Remove}" IsVisible="{Binding Added}" IsEnabled="{Binding CanRemove}"
+                              ToolTip.Tip="Takes the project off this list, and Veronica out of it first." />
                     </Grid>
                   </Grid>
                 </Border>

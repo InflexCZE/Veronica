@@ -176,4 +176,39 @@ public class ModsTests
              new ModIndexEntry("0dca74b9-f717-44fb-825c-0da201822a79", @"C:\Users\m\Documents\SpaceEngineers2\Mods\NOTaROTOR")],
             entries);
     }
+
+    [Fact]
+    public void LauncherSettings_ProjectsRoundTrip()
+    {
+        var settings = LauncherSettings.Empty.WithProjects([@"D:\Mods\A\A.vrgproj", @"D:\Mods\B\B.vrgproj"]);
+
+        var parsed = LauncherSettings.Parse(settings.Serialize());
+
+        Assert.Equal([@"D:\Mods\A\A.vrgproj", @"D:\Mods\B\B.vrgproj"], parsed.Projects);
+    }
+
+    [Fact]
+    public void LauncherSettings_KeepsUnknownKeys()
+    {
+        const string text = """{ "Future": { "x": 1 }, "Projects": ["D:\\Mods\\A\\A.vrgproj"] }""";
+
+        string written = LauncherSettings.Parse(text).WithProjects([]).Serialize();
+
+        Assert.Empty(LauncherSettings.Parse(written).Projects);
+        Assert.Contains("\"Future\"", written);
+    }
+
+    [Fact]
+    public void LauncherSettings_SkipsNonStringAndBlankProjects()
+    {
+        var settings = LauncherSettings.Parse("""{ "Projects": ["", 5, null, "D:\\M\\M.vrgproj"] }""");
+
+        Assert.Equal([@"D:\M\M.vrgproj"], settings.Projects);
+    }
+
+    [Fact]
+    public void LauncherSettings_NotAnObject_Throws()
+    {
+        Assert.Throws<FormatException>(() => LauncherSettings.Parse("[]"));
+    }
 }

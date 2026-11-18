@@ -786,10 +786,13 @@ public sealed class SetupFlow(Slides slides, FilesStrip files) : ViewModel
 
 public sealed class ModCard : ViewModel
 {
-    public ModCard(string name, string folder, string? project, HookState state, Action<ModCard> start, Action<ModCard, bool> change)
+    // remove is set on a project the modder added by hand; key tells cards apart when two share a folder.
+    public ModCard(string name, string folder, string? project, HookState state, Action<ModCard> start, Action<ModCard, bool> change,
+        string? key = null, Action<ModCard>? remove = null)
     {
         Name = name;
         Folder = folder;
+        Key = key ?? folder;
         Project = project;
         State = state;
         Note = project == null ? "No .vrgproj file found."
@@ -798,11 +801,21 @@ public sealed class ModCard : ViewModel
         Start = new Command(() => start(this));
         Install = new Command(() => change(this, true));
         Uninstall = new Command(() => change(this, false));
+        Added = remove != null;
+        Remove = new Command(() => remove?.Invoke(this));
     }
 
     public string Name { get; }
 
     public string Folder { get; }
+
+    public string Key { get; }
+
+    public bool Added { get; }
+
+    public bool CanRemove => Added && !Activity.Running;
+
+    public ICommand Remove { get; }
 
     public string? Project { get; }
 
@@ -824,16 +837,22 @@ public sealed class ModCard : ViewModel
 
     public ICommand Uninstall { get; }
 
-    public void Touch() => Changed(nameof(CanAct));
+    public void Touch()
+    {
+        Changed(nameof(CanAct));
+        Changed(nameof(CanRemove));
+    }
 }
 
-public sealed class ModsPane(Action changeEditor, Action changeGame) : ViewModel
+public sealed class ModsPane(Action changeEditor, Action changeGame, Action addProject) : ViewModel
 {
     private string _message = "";
     private string _editor = "";
     private string _game = "";
 
     public ObservableCollection<ModCard> Mods { get; } = new();
+
+    public ICommand AddProject { get; } = new Command(addProject);
 
     // Empty when neither the settings nor Steam know one; the first Start Editor then asks for it.
     public string Editor

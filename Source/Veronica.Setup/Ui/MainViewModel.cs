@@ -53,6 +53,8 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
 
     public Func<Task<string?>> PickGame { get; set; } = () => Task.FromResult<string?>(null);
 
+    public Func<Task<string?>> PickProject { get; set; } = () => Task.FromResult<string?>(null);
+
     public Func<string, Task> CopyText { get; set; } = _ => Task.CompletedTask;
 
     public void Start(bool update, bool selfUpdated, bool install)
@@ -598,7 +600,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
         _filesReady = true;
         if (_app == null)
         {
-            var app = _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
+            var app = _app = new AppShell(new ModsPane(() => _ = PickEditorExeAsync(), () => _ = PickGameExeAsync(), () => _ = AddProjectAsync()), BrainSlides(), new UpdatesPane(RunUpdate, CheckLatest));
             // A bare MCP check left running would hold the port when the modder starts the Editor from Mods.
             app.PropertyChanged += (_, e) =>
             {
@@ -641,36 +643,36 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
     {
         var pane = _app!.Mods;
         // A card still waiting for the Editor keeps its own state, Cancel included.
-        var running = pane.Mods.Where(m => m.Activity.Running).ToDictionary(m => m.Folder, StringComparer.OrdinalIgnoreCase);
+        var running = pane.Mods.Where(m => m.Activity.Running).ToDictionary(m => m.Key, StringComparer.OrdinalIgnoreCase);
         string? editor = FindEditorExe();
         pane.Editor = editor ?? "";
         pane.Game = FindGameExe(editor) ?? "";
-        var mods = ReadMods(pane).Select(m => running.GetValueOrDefault(m.Folder) ?? m).ToList();
+        var mods = ReadMods(pane).Select(m => running.GetValueOrDefault(m.Key) ?? m).ToList();
         pane.Mods.Clear();
         foreach (var mod in mods)
             pane.Mods.Add(mod);
     }
 
+    // The mod HUB's index first, then the projects the modder added; an added project the index already lists
+    // shows once, on the index's card, which then offers Remove.
     private List<ModCard> ReadMods(ModsPane pane)
     {
         var mods = new List<ModCard>();
-        IReadOnlyList<ModIndexEntry> entries;
+        var added = host.LauncherSettings.Projects.Select(FullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var addedSet = new HashSet<string>(added, StringComparer.OrdinalIgnoreCase);
+        string message = "";
+        IReadOnlyList<ModIndexEntry> entries = [];
         try
         {
-            if (!host.Files.FileExists(ModIndex.DefaultPath))
-            {
-                pane.Message = "No local mods found. Create or open a mod in the Editor and it shows up here.";
-                return mods;
-            }
-            entries = ModIndex.Parse(host.Files.ReadAllText(ModIndex.DefaultPath));
+            if (host.Files.FileExists(ModIndex.DefaultPath))
+                entries = ModIndex.Parse(host.Files.ReadAllText(ModIndex.DefaultPath));
         }
         catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             host.Log($"Reading {ModIndex.DefaultPath} failed: {e}");
-            pane.Message = $"The Editor's list of local mods cannot be read ({e.Message}).";
-            return mods;
+            message = $"The Editor's list of local mods cannot be read ({e.Message}).";
         }
-        pane.Message = entries.Count == 0 ? "No local mods yet. Create one in the Editor and it shows up here." : "";
+        var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in entries)
         {
             string name = Path.GetFileName(entry.Folder.TrimEnd('\\', '/'));
@@ -678,14 +680,10 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
             {
                 string? project = host.Files.Files(entry.Folder, recursive: false)
                     .Where(f => f.EndsWith(".vrgproj", StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault();
-                var state = HookState.NotHooked;
-                if (project != null)
-                {
-                    string text = host.Files.ReadAllText(project);
-                    name = VrgProj.Name(text) ?? name;
-                    state = VrgProj.State(text, host.Layout.Runtime);
-                }
-                mods.Add(new ModCard(name, entry.Folder, project, state, mod => _ = StartEditorAsync(mod), (mod, hook) => _ = ChangeModAsync(mod, hook)));
+                bool isAdded = project != null && addedSet.Contains(FullPath(project));
+                if (isAdded)
+                    listed.Add(FullPath(project!));
+                mods.Add(ProjectCard(name, entry.Folder, project, entry.Folder, isAdded));
             }
             catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
             {
@@ -693,7 +691,104 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
                 mods.Add(new ModCard(name, entry.Folder, null, HookState.NotHooked, _ => { }, (_, _) => { }) { Note = $"Cannot be read: {e.Message}" });
             }
         }
+        foreach (var project in added.Where(p => !listed.Contains(p)))
+        {
+            string folder = Path.GetDirectoryName(project) ?? project;
+            string name = Path.GetFileNameWithoutExtension(project);
+            try
+            {
+                if (host.Files.FileExists(project))
+                    mods.Add(ProjectCard(name, folder, project, project, added: true));
+                else
+                    mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => _ = RemoveModAsync(mod))
+                        { Note = $"{project} is missing." });
+            }
+            catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                host.Log($"Reading project {project} failed: {e}");
+                mods.Add(new ModCard(name, folder, null, HookState.NotHooked, _ => { }, (_, _) => { }, project, mod => _ = RemoveModAsync(mod))
+                    { Note = $"Cannot be read: {e.Message}" });
+            }
+        }
+        if (message.Length == 0 && mods.Count == 0)
+            message = "No local mods yet. Create one in the Editor, or add a project, and it shows up here.";
+        pane.Message = message;
         return mods;
+    }
+
+    private static string FullPath(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return path;
+        }
+    }
+
+    private ModCard ProjectCard(string name, string folder, string? project, string key, bool added)
+    {
+        var state = HookState.NotHooked;
+        if (project != null)
+        {
+            string text = host.Files.ReadAllText(project);
+            name = VrgProj.Name(text) ?? name;
+            state = VrgProj.State(text, host.Layout.Runtime);
+        }
+        return new ModCard(name, folder, project, state, mod => _ = StartEditorAsync(mod), (mod, hook) => _ = ChangeModAsync(mod, hook),
+            key, added ? mod => _ = RemoveModAsync(mod) : null);
+    }
+
+    private async Task AddProjectAsync()
+    {
+        if (await PickProject() is not { Length: > 0 } picked)
+            return;
+        string project = FullPath(picked);
+        var settings = host.LauncherSettings;
+        if (!settings.Projects.Select(FullPath).Contains(project, StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                host.SaveLauncherSettings(settings.WithProjects(settings.Projects.Append(project)));
+                host.Log($"Added project {project}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                host.Log($"Adding project {project} failed: {e}");
+                Safe(RefreshMods);
+                _app!.Mods.Message = $"The project could not be added: {e.Message}";
+                return;
+            }
+        }
+        Safe(RefreshMods);
+    }
+
+    // Veronica comes out of the mod first; a cancelled or failed removal from the .vrgproj keeps the project listed.
+    private async Task RemoveModAsync(ModCard mod)
+    {
+        if (mod.Activity.Running)
+            return;
+        if (mod.Project != null && mod.State != HookState.NotHooked && !await ChangeModAsync(mod, hook: false))
+            return;
+        var settings = host.LauncherSettings;
+        try
+        {
+            var gone = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { FullPath(mod.Key) };
+            if (mod.Project != null)
+                gone.Add(FullPath(mod.Project));
+            host.SaveLauncherSettings(settings.WithProjects(settings.Projects.Where(p => !gone.Contains(FullPath(p)))));
+            host.Log($"Removed project {mod.Project ?? mod.Key}");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            host.Log($"Removing project {mod.Project ?? mod.Key} failed: {e}");
+            Safe(RefreshMods);
+            ShowModError(mod, $"The project could not be removed from the list: {e.Message}");
+            return;
+        }
+        Safe(RefreshMods);
     }
 
     // Returns whether the .vrgproj was changed; the card is replaced by a fresh one either way.
@@ -745,7 +840,7 @@ public sealed class MainViewModel(SetupHost host, Action shutdown) : ViewModel
 
     private void ShowModError(ModCard mod, string error)
     {
-        var card = _app!.Mods.Mods.FirstOrDefault(m => string.Equals(m.Folder, mod.Folder, StringComparison.OrdinalIgnoreCase)) ?? mod;
+        var card = _app!.Mods.Mods.FirstOrDefault(m => string.Equals(m.Key, mod.Key, StringComparison.OrdinalIgnoreCase)) ?? mod;
         card.Activity.Error = error;
     }
 

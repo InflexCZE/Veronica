@@ -65,6 +65,25 @@ public sealed class SetupHost
     public void SaveSettings(IReadOnlyDictionary<string, string?> changes) =>
         Files.WriteAllText(Layout.SettingsFile, SettingsFile.With(changes, Secrets.Protect).Serialize());
 
+    // A broken file reads as empty, like the settings file.
+    public LauncherSettings LauncherSettings
+    {
+        get
+        {
+            try
+            {
+                return Files.FileExists(Layout.LauncherFile) ? LauncherSettings.Parse(Files.ReadAllText(Layout.LauncherFile)) : LauncherSettings.Empty;
+            }
+            catch (Exception e) when (e is System.Text.Json.JsonException or FormatException or InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                Log($"{Layout.LauncherFile} could not be read ({e.Message}); treated as empty.");
+                return LauncherSettings.Empty;
+            }
+        }
+    }
+
+    public void SaveLauncherSettings(LauncherSettings settings) => Files.WriteAllText(Layout.LauncherFile, settings.Serialize());
+
     public string ReleasesUrl => Settings.GetTrimmed(Agent.Settings.VERONICA_RELEASES_URL) ?? Agent.Settings.DefaultReleasesUrl;
 
     public InstalledRecord Record

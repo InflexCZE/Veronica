@@ -13,7 +13,7 @@ One downloaded program installs Veronica, sets up its AI provider, enables it pe
 ## Afterwards
 
 - Three tabs: mods, AI provider, updates (marked when something waits).
-- Mods: the modder's local mods, each with Veronica enabled or not, and a way to open it in the Editor. The Launcher finds the Editor and the game through Steam, or asks for the Editor once. A mod using another Veronica build offers only removal.
+- Mods: the modder's local mods, each with Veronica enabled or not, and a way to open it in the Editor. A mod the Editor does not list is added by its project file and stays listed; removing it takes Veronica out of it first. An added project that went missing stays listed, marked, until removed. The Launcher finds the Editor and the game through Steam, or asks for the Editor once. A mod using another Veronica build offers only removal.
 - Installed models can be deleted.
 - Downloads can be cancelled; a partial model download resumes.
 

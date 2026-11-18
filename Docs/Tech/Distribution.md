@@ -45,7 +45,7 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 - `Runtime` holds the plugin with its private DLLs and the runtime with its native DLLs and manifest. It is replaced as a whole on update.
 - `Skills` and `Wiki` hold the shipped Markdown plus anything the user adds; they are merged on update.
 - `Models` holds one folder per installed model; `Downloads` holds partial downloads.
-- `Veronica.settings.json` holds the settings and survives updates. `Veronica.installed.json` is the Launcher's record of the install: the release version, the hash of every skill and wiki file it installed, each model's pin, and which waiting conflicts are drops.
+- `Veronica.settings.json` holds the settings and survives updates. `Veronica.launcher.json` holds what only the Launcher reads, and survives updates too. `Veronica.installed.json` is the Launcher's record of the install: the release version, the hash of every skill and wiki file it installed, each model's pin, and which waiting conflicts are drops.
 - An installed plugin finds everything relative to itself, so an install folder can sit anywhere. A development build uses the paths its build wrote in (`EditorPlugin.md`).
 
 ## Settings
@@ -54,6 +54,7 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 - The store is filled from the settings file, then from environment variables, which win. An unreadable file is logged and skipped. The plugin reads the store once when its panel is created; a change takes effect at the next Editor start.
 - The Launcher writes the file: the provider, its settings and the active model.
 - The API key is encrypted with Windows DPAPI for the current user, so a copied install folder does not carry it in the clear.
+- New settings only the Launcher reads go to `Veronica.launcher.json`: typed JSON values, no environment-variable override, and keys an older Launcher does not know are kept when it writes the file. The Launcher-only keys already in `Veronica.settings.json` stay there.
 
 ## Models
 
@@ -66,7 +67,8 @@ How Veronica reaches a modder's machine and stays current: the release, the Laun
 
 ## Enabling Veronica in a mod
 
-- Local mods come from the mod HUB's mod index. Whether a mod has Veronica is read from its `.vrgproj`, never recorded separately, so there is one source of truth.
+- Local mods come from the mod HUB's mod index, plus the `.vrgproj` files the modder added, kept in the Launcher's own file. The HUB's index is never written, as it belongs to the Editor. An added project the index also lists shows once, on the index's card. Removing an added project disables Veronica in it first, so no mod is left loading Veronica that the Launcher no longer lists.
+- Whether a mod has Veronica is read from its `.vrgproj`, never recorded separately, so there is one source of truth.
 - Enabling adds `Veronica.dll` to the `.vrgproj`'s extension assemblies and this install's absolute `Runtime` path to its search paths. Disabling removes `Veronica.dll`, this install's path and any search path whose folder holds a `Veronica.dll`; the mod's other paths stay.
 - A mod that loads `Veronica.dll` through any other path (a development build, another or a moved install) is another build: the Launcher offers only to remove it, never to enable over it.
 - A `.vrgproj` is edited only while the Editor is closed, since an open Editor may write the project back over the edit.
