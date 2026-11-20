@@ -23,6 +23,7 @@ Work known to be missing or unfinished. One file per item: what exists, what is 
 | [BoardStaleAfterReload.md](BoardStaleAfterReload.md) | Board: tiles of the previous project after a reload (owner decision) |
 | [BoardLayoutGaps.md](BoardLayoutGaps.md) | Board: back edges, late size changes, unconnected nodes, cancelled drags |
 | [PresentGraphUse.md](PresentGraphUse.md) | Board: a graph in place of show on a changed item (owner decision) |
+| [ShowDuringReload.md](ShowDuringReload.md) | Tools: show during a content reload once left the Editor on a modal assert |
 | [SubpartNesting.md](SubpartNesting.md) | Tools: a part inside a part (second motion, off-origin pivot) |
 | [SkippedBlockKinds.md](SkippedBlockKinds.md) | Skills: block kinds and parts left out of the wide block run (owner decision) |
 | [Grinder.md](Grinder.md) | Skills: no grinder block, deferred out of the items and recipes round (owner decision) |

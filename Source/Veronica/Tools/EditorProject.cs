@@ -1,7 +1,10 @@
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Avalonia.Threading;
 using Keen.VRage.ContentPipeline.Project.Structure;
 using Keen.VRage.Core;
 using Keen.VRage.Editor.Project;
+using Keen.VRage.Library.Diagnostics;
 using Veronica.Editing;
 
 namespace Veronica.Tools;
@@ -24,7 +27,7 @@ public static class EditorProject
                 return await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    return work(Current);
+                    return Unwrapped(() => work(Current));
                 }).GetTask();
             }
             catch (ItemBusy) when (DateTime.UtcNow < deadline)
@@ -39,8 +42,23 @@ public static class EditorProject
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return work(Current);
+            return Unwrapped(() => work(Current));
         });
+
+    // Editor entry points reached by reflection wrap their failure; the model and the log need the real one.
+    private static T Unwrapped<T>(Func<T> work)
+    {
+        try
+        {
+            return work();
+        }
+        catch (TargetInvocationException e) when (e.InnerException is { } inner)
+        {
+            Log.Default.Error($"[Veronica] Editor call failed: {inner}");
+            ExceptionDispatchInfo.Throw(inner);
+            throw;
+        }
+    }
 
     private static LoadedProject Current =>
         (VRageCore.HasValue ? VRageCore.Instance.Engine?.TryGet<ProjectLoaderComponent>()?.Current?.RootProject : null)
