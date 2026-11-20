@@ -13,6 +13,7 @@ Parts:
 Leaves:
 - Each leaf prefab has Client and Server compositions, each with a ModelComponentDefinition (the leaf model) and a DoorSegmentTransformSLERPDefinition.
 - DoorSegmentTransformSLERPDefinition: ClosedPositionDummy and OpenPositionDummy name dummy types on the frame's model; the leaf moves smoothly between the two spots as the door opens. Vanilla gives each spot a dummy type of its own, in the door's folder (LeftDoorClosedDummy and so on). Doors do not use TranslationAnimation.
+- The leaf blends both position and rotation between the two spots, so a leaf can swing as well as slide. Position moves in a straight line, so a swinging leaf's model has its origin on the hinge.
 - Leaves are not hidden or scaled when open: to clear the doorway, put the open spot where the leaf is out of the way (slid or turned into the frame).
 
 Opening:

@@ -2,7 +2,7 @@
 
 ## Prompt
 
-I want my own gatling gun block, using my MyThruster models, with its own ammo that hits twice as hard as the vanilla gatling ammo. Players should be able to build it in survival.
+I want my own gatling gun block, using my MyThruster models, with its own ammo that hits twice as hard as the vanilla gatling ammo. Players should be able to build it in survival. Its barrel should spin while it shoots; reuse the MyThruster model for the barrel too.
 
 ## User
 
@@ -18,6 +18,10 @@ I want my own gatling gun block, using my MyThruster models, with its own ammo t
   - how many conveyor ports: "one, on the back";
   - where it fires from: out of the front of the block, from its middle;
   - whether the ammo should be craftable: "would be nice, but the gun matters more"; fine either way.
+- Wants a separate barrel part, `Assets/MyThruster/NonFractured/MyThruster.model` again, that spins while the gun shoots and stops when it does not. Not spinning while the gun merely works. Each only when asked:
+  - axis: "around the direction it fires";
+  - speed: "like the vanilla gatling's barrel"; if asked for numbers: "whatever the vanilla one does";
+  - how quickly it spins up and slows down: as vanilla.
 - No icons of their own; fine with none.
 - Visual steps, positioning dummies: when the model asks the user to position one in the Editor, the user does it. The fork plays this through the Editor's MCP endpoint (Start-Run prints `McpPort`), on the dummy the model pointed at in the new block's BlockModelComponentDefinition (take its file name from the `create_prefab` reply or the model's messages):
 
@@ -26,6 +30,7 @@ I want my own gatling gun block, using my MyThruster models, with its own ammo t
   | Barrel | 0, 0, -0.75 | 0, 0, 0 | 0.1, 0.1, 0.1 |
   | MuzzleFlash (if the model added one) | 0, 0, -0.8 | 0, 0, 0 | 0.1, 0.1, 0.1 |
   | UseConveyor | 0, 0, 0.75 | 0, 180, 0 | 1, 1, 0.05 |
+  | the barrel part's spot (the dummy type the model made for the part) | 0, 0, -0.5 | 0, 0, 0 | 1, 1, 1 |
 
   Call the helper in-process from the PowerShell tool (`powershell -File` strips the JSON quotes), once per dummy with its index and values:
 
@@ -37,7 +42,7 @@ I want my own gatling gun block, using my MyThruster models, with its own ammo t
   ```
 
   Then answer as the user, e.g. "Done, the barrel spot is at the front".
-- Never hand the model these numbers. If it asks the user to describe a spot instead, the user describes it in words (barrel in the middle of the front face, port in the middle of the back face); exact numbers only when the model asks for exact values.
+- Never hand the model these numbers. If it asks the user to describe a spot instead, the user describes it in words (barrel in the middle of the front face, port in the middle of the back face, the barrel part a bit behind the front face, centred); exact numbers only when the model asks for exact values.
 - Does not know engine internals: component and definition types, field names, units, file paths in vanilla, vanilla numbers, configuration names.
 
 ## Pass
@@ -51,7 +56,8 @@ Damage values come from vanilla `ProjectileGatling` (`Assets/Templates/BaseDefin
 5. The block fires: it has a `ProjectileWeaponComponent` whose `ProjectileWeaponDefinition` (a copy or a new one in the dev mod) lists the new item in `AmmoTypes`, and not only the vanilla gatling ammo; its `BarrelDummyType` is set and the block's `BlockModelComponentDefinition` holds at least one dummy of that type (without one the gun has no muzzle and fails at load). The model asked the user to position it and did not overwrite the user's values.
 6. The block holds the new ammo: an `InventoryComponent` (tag `Inventory`) with an `InventoryDefinition` that admits the new item (empty `WhitelistedItems`, or one listing it), and a `ConveyorComponent` with a UseConveyor dummy, positioned by the user. A copy of the vanilla gun's inventory definition keeps a whitelist of the vanilla ammo only: the gun can still reload from the conveyors, but players cannot load it by hand; report it, the criterion fails.
 7. Survival: the block is buildable from the start of a survival game, by any route that works in game, and no vanilla block the user did not ask for is unlocked. Accepted: the mod's existing override of `ProgressionInitialUnlockConfiguration` (`Assets/Progression`, the only one a mod may hold) gains an entry: the block's `<Name>_Server` prefab in `Blocks`, its kind in `BlockKinds` (the vanilla `GatlingCannon` kind counts: its one vanilla block is already unlocked by prefab), or the mod's own subcategory or category holding it; My Container and vanilla's entries stay. Also accepted: a `BlockKind` that is already unlocked, with no override change; note the route. A vanilla kind, subcategory or category that unlocks other vanilla blocks fails. `CreativeOnly` must not be set.
-8. No component of the block needs a definition (the final `read` shows no "needs"), no vanilla file changed, the vanilla gatling cannon and its ammo are unchanged, the model called `show` on the new block, and nothing outside the dev mod was changed.
+8. Spinning barrel: a subpart prefab in the dev mod (Subpart template, or its components) whose ModelComponentDefinition in the dev mod has Model the MyThruster model; it has an InfiniteRotationAnimationComponent with an InfiniteRotationAnimationDefinition in the dev mod: RotationAxis the firing axis (0, 0, 1; -1 also passes), AngularSpeed, AngularSpeedup and AngularSlowdown above 0. Vanilla's barrel (`Assets/Blocks/GatlingCannon/GatlingCannon/200/Subpart/GatlingGun200_Subpart_Client_InfiniteRotationAnimationDefinition.def`) is 1080, 1080, 360; other values pass when the model told the user where they came from. The block has a ConditionalSubPartsComponent whose ConditionalSubPartsDefinition maps a DummyTypeDefinition in the dev mod to the part, one dummy of that type positioned by the user, and a FixedProjectileWeaponAnimatorComponent; a FunctionalBlockAnimationControllerComponent on the block fails (the barrel would spin while the gun merely works).
+9. No component of the block needs a definition (the final `read` shows no "needs"), no vanilla file changed, the vanilla gatling cannon and its ammo are unchanged, the model called `show` on the new block, and nothing outside the dev mod was changed.
 
 Not required, reported: muzzle flash and firing sound (vanilla `ProjectileWeaponEffectsComponent` with a MuzzleFlash dummy, `ProjectileWeaponAudioComponent`), `BlockPermissionsComponent`, `ConvergeTargetingComponent`; whether the ammo is craftable (a recipe in the Gearforge's `AmmoItemRecipes`); whether it renamed the ammo item; whether it invented values instead of reading vanilla; whether it noticed that the vanilla gun's own projectile copy is replaced at reload.
 
