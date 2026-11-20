@@ -14,6 +14,7 @@ The tools act on the project (`Tools_Overview.md`). How to reach a goal with the
 
 Skills are cut so the model combines them, not one per finished thing.
 
+- A skill reaches one goal a modder has, such as giving a block a part or making a part move, since the goal is what the model looks for when it searches the skills. Within that goal it covers the ways the game offers, not only the case one task needed: a skill cut to one case leaves the model without guidance for the cases next to it.
 - Procedures: a task's steps (`create-block`, `override-definition`, `add-to-gscreen`).
 - Appendices: what one function adds to a procedure (`block-thruster`). A procedure names, at the step where they apply, the appendices to activate.
 - A function without an appendix is built by mirroring a comparable vanilla block's definitions; that step lives in `create-block`.
@@ -22,13 +23,14 @@ Skills are cut so the model combines them, not one per finished thing.
 
 ## Skill files
 
-- One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence, no instructions.
+- One Markdown file per skill, with `name` and `description` frontmatter. The description is the trigger only: when to load the skill, one sentence, no instructions. It may name a case or two where that helps the model pick the skill; it stays short, since every description is in the index.
 - Body sections, in order: Needs (inputs the user provides), Plan (one-line items, see Plan), Steps (numbered, written as real tool calls, a conditional step says when), Show (the last step shows the result in the Editor with what to look at; testing in game is the user's call).
 - No read-back check of edits: the model sees each change's reply, and the user works alongside it.
 - Lean, not bare: a skill holds what every run needs and leaves the rest to the wiki, because it shares the context with the tool schemas and the transcript.
-- Steps say what to do. A fact belongs in a step only when the step goes wrong without it.
+- Steps say what to do. A fact belongs in a step only when the step goes wrong without it in most sessions; a trap that only some cases hit goes to the wiki, where the researcher finds it when that case comes up.
 - Definitions are named by type, never by a file name a template generates, since those vary per template.
-- No lists of what is supported and no general gotchas: they go stale, and the tools' errors already name the valid choices.
+- A step that asks the user for values comes after the reads that give it something to offer: the fields and their units, and a comparable vanilla item's values. With the read after the question, the model fills the offer from memory. One comparable item is enough: reading every size or variant costs context and adds nothing to the offer.
+- No lists of what is supported and no general gotchas: they go stale, and the tools' errors already name the valid choices. Where the game offers several interchangeable types for one role, a step finds them with the tools, by describing their common base type or interface, since a list holds only the cases its author thought of. The one most sessions need may be named directly, so the common case costs no search.
 - Importing files is the user's job in the Editor. A skill lists the imported items it needs, not how to import them.
 - Source material: the official SE2 modding guides, rewritten from clicks into tool calls. Art, audio and other work outside the Editor is left to the user.
 - ASCII only.

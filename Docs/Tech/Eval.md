@@ -62,5 +62,6 @@ The plugin serves a small HTTP JSON endpoint on loopback when its port setting i
 - A criterion that disagrees with the game is checked in the game source; a wrong task is fixed.
 - A run counts beyond pass or fail: user turns, context used, whether what it asked was the user's to answer, proof accuracy, invented claims. A wish the user restated unasked is a nudge and noted.
 - A change is kept when it moves its failure without a regression in the other tasks; otherwise it is reverted. Context changes follow `Context.md`.
+- A skill written or reshaped around one task is also tried on another case of its goal before it is kept. An off-script run is enough: a prompt and user written for the trial, not committed as a task. One task alone lets a skill bend to that task's shape unnoticed, and a task per case would bloat the task set.
 - Facts about the game come from the SE2 source, read by a subagent that does not touch the Editor while a batch runs.
 - Run folders and the findings log stay out of the repo, under `.tmp/eval/`. Context changes reach the repo only after the owner approves them.
