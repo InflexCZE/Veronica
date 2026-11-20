@@ -14,10 +14,11 @@ public static class DefinitionTypes
         if (wanted.Length == 0)
             throw new EditError($"Give a {noun}, e.g. {example}.");
 
+        choices = choices.Where(t => !TypeCatalog.IsLeftover(t)).ToList();
         var exact = choices.Where(t => Same(t.Name, wanted) || Same(t.Name, wanted + suffix) || Same(t.FullName, wanted)).ToList();
         if (exact.Count == 1)
             return exact[0];
-        // Internal types sharing a public type's name are migration leftovers the game no longer builds.
+        // An internal type sharing a public type's name is not one content uses, even without the leftover mark.
         var visible = exact.Where(t => t.IsVisible).ToList();
         if (visible.Count == 1)
             return visible[0];

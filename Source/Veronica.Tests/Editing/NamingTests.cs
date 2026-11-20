@@ -1,3 +1,4 @@
+using Keen.VRage.Library.UI.Attributes;
 using Veronica.Editing;
 using Xunit;
 
@@ -263,6 +264,29 @@ public sealed class NamingTests
     public void Same_name_prefers_the_only_public_type() =>
         Assert.Equal(typeof(PublicTypes.SpinComponent),
             DefinitionTypes.Pick([typeof(InternalTypes.SpinComponent), typeof(PublicTypes.SpinComponent)], "Spin", "Component", "component type", "X"));
+
+    [TypeSearchInfo(hideInCreationMenu: true)]
+    internal sealed class LeftoverComponent;
+
+    [TypeSearchInfo(hideInCreationMenu: true)]
+    public sealed class HiddenPublicComponent;
+
+    internal sealed class InternalComponent;
+
+    [Fact]
+    public void A_leftover_is_internal_and_hidden_from_the_creation_menu()
+    {
+        Assert.True(TypeCatalog.IsLeftover(typeof(LeftoverComponent)));
+        Assert.False(TypeCatalog.IsLeftover(typeof(HiddenPublicComponent)));
+        Assert.False(TypeCatalog.IsLeftover(typeof(InternalComponent)));
+    }
+
+    [Fact]
+    public void A_leftover_is_never_picked()
+    {
+        var e = Assert.Throws<EditError>(() => DefinitionTypes.Pick([typeof(LeftoverComponent)], "Leftover", "Component", "component type", "X"));
+        Assert.Contains("No component type is named 'Leftover'", e.Message);
+    }
 
     [Fact]
     public void Definition_type_without_candidates_says_so()

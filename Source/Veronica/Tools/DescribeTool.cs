@@ -16,7 +16,7 @@ public sealed class DescribeTool : ITool
     public string Name => "describe";
 
     public string Description =>
-        "Explains a type from the game's own documentation: what it and its members are for, its base and derived types, the component or definition it pairs with, and units. " +
+        "Explains a type from the game's own documentation: what it and its members are for, its base and derived types, the interfaces it implements or the components implementing it, the component or definition it pairs with, and units. " +
         "Without member: the type's summary and its member list. With member: that member in full, then the members of its type.";
 
     public string Parameters => """
@@ -72,12 +72,14 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
         IReadOnlyList<Type> Types,
         Dictionary<string, List<Type>> ByName,
         IReadOnlyList<Type> Components,
-        Dictionary<Type, Type> ComponentBuilders);
+        Dictionary<Type, Type> ComponentBuilders,
+        HashSet<Type> Interfaces);
 
     private readonly Lazy<Index> _index = new(Load);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IReadOnlyList<Type>> _concrete = new();
 
-    // Every type the inspector can show, named as the tools name it, plus the component types. The attribute index
+    // Every type the inspector can show, named as the tools name it, plus the component types and the interfaces
+    // they implement: some families share only an interface (animation controllers, render parents). The attribute index
     // misses plain serializable types such as ModelDummy, so the engine's and game's assemblies are scanned.
     private static Index Load()
     {
@@ -97,7 +99,7 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
             }
             foreach (var type in types)
             {
-                if (type.ContainsGenericParameters || type.IsNested && !type.IsNestedPublic)
+                if (type.ContainsGenericParameters || type.IsNested && !type.IsNestedPublic || TypeCatalog.IsLeftover(type))
                     continue;
                 if (RuntimeComponentInfo.IsComponent(type))
                 {
@@ -109,12 +111,25 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
                             builders.TryAdd(builder, type);
                     }
                 }
-                else if (typeof(IAccessible).IsAssignableFrom(type) && TypeCatalog.IsAccessible(type))
+                else if (typeof(IAccessible).IsAssignableFrom(type) && TypeCatalog.IsAccessible(type) && TypeCatalog.Shown(type) is var shownType && !TypeCatalog.IsLeftover(shownType))
                 {
-                    found.Add(TypeCatalog.Shown(type));
+                    found.Add(shownType);
                 }
             }
         }
+
+        var interfaces = new HashSet<Type>();
+        foreach (var component in components)
+        {
+            try
+            {
+                interfaces.UnionWith(component.GetInterfaces().Where(TypeCatalog.IsOffered));
+            }
+            catch (Exception)
+            {
+            }
+        }
+        found.UnionWith(interfaces);
 
         var shown = found.Select(t => builders.GetValueOrDefault(t, t)).Distinct().ToList();
         var byName = new Dictionary<string, List<Type>>(StringComparer.OrdinalIgnoreCase);
@@ -142,7 +157,7 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
             Name(builder.Name, component);
             Name(builder.FullName, component);
         }
-        return new Index(shown, byName, components, builders);
+        return new Index(shown, byName, components, builders, interfaces);
     }
 
     private static bool IsGameAssembly(System.Reflection.Assembly assembly) =>
@@ -153,7 +168,11 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
     {
         string wanted = name.Trim();
         if (!_index.Value.ByName.TryGetValue(wanted, out var exact))
+        {
+            if (TypeCatalog.PlumbingInterfaces.Any(p => Same(p, wanted) || p.EndsWith("." + wanted, StringComparison.OrdinalIgnoreCase)))
+                throw new EditError($"'{wanted}' is engine plumbing nearly every component implements; describe does not list it, and no component needs it from another.");
             return null;
+        }
         return exact.Count == 1
             ? exact[0]
             : throw new EditError($"'{wanted}' names several types; use one of: {string.Join(", ", exact.Select(t => t.FullName).Order(StringComparer.OrdinalIgnoreCase))}.");
@@ -184,6 +203,20 @@ internal sealed class EditorTypeCatalog : ITypeCatalog
         if (type.IsSealed || type.IsValueType)
             return [];
         return _concrete.GetOrAdd(type, t => _index.Value.Types.Where(c => c != t && !c.IsAbstract && !c.IsInterface && t.IsAssignableFrom(c)).ToList());
+    }
+
+    public IReadOnlyList<Type> Interfaces(Type type)
+    {
+        if (type.IsInterface)
+            return [];
+        try
+        {
+            return type.GetInterfaces().Where(_index.Value.Interfaces.Contains).ToList();
+        }
+        catch (Exception)
+        {
+            return [];
+        }
     }
 
     // A component's object builder is not paired with it in the object builder index, so it is mapped here.

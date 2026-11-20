@@ -120,7 +120,36 @@ public sealed class FakeCatalog : ITypeCatalog
     public Type Shown(Type type) => TypeCatalog.Shown(type);
 
     public string? Summary(Type type) => TypeCatalog.Summary(type);
+
+    public IReadOnlyList<Type> Interfaces(Type type) =>
+        type.IsInterface ? [] : type.GetInterfaces().Where(i => i.Assembly == typeof(FakeCatalog).Assembly).ToList();
 }
+
+public interface IDriver;
+
+public partial class Lifter : IDriver;
+
+public sealed class Crank : IDriver;
+
+public interface IBusy;
+
+public sealed class Busy01 : IBusy;
+public sealed class Busy02 : IBusy;
+public sealed class Busy03 : IBusy;
+public sealed class Busy04 : IBusy;
+public sealed class Busy05 : IBusy;
+public sealed class Busy06 : IBusy;
+public sealed class Busy07 : IBusy;
+public sealed class Busy08 : IBusy;
+public sealed class Busy09 : IBusy;
+public sealed class Busy10 : IBusy;
+public sealed class Busy11 : IBusy;
+public sealed class Busy12 : IBusy;
+public sealed class Busy13 : IBusy;
+public sealed class Busy14 : IBusy;
+public sealed class Busy15 : IBusy;
+public sealed class Busy16 : IBusy;
+public sealed class Busy17 : IBusy;
 
 public class DescribeTests
 {
@@ -157,6 +186,29 @@ public class DescribeTests
         Assert.Contains("Derived: Lifter", text);
         Assert.Contains("Takes definition: DummyTypeDefinition", text);
     }
+
+    [Fact]
+    public void AnInterfaceListsWhatImplementsIt()
+    {
+        string text = Describer.OfType(typeof(IDriver), "", Catalog);
+        Assert.StartsWith("IDriver (interface)\n", text);
+        Assert.Contains("Implemented by: Crank, Lifter", text);
+        Assert.DoesNotContain("Bases:", text);
+        Assert.DoesNotContain("Derived:", text);
+        Assert.DoesNotContain("Fields", text);
+    }
+
+    [Fact]
+    public void ATypeListsTheInterfacesItImplements()
+    {
+        Assert.Contains("Implements: IDriver", Describer.OfType(typeof(Crank), "", Catalog));
+        Assert.DoesNotContain("Implements:", Describer.OfType(typeof(Wheel), "", Catalog));
+    }
+
+    [Fact]
+    public void ALongImplementerListIsCut() =>
+        Assert.Contains("Implemented by: Busy01, Busy02, Busy03, Busy04, Busy05, Busy06, Busy07, Busy08, Busy09, Busy10, Busy11, Busy12, Busy13, Busy14, Busy15, ... and 2 more",
+            Describer.OfType(typeof(IBusy), "", Catalog));
 
     [Fact]
     public void InheritedFieldsAreGroupedByTheirBase()

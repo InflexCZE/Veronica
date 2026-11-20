@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Keen.VRage.Library.Serialization;
 using Keen.VRage.Library.Serialization.ObjectBuilders;
+using Keen.VRage.Library.UI.Attributes;
 
 namespace Veronica.Editing;
 
@@ -22,10 +23,49 @@ public interface ITypeCatalog
     Type Shown(Type type);
 
     string? Summary(Type type);
+
+    // The interfaces describe offers that a type implements.
+    IReadOnlyList<Type> Interfaces(Type type);
 }
 
 public static class TypeCatalog
 {
+    // Engine plumbing nearly every component implements and no component asks for as a dependency: listing them
+    // would fill every component's description with names a modder never uses.
+    public static readonly IReadOnlySet<string> PlumbingInterfaces = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "Keen.VRage.Core.Game.Systems.IInSceneListener",
+        "Keen.VRage.Core.Game.Systems.ISessionConfigurator",
+        "Keen.VRage.Core.Game.Systems.IEntityBundleListener",
+        "Keen.VRage.Library.Serialization.IAccessible",
+        "Keen.VRage.Core.DebugMenu.IDebugMenuEvents",
+        "Keen.VRage.Core.Game.GameSystems.SpaceProbe.IDebugListenerAcceptor",
+        "Keen.VRage.Multiplayer.Transport.OutOfProcess.Server.IConnectedClientsListener",
+        "Keen.VRage.Library.Definitions.IDefinitionLoadingServiceProvider",
+        "Keen.Game2.Simulation.RuntimeSystems.CoreScenes.ITransitionListener",
+    };
+
+    public static bool IsPlumbing(Type type) => type.IsInterface && type.FullName is { } name && PlumbingInterfaces.Contains(name);
+
+    // An interface describe offers: a public game interface that is not plumbing.
+    public static bool IsOffered(Type type) =>
+        type.IsInterface && type.IsVisible && !type.ContainsGenericParameters && type.Namespace?.StartsWith("Keen.", StringComparison.Ordinal) == true && !IsPlumbing(type);
+
+    // The game keeps such types only so old files still load; they share names with the real types.
+    public static bool IsLeftover(Type type)
+    {
+        if (type.IsVisible)
+            return false;
+        try
+        {
+            return type.GetCustomAttributes(typeof(TypeSearchInfo), inherit: false).OfType<TypeSearchInfo>().Any(a => a.HideInCreationMenu);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     // Definitions and components are named as themselves, though their fields are their object builders'.
     public static Type Shown(Type type) => Buildable(type) is { } info && info.BuilderType == type ? info.ObjectType : type;
 

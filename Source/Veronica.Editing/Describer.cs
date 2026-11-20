@@ -137,7 +137,7 @@ public static class Describer
         if (Values.PlainValueText(type) is { } plain)
             return $"{Name(type)}\n{plain}";
 
-        var lines = new List<string> { type.IsAbstract && !type.IsSealed ? $"{Name(type)} (abstract)" : Name(type) };
+        var lines = new List<string> { type.IsInterface ? $"{Name(type)} (interface)" : type.IsAbstract && !type.IsSealed ? $"{Name(type)} (abstract)" : Name(type) };
         if (catalog.Summary(type) is { } summary)
             lines.Add(summary);
         lines.AddRange(Relations(type, catalog));
@@ -263,12 +263,16 @@ public static class Describer
             bases.Add(Name(b));
         if (bases.Count > 0)
             yield return $"Bases: {string.Join(", ", bases)}";
+        var implemented = catalog.Interfaces(type).Select(Name).Distinct().Order(StringComparer.OrdinalIgnoreCase).ToList();
+        if (implemented.Count > 0)
+            yield return $"Implements: {string.Join(", ", implemented)}";
 
         var derived = catalog.ConcreteTypes(type).Where(t => t != type).Select(Name).Distinct().Order(StringComparer.OrdinalIgnoreCase).ToList();
         if (derived.Count > 0)
         {
             string shown = string.Join(", ", derived.Take(MaxDerived));
-            yield return $"Derived: {shown}{(derived.Count > MaxDerived ? $", ... and {derived.Count - MaxDerived} more" : "")}";
+            string label = type.IsInterface ? "Implemented by" : "Derived";
+            yield return $"{label}: {shown}{(derived.Count > MaxDerived ? $", ... and {derived.Count - MaxDerived} more" : "")}";
         }
         else if (type.IsAbstract && !type.IsSealed && !type.IsInterface)
         {
