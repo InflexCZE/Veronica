@@ -1,14 +1,9 @@
-# Finding the components that implement an interface
+# Finding which of a prefab's components implement an interface
 
-**Exists:** `component_add` names, in its reply, the components that provide an interface dependency the Editor's filling skips (`Docs/Tech/Tools_Creators.md`, interface dependencies). `describe` lists base types and concrete derived types but filters interfaces out. No tool answers "which components implement this interface" on its own.
+**Exists:** `describe` on an interface lists every component type implementing it, game-wide, and on a component lists the interfaces it implements (`Docs/Tech/Tools_Readers.md`, describe). `component_add` names, in its reply, the components that provide an interface dependency the Editor's filling skips (`Docs/Tech/Tools_Creators.md`, interface dependencies).
 
-**Missing:** a tool the model can call when a dependency is missing or a behaviour comes through an interface, such as power draw through `IConsumedResourceModifier`, that lists the candidates:
-- on a prefab: which of its components implement the interface;
-- across the whole game: every component type that implements it, so the model knows what it could add.
+**Missing:** on one prefab, which of its components implement a given interface, such as the components that add to a block's power draw through `IConsumedResourceModifier`. Today the model has to match the prefab's component list against describe's game-wide list by itself.
 
-**Where to start:** `DescribeTool.cs` (where interfaces are filtered out), the lookup `component_add` already does for interface dependencies; `Type.GetInterfaces()` over the game assemblies, filtered to game namespaces.
+**Where to start:** the "Implemented by" lookup in `DescribeTool.cs` (`EditorTypeCatalog`), applied to the components a `read` of the prefab lists.
 
-**Owner decision:** wanted. Open questions:
-- A new tool, or a mode of `describe` or `find_content`?
-- Does the game-wide list include components no vanilla prefab uses?
-- Are interface names shown with their doc summary, so the model knows what the interface means?
+**Owner decision:** wanted. Open question: a new tool, or a mode of `describe` or `read`?
